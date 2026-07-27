@@ -20,6 +20,7 @@ class AuthController extends Controller{
         $user = User::where('correo', $request->correo) -> first();
 
         if($user){
+            Auth::login($user);
             return $this-> redirectBasedOnRole($user -> rol);
         }
 
