@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
+use Exception;
 
 class AuthController extends Controller{
 
@@ -12,41 +14,58 @@ class AuthController extends Controller{
         return view('auth.login');
     }
 
-    public function login (Request $request){
-        $request ->validate([
-            'correo' => 'required|email',
-        ]);
-
-        $user = User::where('correo', $request->correo) -> first();
-
-        if($user){
-            Auth::login($user);
-            return $this-> redirectBasedOnRole($user -> rol);
-        }
-
-        return back() -> withErrors([
-            'correo' => 'Correo electronico no encontrado',
-        ]);
+    public function redirect(){
+        /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+        $driver = Socialite::driver('google');
+        return $driver
+            ->with(['hd' => env('GOOGLE_ALLOWED_DOMAIN', 'FarusacTest.com')])
+            ->redirect();
     }
 
-    private function redirectBasedOnRole($role){
-        switch ($role){
-            case 'administrador':
-                return redirect()->route('admin.dashboard');
-            case 'jefe':
-                return redirect()->route('jefe.dashboard');
-            case 'docente':
-                return redirect()->route('docente.dashboard');
-            default:
-                Auth::logout();
-                return redirect('/')->withErrors(['correo' => 'Rol invalido']);
+    public function callback(){
+        try{
+            $googleUser = Socialite::driver('google')->user();
+        }catch (Exception $ex){
+            return redirect('/')->withErrors(['correo' => 'Ocurrio un error al intentar iniciar sesión con Google']);
         }
-    }
 
+        //Validar Acceso al dominio
+        $allowedDomain = strtolower(env('GOOGLE_ALLOWED_DOMAIN', 'FarusacTest.com'));
+        $domain = explode('@', $googleUser->getEmail())[1] ?? '';
+
+        if(strtolower($domain) !== $allowedDomain){
+            return redirect('/')->withErrors(['correo' => 'Acceso denegado solo se permiten personas que pertenezcan a la institucion']);
+        }
+
+        //Buscar si el usuario está cargado en la base de datos
+        $user = User::where('correo', $googleUser->getEmail())->first();
+
+        if(!$user){
+            return redirect('/')->withErrors(['correo'=>'Correo valido, contactar al administrador para registrarlo en el sistema']);
+        }
+
+        //Iniciar Sesion si todo está correcto y redirigir al panle correspondiente
+        Auth::login($user);
+        return $this->redirectBasedOnRole($user->rol);
+    }
+    
+    private function redirectBasedOnRole($rol){
+            switch($rol){
+                case 'administrador':
+                    return redirect()->route('admin.dashboard');
+                case 'jefe':
+                    return redirect()->route('jefe.dashboard');
+                case 'docente':
+                    return redirect()->route('docente.dashboard');
+                default:
+                    Auth::logout();
+                    return redirect('/')->withErrors(['correo' => 'Rol invalido']);
+            }
+        }
+    
     public function logout(Request $request){
-        Auth::logout();
+        Auth::Logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/');
     }
 }
