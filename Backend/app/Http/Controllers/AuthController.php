@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Exception;
@@ -24,9 +25,15 @@ class AuthController extends Controller{
 
     public function callback(){
         try{
-            $googleUser = Socialite::driver('google')->user();
+            /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+            $driver = Socialite::driver('google');
+            $driver->setHttpClient(new \GuzzleHttp\Client([
+                'verify' => 'C:\\php\\cacert.pem'
+            ]));
+            $googleUser = $driver->user();
         }catch (Exception $ex){
-            return redirect('/')->withErrors(['correo' => 'Ocurrio un error al intentar iniciar sesión con Google']);
+            Log::error('Error al iniciar sesión: ' . $ex->getMessage());
+            return redirect('/')->withErrors(['correo' => 'Error al iniciar sesión. Intente nuevamente.']);
         }
 
         //Validar Acceso al dominio
@@ -41,7 +48,20 @@ class AuthController extends Controller{
         $user = User::where('correo', $googleUser->getEmail())->first();
 
         if(!$user){
-            return redirect('/')->withErrors(['correo'=>'Correo valido, contactar al administrador para registrarlo en el sistema']);
+            // Registrar al usuario automáticamente con el rol de docente
+            $user = User::create([
+                'nombre' => $googleUser->getName(),
+                'correo' => $googleUser->getEmail(),
+                'rol' => 'docente',
+                'google_id' => $googleUser->getId(),
+            ]);
+        } else {
+            // Vincular google_id si es el primer inicio de sesión del usuario
+            if (!$user->google_id) {
+                $user->update([
+                    'google_id' => $googleUser->getId(),
+                ]);
+            }
         }
 
         //Iniciar Sesion si todo está correcto y redirigir al panle correspondiente
