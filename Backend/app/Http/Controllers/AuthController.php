@@ -19,7 +19,10 @@ class AuthController extends Controller{
         /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
         $driver = Socialite::driver('google');
         return $driver
-            ->with(['hd' => env('GOOGLE_ALLOWED_DOMAIN', 'FarusacTest.com')])
+            ->with([
+                'hd' => env('GOOGLE_ALLOWED_DOMAIN', 'FarusacTest.com'),
+                'prompt' => 'select_account'
+            ])
             ->redirect();
     }
 
@@ -87,5 +90,7 @@ class AuthController extends Controller{
         Auth::Logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        return redirect()->route('login');
     }
 }
