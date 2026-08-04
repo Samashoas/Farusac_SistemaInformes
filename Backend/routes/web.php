@@ -24,12 +24,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:administrador')->group(function () {
         Route::get('/admin/panel', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-        Route::post('/admin/importar-usuarios', [AdminController::class, 'cargarUsuariosCsv'])->name('admin.importar');
+        Route::get('/admin/carga-datos', [AdminController::class, 'cargaDatosView'])->name('admin.carga-datos');
+        Route::post('/admin/importar-usuarios', [AdminController::class, 'CargaUsuariosCsv'])->name('admin.importar');
     });
-});
-
-Route::middleware('role:administrador')->group(function(){
-    Route::get('/admin/panel', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-
-    Route::post('/admin/importar-usuarios', [AdminController::class, 'CargarUsuariosCsv'])->name('admin.importar');
 });

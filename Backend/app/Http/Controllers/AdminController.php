@@ -11,6 +11,10 @@ class AdminController extends Controller
         return view('admin.dashboard');
     }
 
+    public function cargaDatosView(){
+        return view('admin.carga_datos');
+    }
+
     public function CargaUsuariosCsv(Request $request){
         $request -> validate([
             'archivo_csv' => 'required|mimes:csv,txt|max:5120',
