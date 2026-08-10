@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:administrador')->group(function () {
         Route::get('/admin/panel', [AdminController::class, 'dashboard'])->name('admin.dashboard');
         Route::get('/admin/carga-datos', [AdminController::class, 'cargaDatosView'])->name('admin.carga-datos');
+        Route::get('/admin/usuarios', [AdminController::class, 'usuariosView'])->name('admin.usuarios');
         Route::post('/admin/importar-usuarios', [AdminController::class, 'CargaUsuariosCsv'])->name('admin.importar');
     });
 });

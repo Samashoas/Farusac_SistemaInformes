@@ -664,7 +664,7 @@
                     <div class="card-icon">
                         <img src="{{ asset('images/Admin/GestionUsuarios.png') }}" alt="Gestión de Usuarios">
                     </div>
-                    <a href="#" class="card-btn">Ir a Gestión de Usuarios</a>
+                    <a href="{{ route('admin.usuarios') }}" class="card-btn">Ir a Gestión de Usuarios</a>
                 </div>
 
                 <!-- Gestión de Cursos -->
