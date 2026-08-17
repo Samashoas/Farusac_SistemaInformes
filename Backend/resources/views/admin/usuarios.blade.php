@@ -8,13 +8,18 @@
     <!-- Google Fonts: Outfit (headings) and Inter (body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
     <style>
         :root {
-            --color-azul: #002D72;      /* Pantone 288C */
-            --color-dorado: #AC8400;    /* Pantone 118C */
-            --color-terracota: #B94700; /* Pantone 1525C */
+            --color-azul: #002D72;
+            /* Pantone 288C */
+            --color-dorado: #AC8400;
+            /* Pantone 118C */
+            --color-terracota: #B94700;
+            /* Pantone 1525C */
             --color-texto-oscuro: #1a202c;
             --color-texto-claro: #4a5568;
             --color-fondo: #f7fafc;
@@ -42,8 +47,8 @@
         .admin-header {
             background-color: #ffffff;
             border-bottom: 2px solid transparent;
-            background-image: linear-gradient(white, white), 
-                              linear-gradient(90deg, var(--color-azul), var(--color-dorado), var(--color-terracota));
+            background-image: linear-gradient(white, white),
+                linear-gradient(90deg, var(--color-azul), var(--color-dorado), var(--color-terracota));
             background-origin: border-box;
             background-clip: padding-box, border-box;
             height: 90px;
@@ -229,15 +234,21 @@
             padding: 30px 15px;
             display: flex;
             flex-direction: column;
-            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
             flex-shrink: 0;
+            position: fixed; /* Superponer sobre el contenido */
+            top: 90px;       /* Justo abajo del header */
+            left: 0;
+            height: calc(100vh - 90px);
+            z-index: 99;     /* Encima del contenido principal */
+            box-shadow: 10px 0 25px rgba(0, 45, 114, 0.08); /* Sombra elegante */
+            transform: translateX(0);
+            overflow-y: auto;
         }
 
         .admin-sidebar.collapsed {
-            width: 0;
-            padding: 30px 0;
-            overflow: hidden;
-            border-right-width: 0;
+            transform: translateX(-100%); /* Deslizar a la izquierda */
+            box-shadow: none;
         }
 
         .sidebar-nav {
@@ -260,12 +271,27 @@
             transition: all 0.2s ease;
         }
 
-        .sidebar-link:hover {
-            background-color: #f7fafc;
+        /* Estilos de Hover/Activo basados en los colores del dashboard */
+        .sidebar-link-inicio:hover,
+        .sidebar-link-inicio.active {
+            background-color: rgba(0, 45, 114, 0.05);
             color: var(--color-azul);
         }
 
-        .sidebar-link.active {
+        .sidebar-link-cursos:hover,
+        .sidebar-link-cursos.active {
+            background-color: rgba(172, 132, 0, 0.05);
+            color: var(--color-dorado);
+        }
+
+        .sidebar-link-informes:hover,
+        .sidebar-link-informes.active {
+            background-color: rgba(185, 71, 0, 0.05);
+            color: var(--color-terracota);
+        }
+
+        .sidebar-link-carga:hover,
+        .sidebar-link-carga.active {
             background-color: rgba(0, 45, 114, 0.05);
             color: var(--color-azul);
         }
@@ -638,8 +664,8 @@
             background-color: #ffffff;
             border-radius: var(--border-radius-card);
             border: 2px solid transparent;
-            background-image: linear-gradient(white, white), 
-                              linear-gradient(135deg, var(--color-azul), var(--color-dorado), var(--color-terracota));
+            background-image: linear-gradient(white, white),
+                linear-gradient(135deg, var(--color-azul), var(--color-dorado), var(--color-terracota));
             background-origin: border-box;
             background-clip: padding-box, border-box;
             padding: 40px;
@@ -740,7 +766,8 @@
 
         .btn-submit:hover,
         .btn-submit:active {
-            background-color: #93c5fd; /* Azul claro */
+            background-color: #93c5fd;
+            /* Azul claro */
             color: var(--color-azul);
             border-color: #3b82f6;
             box-shadow: 0 4px 12px rgba(96, 165, 250, 0.25);
@@ -756,7 +783,8 @@
 
         .btn-cancel:hover,
         .btn-cancel:active {
-            background-color: #fca5a5; /* Rojo/Rosado claro */
+            background-color: #fca5a5;
+            /* Rojo/Rosado claro */
             color: #991b1b;
             border-color: #ef4444;
             box-shadow: 0 4px 12px rgba(248, 113, 113, 0.25);
@@ -790,7 +818,8 @@
             <div class="profile-avatar">
                 {{ strtoupper(substr(Auth::user()->nombre, 0, 1)) }}
             </div>
-            <svg class="profile-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="profile-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
 
@@ -798,7 +827,9 @@
                 <form action="{{ route('logout') }}" method="POST" id="logout-form" style="display: none;">
                     @csrf
                 </form>
-                <button type="button" onclick="event.stopPropagation(); document.getElementById('logout-form').submit();" class="dropdown-item">
+                <button type="button"
+                    onclick="event.stopPropagation(); document.getElementById('logout-form').submit();"
+                    class="dropdown-item">
                     Cerrar sesión
                 </button>
             </div>
@@ -807,49 +838,66 @@
 
     <!-- Contenedor general del layout de la aplicación (Sidebar + Contenido) -->
     <div class="app-container">
-        
+
         <!-- Menú Lateral (Sidebar) -->
-        <aside class="admin-sidebar" id="adminSidebar">
+        <aside class="admin-sidebar collapsed" id="adminSidebar">
             <nav class="sidebar-nav">
                 <!-- Enlace Inicio -->
-                <a href="{{ route('admin.dashboard') }}" class="sidebar-link">
+                <a href="{{ route('admin.dashboard') }}" class="sidebar-link sidebar-link-inicio">
                     <!-- Icono de Casa SVG -->
-                    <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
                     <span>Inicio</span>
                 </a>
-                
+
                 <!-- Enlace Cursos -->
-                <a href="#" class="sidebar-link">
+                <a href="#" class="sidebar-link sidebar-link-cursos">
                     <!-- Icono de Libro SVG -->
-                    <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                     <span>Cursos</span>
                 </a>
-                
+
                 <!-- Enlace Informes -->
-                <a href="#" class="sidebar-link">
+                <a href="#" class="sidebar-link sidebar-link-informes">
                     <!-- Icono de Documento/Gráfico SVG -->
-                    <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>Informes</span>
+                </a>
+
+                <!-- Enlace Carga de datos -->
+                <a href="{{ route('admin.carga-datos') }}" class="sidebar-link sidebar-link-carga">
+                    <!-- Icono de Base de Datos SVG -->
+                    <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                    <span>Carga de datos</span>
                 </a>
             </nav>
         </aside>
 
         <!-- Área de Contenido Principal -->
         <main class="main-content-area" id="mainContent">
-            
+
             <!-- Tarjeta de Contenido Principal -->
             <div class="content-card">
                 <h2 class="content-header-title">Gestión de Usuarios</h2>
 
                 <!-- Barra de Herramientas (Filtros y Búsqueda) -->
                 <div class="toolbar">
-                    
+
                     <div class="filters-left">
                         <!-- Entrada de Búsqueda -->
                         <div class="form-group search-group">
@@ -858,11 +906,13 @@
                                 <div class="tooltip-container">
                                     <button type="button" class="tooltip-btn">?</button>
                                     <div class="tooltip-content">
-                                        Se puede buscar por número de teléfono, correo electrónico o nombre de usuario por medio de texto.
+                                        Se puede buscar por número de teléfono, correo electrónico o nombre de usuario
+                                        por medio de texto.
                                     </div>
                                 </div>
                             </div>
-                            <input type="text" id="searchInput" class="input-text" placeholder="Ej. Juan, juan@farusac.edu.gt, 5587...">
+                            <input type="text" id="searchInput" class="input-text"
+                                placeholder="Ej. Juan, juan@farusac.edu.gt, 5587...">
                         </div>
 
                         <!-- Filtro de Rol -->
@@ -891,8 +941,10 @@
                     <button type="button" class="add-user-trigger" id="addUserBtn">
                         <div class="add-user-avatar">
                             <!-- Icono de usuario SVG -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                             <span class="plus-badge">+</span>
                         </div>
@@ -940,9 +992,9 @@
         <div class="add-user-modal" onclick="event.stopPropagation()">
             <button type="button" class="modal-close-btn" onclick="closeAddUserModal()">×</button>
             <h2 class="modal-title">Agregar Nuevo Usuario</h2>
-            
+
             <form class="modal-form" id="addUserForm" onsubmit="handleCreateUser(event)">
-                
+
                 <div class="form-group">
                     <label for="newUserName" class="modal-form-label">Nombre</label>
                     <input type="text" id="newUserName" class="input-text" placeholder="Ej. Juan Pérez" required>
@@ -950,7 +1002,8 @@
 
                 <div class="form-group">
                     <label for="newUserEmail" class="modal-form-label">Correo</label>
-                    <input type="email" id="newUserEmail" class="input-text" placeholder="Ej. juan.perez@farusac.edu.gt" required>
+                    <input type="email" id="newUserEmail" class="input-text" placeholder="Ej. juan.perez@farusac.edu.gt"
+                        required>
                 </div>
 
                 <div class="form-group">
@@ -1024,11 +1077,11 @@
             // Filtrar los usuarios
             const filtered = dbUsuarios.filter(user => {
                 // Filtro de búsqueda textual (nombre, correo o número)
-                const matchesSearch = 
+                const matchesSearch =
                     user.nombre.toLowerCase().includes(searchVal) ||
                     user.correo.toLowerCase().includes(searchVal) ||
                     user.numero.includes(searchVal);
-                
+
                 // Filtro de Rol
                 const matchesRol = (rolVal === 'todos') || (user.rol === rolVal);
 
@@ -1088,7 +1141,7 @@
         // Acción al agregar un nuevo usuario
         function handleCreateUser(e) {
             e.preventDefault();
-            
+
             const name = document.getElementById('newUserName').value.trim();
             const email = document.getElementById('newUserEmail').value.trim();
             const phone = document.getElementById('newUserPhone').value.trim();
@@ -1108,7 +1161,7 @@
             };
 
             dbUsuarios.push(newUser);
-            
+
             // Cerrar el modal y refrescar la tabla
             closeAddUserModal();
             renderTable();
@@ -1134,6 +1187,16 @@
             hamburgerBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 adminSidebar.classList.toggle('collapsed');
+            });
+
+            // Cerrar sidebar al hacer clic en el contenido principal
+            mainContent.addEventListener('click', () => {
+                adminSidebar.classList.add('collapsed');
+            });
+
+            // Evitar que hacer clic dentro de la barra lateral propague y la cierre
+            adminSidebar.addEventListener('click', (e) => {
+                e.stopPropagation();
             });
 
             // Dropdown de perfil
