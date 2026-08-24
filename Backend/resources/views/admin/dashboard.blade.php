@@ -677,7 +677,7 @@
                     <div class="card-icon">
                         <img src="{{ asset('images/Admin/GestionCursos.png') }}" alt="Gestión de Cursos">
                     </div>
-                    <a href="#" class="card-btn">Ir a Gestión de Cursos</a>
+                    <a href="{{ route('admin.cursos') }}" class="card-btn">Ir a Gestión de Cursos</a>
                 </div>
 
                 <!-- Gestión de Informes -->

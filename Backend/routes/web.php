@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/panel', [AdminController::class, 'dashboard'])->name('admin.dashboard');
         Route::get('/admin/carga-datos', [AdminController::class, 'cargaDatosView'])->name('admin.carga-datos');
         Route::get('/admin/usuarios', [AdminController::class, 'usuariosView'])->name('admin.usuarios');
+        Route::get('/admin/cursos', [AdminController::class, 'cursosView'])->name('admin.cursos');
         Route::post('/admin/usuarios', [AdminController::class, 'crearUsuario'])->name('admin.usuarios.crear');
         Route::put('/admin/usuarios/{id}', [AdminController::class, 'editarUsuario'])->name('admin.usuarios.editar');
         Route::post('/admin/usuarios/{id}/toggle-status', [AdminController::class, 'toggleEstadoUsuario'])->name('admin.usuarios.toggle-status');

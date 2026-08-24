@@ -676,6 +676,8 @@
             padding: 40px;
             max-width: 480px;
             width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 0 25px 50px rgba(0, 45, 114, 0.12);
             position: relative;
             transform: scale(0.9);
@@ -1003,7 +1005,7 @@
                 </a>
 
                 <!-- Enlace Cursos -->
-                <a href="#" class="sidebar-link sidebar-link-cursos">
+                <a href="{{ route('admin.cursos') }}" class="sidebar-link sidebar-link-cursos">
                     <!-- Icono de Libro SVG -->
                     <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor" stroke-width="2.2">
@@ -1271,9 +1273,9 @@
             const filtered = dbUsuarios.filter(user => {
                 // Filtro de búsqueda textual (nombre, correo o número)
                 const matchesSearch =
-                    user.nombre.toLowerCase().includes(searchVal) ||
-                    user.correo.toLowerCase().includes(searchVal) ||
-                    user.numero.includes(searchVal);
+                    (user.nombre && user.nombre.toLowerCase().includes(searchVal)) ||
+                    (user.correo && user.correo.toLowerCase().includes(searchVal)) ||
+                    (user.numero && user.numero.includes(searchVal));
 
                 // Filtro de Rol
                 const matchesRol = (rolVal === 'todos') || (user.rol === rolVal);

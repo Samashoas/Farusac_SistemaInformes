@@ -20,6 +20,10 @@ class AdminController extends Controller
         return view('admin.usuarios', compact('usuarios'));
     }
 
+    public function cursosView(){
+        return view('admin.cursos');
+    }
+
     public function crearUsuario(Request $request){
         $request->validate([
             'nombre' => 'required|string|max:150',
