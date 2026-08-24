@@ -789,6 +789,143 @@
             border-color: #ef4444;
             box-shadow: 0 4px 12px rgba(248, 113, 113, 0.25);
         }
+
+        /* --- NUEVAS CLASES PARA GESTIÓN DE USUARIOS --- */
+        .input-disabled {
+            background-color: #edf2f7 !important;
+            color: #718096 !important;
+            cursor: not-allowed;
+            border-color: #e2e8f0 !important;
+        }
+        
+        .input-disabled:focus {
+            border-color: #cbd5e0 !important;
+            box-shadow: none !important;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            color: var(--color-texto-claro);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background-color: #f7fafc;
+            color: var(--color-azul);
+        }
+
+        .action-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .status-badge.clickable {
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .status-badge.clickable:hover {
+            opacity: 0.85;
+            transform: scale(1.03);
+        }
+
+        /* CARD DE ALERTA PARA CAMBIO DE ESTADO */
+        .confirm-status-card {
+            background-color: #ffffff;
+            border-radius: var(--border-radius-card);
+            border: 2.5px solid #e53e3e; /* Borde rojo del bosquejo */
+            padding: 35px 40px;
+            max-width: 460px;
+            width: 90%;
+            box-shadow: 0 20px 45px rgba(229, 62, 62, 0.15);
+            text-align: center;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .modal-overlay.active .confirm-status-card {
+            transform: scale(1);
+        }
+
+        .warning-triangle {
+            font-size: 52px;
+            color: #d69e2e; /* Amarillo de advertencia */
+            margin-bottom: 15px;
+            line-height: 1;
+        }
+
+        .alert-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            color: #e53e3e; /* Texto de la cabecera en rojo */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .alert-desc {
+            font-size: 13px;
+            color: #718096;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        /* Estilo de éxito (verde) para reactivación de usuario */
+        .confirm-status-card.success-style {
+            border-color: #38a169; /* Verde */
+            box-shadow: 0 20px 45px rgba(56, 161, 105, 0.15);
+        }
+
+        .confirm-status-card.success-style .alert-title {
+            color: #38a169; /* Título verde */
+        }
+
+        .confirm-status-card.success-style .warning-triangle {
+            color: #38a169; /* Icono verde */
+        }
+
+        /* CONTENEDOR DE ACCIONES DE AGREGAR Y CARGA MASIVA */
+        .add-actions-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            margin-bottom: 2px;
+        }
+
+        .bulk-load-link {
+            font-family: 'Outfit', sans-serif;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--color-texto-claro);
+            text-decoration: none;
+            padding: 4px 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+            text-transform: lowercase; /* Coincide con el estilo manuscrito del bosquejo */
+            letter-spacing: 0.02em;
+            text-align: center;
+        }
+
+        .bulk-load-link:hover {
+            color: var(--color-azul);
+            border-color: var(--color-azul);
+            background-color: rgba(0, 45, 114, 0.02);
+            box-shadow: 0 2px 5px rgba(0, 45, 114, 0.05);
+        }
     </style>
 </head>
 
@@ -937,18 +1074,21 @@
                         </div>
                     </div>
 
-                    <!-- Botón para Agregar Usuario -->
-                    <button type="button" class="add-user-trigger" id="addUserBtn">
-                        <div class="add-user-avatar">
-                            <!-- Icono de usuario SVG -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            <span class="plus-badge">+</span>
-                        </div>
-                    </button>
+                    <!-- Botón y Acciones de Agregar / Carga Masiva -->
+                    <div class="add-actions-container">
+                        <button type="button" class="add-user-trigger" id="addUserBtn" title="Agregar Usuario Individual">
+                            <div class="add-user-avatar">
+                                <!-- Icono de usuario SVG -->
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span class="plus-badge">+</span>
+                            </div>
+                        </button>
+                        <a href="{{ route('admin.carga-datos') }}" class="bulk-load-link" title="Ir a Carga de Datos Masiva">carga masiva</a>
+                    </div>
 
                 </div>
 
@@ -962,21 +1102,13 @@
                                 <th>Correo</th>
                                 <th>Número</th>
                                 <th>Rol</th>
+                                <th>Plaza</th>
                                 <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <!-- Fila de ejemplo precargada en base a tu plantilla -->
-                            <tr data-id="1">
-                                <td class="td-id">1.</td>
-                                <td class="td-nombre">Juan Pablo Samayoa Ruiz</td>
-                                <td class="td-correo">juan.samayoa@farusac.edu.gt</td>
-                                <td class="td-numero">5587-1751</td>
-                                <td class="td-rol">Administrador</td>
-                                <td>
-                                    <span class="status-badge active">Activo</span>
-                                </td>
-                            </tr>
+                            <!-- Filas generadas dinámicamente -->
                         </tbody>
                     </table>
                 </div>
@@ -1020,12 +1152,87 @@
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label for="newUserPlaza" class="modal-form-label">Plaza</label>
+                    <select id="newUserPlaza" class="select-filter" style="width: 100%;" required>
+                        <option value="titular + ampliacion">Titular + Ampliacion</option>
+                        <option value="titular">Titular</option>
+                        <option value="interino">Interino</option>
+                    </select>
+                </div>
+
                 <div class="modal-footer">
                     <button type="submit" class="modal-btn btn-submit">Agregar</button>
                     <button type="button" class="modal-btn btn-cancel" onclick="closeAddUserModal()">Cancelar</button>
                 </div>
 
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Emergente: Editar Usuario -->
+    <div class="modal-overlay" id="editUserModal" onclick="closeEditUserModal()">
+        <div class="add-user-modal" onclick="event.stopPropagation()">
+            <button type="button" class="modal-close-btn" onclick="closeEditUserModal()">×</button>
+            <h2 class="modal-title">Editar Usuario</h2>
+
+            <form class="modal-form" id="editUserForm" onsubmit="handleUpdateUser(event)">
+                <input type="hidden" id="editUserId">
+
+                <div class="form-group">
+                    <label for="editUserName" class="modal-form-label">Nombre</label>
+                    <input type="text" id="editUserName" class="input-text input-disabled" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="editUserEmail" class="modal-form-label">Correo</label>
+                    <input type="email" id="editUserEmail" class="input-text input-disabled" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="editUserPhone" class="modal-form-label">Número</label>
+                    <input type="text" id="editUserPhone" class="input-text" placeholder="Ej. 5587-1751" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editUserRole" class="modal-form-label">Rol</label>
+                    <select id="editUserRole" class="select-filter" style="width: 100%;" required>
+                        <option value="administrador">Administrador</option>
+                        <option value="jefe">Jefe</option>
+                        <option value="docente">Docente</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editUserPlaza" class="modal-form-label">Plaza</label>
+                    <select id="editUserPlaza" class="select-filter" style="width: 100%;" required>
+                        <option value="titular + ampliacion">Titular + Ampliacion</option>
+                        <option value="titular">Titular</option>
+                        <option value="interino">Interino</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="modal-btn btn-submit">Confirmar</button>
+                    <button type="button" class="modal-btn btn-cancel" onclick="closeEditUserModal()">Cancelar</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Emergente: Confirmación de Alerta de Cambio de Estado (Desactivar/Activar) -->
+    <div class="modal-overlay" id="confirmStatusModal" onclick="closeConfirmStatusModal()">
+        <div class="confirm-status-card" onclick="event.stopPropagation()" id="confirmStatusCard">
+            <div class="alert-content">
+                <div class="warning-triangle" id="alertIcon">⚠</div>
+                <h3 class="alert-title" id="alertTitle">¿ESTÁ SEGURO QUE QUIERE DESACTIVAR EL USUARIO?</h3>
+                <p class="alert-desc" id="alertDesc">El usuario perderá acceso al sistema hasta que vuelva a ser habilitado</p>
+            </div>
+            <div class="modal-footer" style="margin-top: 25px;">
+                <button type="button" class="modal-btn btn-submit" id="confirmStatusBtn" onclick="executeToggleEstado()">Confirmar</button>
+                <button type="button" class="modal-btn btn-cancel" onclick="closeConfirmStatusModal()">Cancelar</button>
+            </div>
         </div>
     </div>
 
@@ -1039,6 +1246,7 @@
                 correo: "juan.samayoa@farusac.edu.gt",
                 numero: "5587-1751",
                 rol: "administrador",
+                plaza: "titular",
                 estado: "activo"
             },
             {
@@ -1047,6 +1255,7 @@
                 correo: "maria.lopez@farusac.edu.gt",
                 numero: "4122-3850",
                 rol: "docente",
+                plaza: "interino",
                 estado: "activo"
             },
             {
@@ -1055,6 +1264,7 @@
                 correo: "carlos.mendez@farusac.edu.gt",
                 numero: "2201-9475",
                 rol: "jefe",
+                plaza: "titular + ampliacion",
                 estado: "activo"
             },
             {
@@ -1063,9 +1273,13 @@
                 correo: "ana.castillo@farusac.edu.gt",
                 numero: "5938-1204",
                 rol: "docente",
+                plaza: "titular",
                 estado: "inactivo"
             }
         ];
+
+        // Variables globales para rastrear el ID del usuario en edición o cambio de estado
+        let statusTargetUserId = null;
 
         // Función para renderizar la tabla con filtrado dinámico
         function renderTable() {
@@ -1097,7 +1311,7 @@
             if (filtered.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="no-records-row">No se encontraron usuarios con los filtros aplicados.</td>
+                        <td colspan="8" class="no-records-row">No se encontraron usuarios con los filtros aplicados.</td>
                     </tr>
                 `;
                 return;
@@ -1110,6 +1324,8 @@
 
                 // Formatear el Rol para mostrarlo elegante
                 const rolFormatted = user.rol.charAt(0).toUpperCase() + user.rol.slice(1);
+                // Formatear la Plaza
+                const plazaFormatted = user.plaza.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                 // Formatear el Estado
                 const estadoClass = user.estado === 'activo' ? 'active' : 'inactive';
                 const estadoFormatted = user.estado.charAt(0).toUpperCase() + user.estado.slice(1);
@@ -1120,15 +1336,27 @@
                     <td class="td-correo">${user.correo}</td>
                     <td class="td-numero">${user.numero}</td>
                     <td class="td-rol">${rolFormatted}</td>
+                    <td class="td-plaza">${plazaFormatted}</td>
                     <td>
-                        <span class="status-badge ${estadoClass}">${estadoFormatted}</span>
+                        <span class="status-badge clickable ${estadoClass}" onclick="confirmToggleEstado(${user.id})" title="Haga clic para cambiar estado">
+                            ${estadoFormatted}
+                        </span>
+                    </td>
+                    <td>
+                        <button type="button" class="action-btn" onclick="openEditUserModal(${user.id})" title="Editar Usuario">
+                            <!-- Icono de usuario + lápiz SVG combinado -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 22px; height: 22px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </button>
                     </td>
                 `;
                 tableBody.appendChild(tr);
             });
         }
 
-        // Abrir y Cerrar Modal de Agregar Usuario
+        // --- FUNCIONALIDADES DE AGREGAR USUARIO ---
         function openAddUserModal() {
             document.getElementById('addUserModal').classList.add('active');
         }
@@ -1138,7 +1366,6 @@
             document.getElementById('addUserForm').reset();
         }
 
-        // Acción al agregar un nuevo usuario
         function handleCreateUser(e) {
             e.preventDefault();
 
@@ -1146,10 +1373,11 @@
             const email = document.getElementById('newUserEmail').value.trim();
             const phone = document.getElementById('newUserPhone').value.trim();
             const role = document.getElementById('newUserRole').value;
+            const plaza = document.getElementById('newUserPlaza').value;
 
-            if (!name || !email || !phone || !role) return;
+            if (!name || !email || !phone || !role || !plaza) return;
 
-            // Registrar nuevo usuario en nuestra base de datos local temporal
+            // Registrar nuevo usuario
             const newId = dbUsuarios.length > 0 ? Math.max(...dbUsuarios.map(u => u.id)) + 1 : 1;
             const newUser = {
                 id: newId,
@@ -1157,13 +1385,106 @@
                 correo: email,
                 numero: phone,
                 rol: role,
+                plaza: plaza,
                 estado: "activo"
             };
 
             dbUsuarios.push(newUser);
 
-            // Cerrar el modal y refrescar la tabla
             closeAddUserModal();
+            renderTable();
+        }
+
+        // --- FUNCIONALIDADES DE EDITAR USUARIO ---
+        function openEditUserModal(id) {
+            const user = dbUsuarios.find(u => u.id === id);
+            if (!user) return;
+
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUserName').value = user.nombre; // Disabled/Readonly
+            document.getElementById('editUserEmail').value = user.correo; // Disabled/Readonly
+            document.getElementById('editUserPhone').value = user.numero;
+            document.getElementById('editUserRole').value = user.rol;
+            document.getElementById('editUserPlaza').value = user.plaza;
+
+            document.getElementById('editUserModal').classList.add('active');
+        }
+
+        function closeEditUserModal() {
+            document.getElementById('editUserModal').classList.remove('active');
+            document.getElementById('editUserForm').reset();
+        }
+
+        function handleUpdateUser(e) {
+            e.preventDefault();
+
+            const id = parseInt(document.getElementById('editUserId').value);
+            const phone = document.getElementById('editUserPhone').value.trim();
+            const role = document.getElementById('editUserRole').value;
+            const plaza = document.getElementById('editUserPlaza').value;
+
+            if (!phone || !role || !plaza) return;
+
+            const userIndex = dbUsuarios.findIndex(u => u.id === id);
+            if (userIndex !== -1) {
+                dbUsuarios[userIndex].numero = phone;
+                dbUsuarios[userIndex].rol = role;
+                dbUsuarios[userIndex].plaza = plaza;
+            }
+
+            closeEditUserModal();
+            renderTable();
+        }
+
+        // --- FUNCIONALIDADES DE CAMBIO DE ESTADO (CONFIRMACIÓN) ---
+        function confirmToggleEstado(id) {
+            const user = dbUsuarios.find(u => u.id === id);
+            if (!user) return;
+
+            statusTargetUserId = id;
+
+            const alertTitle = document.getElementById('alertTitle');
+            const alertDesc = document.getElementById('alertDesc');
+            const confirmBtn = document.getElementById('confirmStatusBtn');
+            const statusCard = document.getElementById('confirmStatusCard');
+            const alertIcon = document.getElementById('alertIcon');
+
+            if (user.estado === 'activo') {
+                statusCard.classList.remove('success-style');
+                alertIcon.textContent = '⚠';
+                alertTitle.textContent = '¿ESTÁ SEGURO QUE QUIERE DESACTIVAR EL USUARIO?';
+                alertDesc.textContent = 'El usuario perderá acceso al sistema hasta que vuelva a ser habilitado';
+                confirmBtn.textContent = 'Desactivar';
+            } else {
+                statusCard.classList.add('success-style');
+                alertIcon.textContent = '✔';
+                alertTitle.textContent = '¿ESTÁ SEGURO QUE QUIERE ACTIVAR EL USUARIO?';
+                alertDesc.textContent = 'El usuario volverá a tener acceso completo y regular al sistema.';
+                confirmBtn.textContent = 'Activar';
+            }
+            confirmBtn.style.borderColor = '';
+            confirmBtn.style.color = '';
+
+            document.getElementById('confirmStatusModal').classList.add('active');
+        }
+
+        function closeConfirmStatusModal() {
+            document.getElementById('confirmStatusModal').classList.remove('active');
+            // Quitar estilos al cerrar para restablecer
+            document.getElementById('confirmStatusCard').classList.remove('success-style');
+            statusTargetUserId = null;
+        }
+
+        function executeToggleEstado() {
+            if (statusTargetUserId === null) return;
+
+            const userIndex = dbUsuarios.findIndex(u => u.id === statusTargetUserId);
+            if (userIndex !== -1) {
+                const currentStatus = dbUsuarios[userIndex].estado;
+                dbUsuarios[userIndex].estado = (currentStatus === 'activo') ? 'inactivo' : 'activo';
+            }
+
+            closeConfirmStatusModal();
             renderTable();
         }
 
@@ -1212,10 +1533,12 @@
                 profileDropdown.classList.remove('active');
             });
 
-            // Cerrar modal al presionar Escape
+            // Cerrar modals al presionar Escape
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     closeAddUserModal();
+                    closeEditUserModal();
+                    closeConfirmStatusModal();
                 }
             });
         });
