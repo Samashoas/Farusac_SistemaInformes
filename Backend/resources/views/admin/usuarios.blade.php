@@ -236,18 +236,23 @@
             flex-direction: column;
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
             flex-shrink: 0;
-            position: fixed; /* Superponer sobre el contenido */
-            top: 90px;       /* Justo abajo del header */
+            position: fixed;
+            /* Superponer sobre el contenido */
+            top: 90px;
+            /* Justo abajo del header */
             left: 0;
             height: calc(100vh - 90px);
-            z-index: 99;     /* Encima del contenido principal */
-            box-shadow: 10px 0 25px rgba(0, 45, 114, 0.08); /* Sombra elegante */
+            z-index: 99;
+            /* Encima del contenido principal */
+            box-shadow: 10px 0 25px rgba(0, 45, 114, 0.08);
+            /* Sombra elegante */
             transform: translateX(0);
             overflow-y: auto;
         }
 
         .admin-sidebar.collapsed {
-            transform: translateX(-100%); /* Deslizar a la izquierda */
+            transform: translateX(-100%);
+            /* Deslizar a la izquierda */
             box-shadow: none;
         }
 
@@ -797,7 +802,7 @@
             cursor: not-allowed;
             border-color: #e2e8f0 !important;
         }
-        
+
         .input-disabled:focus {
             border-color: #cbd5e0 !important;
             box-shadow: none !important;
@@ -840,7 +845,8 @@
         .confirm-status-card {
             background-color: #ffffff;
             border-radius: var(--border-radius-card);
-            border: 2.5px solid #e53e3e; /* Borde rojo del bosquejo */
+            border: 2.5px solid #e53e3e;
+            /* Borde rojo del bosquejo */
             padding: 35px 40px;
             max-width: 460px;
             width: 90%;
@@ -850,14 +856,15 @@
             transform: scale(0.9);
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        
+
         .modal-overlay.active .confirm-status-card {
             transform: scale(1);
         }
 
         .warning-triangle {
             font-size: 52px;
-            color: #d69e2e; /* Amarillo de advertencia */
+            color: #d69e2e;
+            /* Amarillo de advertencia */
             margin-bottom: 15px;
             line-height: 1;
         }
@@ -866,7 +873,8 @@
             font-family: 'Outfit', sans-serif;
             font-size: 15px;
             font-weight: 800;
-            color: #e53e3e; /* Texto de la cabecera en rojo */
+            color: #e53e3e;
+            /* Texto de la cabecera en rojo */
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 12px;
@@ -882,16 +890,19 @@
 
         /* Estilo de éxito (verde) para reactivación de usuario */
         .confirm-status-card.success-style {
-            border-color: #38a169; /* Verde */
+            border-color: #38a169;
+            /* Verde */
             box-shadow: 0 20px 45px rgba(56, 161, 105, 0.15);
         }
 
         .confirm-status-card.success-style .alert-title {
-            color: #38a169; /* Título verde */
+            color: #38a169;
+            /* Título verde */
         }
 
         .confirm-status-card.success-style .warning-triangle {
-            color: #38a169; /* Icono verde */
+            color: #38a169;
+            /* Icono verde */
         }
 
         /* CONTENEDOR DE ACCIONES DE AGREGAR Y CARGA MASIVA */
@@ -915,7 +926,8 @@
             border-radius: 6px;
             background-color: #ffffff;
             transition: all 0.2s ease;
-            text-transform: lowercase; /* Coincide con el estilo manuscrito del bosquejo */
+            text-transform: lowercase;
+            /* Coincide con el estilo manuscrito del bosquejo */
             letter-spacing: 0.02em;
             text-align: center;
         }
@@ -1076,7 +1088,8 @@
 
                     <!-- Botón y Acciones de Agregar / Carga Masiva -->
                     <div class="add-actions-container">
-                        <button type="button" class="add-user-trigger" id="addUserBtn" title="Agregar Usuario Individual">
+                        <button type="button" class="add-user-trigger" id="addUserBtn"
+                            title="Agregar Usuario Individual">
                             <div class="add-user-avatar">
                                 <!-- Icono de usuario SVG -->
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -1087,7 +1100,8 @@
                                 <span class="plus-badge">+</span>
                             </div>
                         </button>
-                        <a href="{{ route('admin.carga-datos') }}" class="bulk-load-link" title="Ir a Carga de Datos Masiva">carga masiva</a>
+                        <a href="{{ route('admin.carga-datos') }}" class="bulk-load-link"
+                            title="Ir a Carga de Datos Masiva">carga masiva</a>
                     </div>
 
                 </div>
@@ -1227,10 +1241,12 @@
             <div class="alert-content">
                 <div class="warning-triangle" id="alertIcon">⚠</div>
                 <h3 class="alert-title" id="alertTitle">¿ESTÁ SEGURO QUE QUIERE DESACTIVAR EL USUARIO?</h3>
-                <p class="alert-desc" id="alertDesc">El usuario perderá acceso al sistema hasta que vuelva a ser habilitado</p>
+                <p class="alert-desc" id="alertDesc">El usuario perderá acceso al sistema hasta que vuelva a ser
+                    habilitado</p>
             </div>
             <div class="modal-footer" style="margin-top: 25px;">
-                <button type="button" class="modal-btn btn-submit" id="confirmStatusBtn" onclick="executeToggleEstado()">Confirmar</button>
+                <button type="button" class="modal-btn btn-submit" id="confirmStatusBtn"
+                    onclick="executeToggleEstado()">Confirmar</button>
                 <button type="button" class="modal-btn btn-cancel" onclick="closeConfirmStatusModal()">Cancelar</button>
             </div>
         </div>
@@ -1238,45 +1254,8 @@
 
     <!-- JavaScript para Interactividad y Filtros Locales (Dashboard Vivo) -->
     <script>
-        // Base de Datos de Usuarios Locales para simular un dashboard 100% vivo e interactivo
-        let dbUsuarios = [
-            {
-                id: 1,
-                nombre: "Juan Pablo Samayoa Ruiz",
-                correo: "juan.samayoa@farusac.edu.gt",
-                numero: "5587-1751",
-                rol: "administrador",
-                plaza: "titular",
-                estado: "activo"
-            },
-            {
-                id: 2,
-                nombre: "María Eugenia López",
-                correo: "maria.lopez@farusac.edu.gt",
-                numero: "4122-3850",
-                rol: "docente",
-                plaza: "interino",
-                estado: "activo"
-            },
-            {
-                id: 3,
-                nombre: "Carlos Humberto Méndez",
-                correo: "carlos.mendez@farusac.edu.gt",
-                numero: "2201-9475",
-                rol: "jefe",
-                plaza: "titular + ampliacion",
-                estado: "activo"
-            },
-            {
-                id: 4,
-                nombre: "Ana Lucía Castillo",
-                correo: "ana.castillo@farusac.edu.gt",
-                numero: "5938-1204",
-                rol: "docente",
-                plaza: "titular",
-                estado: "inactivo"
-            }
-        ];
+        // Base de Datos de Usuarios cargada dinámicamente desde el backend
+        let dbUsuarios = @json($usuarios);
 
         // Variables globales para rastrear el ID del usuario en edición o cambio de estado
         let statusTargetUserId = null;
@@ -1323,18 +1302,18 @@
                 tr.setAttribute('data-id', user.id);
 
                 // Formatear el Rol para mostrarlo elegante
-                const rolFormatted = user.rol.charAt(0).toUpperCase() + user.rol.slice(1);
+                const rolFormatted = user.rol ? (user.rol.charAt(0).toUpperCase() + user.rol.slice(1)) : 'Docente';
                 // Formatear la Plaza
-                const plazaFormatted = user.plaza.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                const plazaFormatted = user.plaza ? user.plaza.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Sin Plaza';
                 // Formatear el Estado
-                const estadoClass = user.estado === 'activo' ? 'active' : 'inactive';
-                const estadoFormatted = user.estado.charAt(0).toUpperCase() + user.estado.slice(1);
+                const estadoClass = (user.estado || 'activo') === 'activo' ? 'active' : 'inactive';
+                const estadoFormatted = user.estado ? (user.estado.charAt(0).toUpperCase() + user.estado.slice(1)) : 'Activo';
 
                 tr.innerHTML = `
                     <td class="td-id">${idx + 1}.</td>
                     <td class="td-nombre">${user.nombre}</td>
                     <td class="td-correo">${user.correo}</td>
-                    <td class="td-numero">${user.numero}</td>
+                    <td class="td-numero">${user.numero || 'N/D'}</td>
                     <td class="td-rol">${rolFormatted}</td>
                     <td class="td-plaza">${plazaFormatted}</td>
                     <td>
@@ -1377,22 +1356,34 @@
 
             if (!name || !email || !phone || !role || !plaza) return;
 
-            // Registrar nuevo usuario
-            const newId = dbUsuarios.length > 0 ? Math.max(...dbUsuarios.map(u => u.id)) + 1 : 1;
-            const newUser = {
-                id: newId,
-                nombre: name,
-                correo: email,
-                numero: phone,
-                rol: role,
-                plaza: plaza,
-                estado: "activo"
-            };
-
-            dbUsuarios.push(newUser);
-
-            closeAddUserModal();
-            renderTable();
+            fetch("{{ route('admin.usuarios.crear') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    nombre: name,
+                    correo: email,
+                    numero: phone,
+                    rol: role,
+                    plaza: plaza
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        dbUsuarios.push(data.usuario);
+                        closeAddUserModal();
+                        renderTable();
+                    } else {
+                        alert(data.message || 'Error al crear el usuario');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Ocurrió un error al intentar registrar el usuario.');
+                });
         }
 
         // --- FUNCIONALIDADES DE EDITAR USUARIO ---
@@ -1403,9 +1394,9 @@
             document.getElementById('editUserId').value = user.id;
             document.getElementById('editUserName').value = user.nombre; // Disabled/Readonly
             document.getElementById('editUserEmail').value = user.correo; // Disabled/Readonly
-            document.getElementById('editUserPhone').value = user.numero;
-            document.getElementById('editUserRole').value = user.rol;
-            document.getElementById('editUserPlaza').value = user.plaza;
+            document.getElementById('editUserPhone').value = user.numero ?? '';
+            document.getElementById('editUserRole').value = user.rol || 'docente';
+            document.getElementById('editUserPlaza').value = user.plaza || 'titular';
 
             document.getElementById('editUserModal').classList.add('active');
         }
@@ -1425,15 +1416,35 @@
 
             if (!phone || !role || !plaza) return;
 
-            const userIndex = dbUsuarios.findIndex(u => u.id === id);
-            if (userIndex !== -1) {
-                dbUsuarios[userIndex].numero = phone;
-                dbUsuarios[userIndex].rol = role;
-                dbUsuarios[userIndex].plaza = plaza;
-            }
-
-            closeEditUserModal();
-            renderTable();
+            fetch(`/admin/usuarios/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    numero: phone,
+                    rol: role,
+                    plaza: plaza
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const idx = dbUsuarios.findIndex(u => u.id === id);
+                        if (idx !== -1) {
+                            dbUsuarios[idx] = data.usuario;
+                        }
+                        closeEditUserModal();
+                        renderTable();
+                    } else {
+                        alert(data.message || 'Error al actualizar el usuario');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Ocurrió un error al intentar actualizar el usuario.');
+                });
         }
 
         // --- FUNCIONALIDADES DE CAMBIO DE ESTADO (CONFIRMACIÓN) ---
@@ -1478,14 +1489,30 @@
         function executeToggleEstado() {
             if (statusTargetUserId === null) return;
 
-            const userIndex = dbUsuarios.findIndex(u => u.id === statusTargetUserId);
-            if (userIndex !== -1) {
-                const currentStatus = dbUsuarios[userIndex].estado;
-                dbUsuarios[userIndex].estado = (currentStatus === 'activo') ? 'inactivo' : 'activo';
-            }
-
-            closeConfirmStatusModal();
-            renderTable();
+            fetch(`/admin/usuarios/${statusTargetUserId}/toggle-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const idx = dbUsuarios.findIndex(u => u.id === statusTargetUserId);
+                        if (idx !== -1) {
+                            dbUsuarios[idx] = data.usuario;
+                        }
+                        closeConfirmStatusModal();
+                        renderTable();
+                    } else {
+                        alert(data.message || 'Error al modificar el estado');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Ocurrió un error al intentar cambiar el estado.');
+                });
         }
 
         document.addEventListener('DOMContentLoaded', () => {

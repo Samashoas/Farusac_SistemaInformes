@@ -16,7 +16,70 @@ class AdminController extends Controller
     }
 
     public function usuariosView(){
-        return view('admin.usuarios');
+        $usuarios = User::all();
+        return view('admin.usuarios', compact('usuarios'));
+    }
+
+    public function crearUsuario(Request $request){
+        $request->validate([
+            'nombre' => 'required|string|max:150',
+            'correo' => 'required|email|max:100|unique:usuarios,correo',
+            'numero' => 'required|string|max:30',
+            'rol' => 'required|in:docente,jefe,administrador',
+            'plaza' => 'required|in:titular + ampliacion,titular,interino',
+        ]);
+
+        $usuario = User::create([
+            'nombre' => $request->nombre,
+            'correo' => $request->correo,
+            'numero' => $request->numero,
+            'rol' => $request->rol,
+            'plaza' => $request->plaza,
+            'estado' => 'activo',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuario creado exitosamente',
+            'usuario' => $usuario
+        ]);
+    }
+
+    public function editarUsuario(Request $request, $id){
+        $usuario = User::findOrFail($id);
+
+        $request->validate([
+            'numero' => 'required|string|max:30',
+            'rol' => 'required|in:docente,jefe,administrador',
+            'plaza' => 'required|in:titular + ampliacion,titular,interino',
+        ]);
+
+        $usuario->update([
+            'numero' => $request->numero,
+            'rol' => $request->rol,
+            'plaza' => $request->plaza,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuario actualizado exitosamente',
+            'usuario' => $usuario
+        ]);
+    }
+
+    public function toggleEstadoUsuario($id){
+        $usuario = User::findOrFail($id);
+        
+        $nuevoEstado = ($usuario->estado === 'activo') ? 'inactivo' : 'activo';
+        $usuario->update([
+            'estado' => $nuevoEstado
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado del usuario modificado exitosamente',
+            'usuario' => $usuario
+        ]);
     }
 
     public function CargaUsuariosCsv(Request $request){

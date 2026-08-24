@@ -15,7 +15,10 @@ class User extends Authenticatable{
     protected $fillable = [
         'nombre',
         'correo',
+        'numero',
         'rol',
+        'plaza',
+        'estado',
         'google_id',
     ];
 
