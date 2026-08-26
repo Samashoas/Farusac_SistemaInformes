@@ -812,6 +812,38 @@
             margin-bottom: 2px;
         }
 
+        /* Contenedor de Sugerencias Autocompletar */
+        .suggestions-container {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            border: 1.5px solid #edf2f7;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            max-height: 160px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            margin-top: 4px;
+        }
+
+        .suggestion-item {
+            padding: 10px 15px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13.5px;
+            color: var(--color-texto-principal);
+            cursor: pointer;
+            text-align: left;
+            transition: background-color 0.2s ease;
+        }
+
+        .suggestion-item:hover {
+            background-color: rgba(0, 45, 114, 0.04);
+            color: var(--color-azul);
+        }
+
         .modal-footer {
             display: flex;
             align-items: center;
@@ -1013,6 +1045,8 @@
                                 <option value="todos">Todos</option>
                                 <option value="Primer Semestre">Primer Semestre</option>
                                 <option value="Segundo Semestre">Segundo Semestre</option>
+                                <option value="Vacaciones Junio">Vacaciones Junio</option>
+                                <option value="Vacaciones Diciembre">Vacaciones Diciembre</option>
                             </select>
                         </div>
 
@@ -1080,22 +1114,25 @@
                         <option value="Diseño Gráfico">Diseño Gráfico</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label for="newArea" class="modal-form-label">Área</label>
-                    <input type="text" id="newArea" class="input-text" style="width: 100%;" placeholder="Ej. Área Tecnología y Expresión" required>
+                    <input type="text" id="newArea" class="input-text" style="width: 100%;" placeholder="Ej. Área Tecnología y Expresión" autocomplete="off" required>
+                    <div id="areaSuggestions" class="suggestions-container"></div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label for="newCurso" class="modal-form-label">Nombre del Curso</label>
-                    <input type="text" id="newCurso" class="input-text" style="width: 100%;" placeholder="Ej. Fotografía" required>
+                    <input type="text" id="newCurso" class="input-text" style="width: 100%;" placeholder="Ej. Fotografía" autocomplete="off" required>
+                    <div id="cursosSuggestions" class="suggestions-container"></div>
                 </div>
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div>
                         <label for="newCodigo" class="modal-form-label">Código de Curso</label>
                         <input type="text" id="newCodigo" class="input-text" style="width: 100%;" placeholder="Ej. 30313" required>
                     </div>
-                    <div>
+                    <div style="position: relative;">
                         <label for="newSeccion" class="modal-form-label">Sección</label>
-                        <input type="text" id="newSeccion" class="input-text" style="width: 100%;" placeholder="Ej. A" required>
+                        <input type="text" id="newSeccion" class="input-text" style="width: 100%;" placeholder="Ej. A" autocomplete="off" required>
+                        <div id="seccionSuggestions" class="suggestions-container"></div>
                     </div>
                 </div>
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -1104,7 +1141,6 @@
                         <select id="newJornada" class="select-filter" style="width: 100%;" required>
                             <option value="Matutina">Matutina</option>
                             <option value="Vespertina">Vespertina</option>
-                            <option value="Nocturna">Nocturna</option>
                         </select>
                     </div>
                     <div>
@@ -1112,16 +1148,15 @@
                         <select id="newSemestre" class="select-filter" style="width: 100%;" required>
                             <option value="Primer Semestre">Primer Semestre</option>
                             <option value="Segundo Semestre">Segundo Semestre</option>
+                            <option value="Vacaciones Junio">Vacaciones Junio</option>
+                            <option value="Vacaciones Diciembre">Vacaciones Diciembre</option>
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label for="newAnio" class="modal-form-label">Año</label>
-                    <select id="newAnio" class="select-filter" style="width: 100%;" required>
-                        <option value="2026">2026</option>
-                        <option value="2025">2025</option>
-                        <option value="2024">2024</option>
-                    </select>
+                    <input type="text" id="newAnio" class="input-text" style="width: 100%;" placeholder="Ej. 2026" maxlength="4" autocomplete="off" required>
+                    <div id="anioSuggestions" class="suggestions-container"></div>
                 </div>
 
                 <div class="modal-footer" style="margin-top: 15px;">
@@ -1192,6 +1227,120 @@
                 anioFilter.value = 'todos';
             }
         }
+
+        // Función para renderizar el panel de sugerencias (autocompletar)
+        function handleCursoInput(e) {
+            const input = e.target;
+            const container = document.getElementById('cursosSuggestions');
+            if (!container) return;
+
+            const val = input.value.trim().toLowerCase();
+            if (val === '') {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                return;
+            }
+
+            // Filtrar nombres de cursos únicos que contengan la búsqueda
+            const matches = [];
+            const seen = new Set();
+            dbCursos.forEach(c => {
+                if (c.curso && c.curso.toLowerCase().includes(val) && !seen.has(c.curso.toLowerCase())) {
+                    seen.add(c.curso.toLowerCase());
+                    matches.push({ nombre: c.curso, codigo: c.codigo, area: c.area });
+                }
+            });
+
+            container.innerHTML = '';
+
+            if (matches.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            matches.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = m.nombre;
+                
+                div.addEventListener('click', () => {
+                    input.value = m.nombre;
+                    document.getElementById('newCodigo').value = m.codigo;
+                    document.getElementById('newArea').value = m.area;
+                    container.innerHTML = '';
+                    container.style.display = 'none';
+                });
+
+                container.appendChild(div);
+            });
+
+            container.style.display = 'block';
+        }
+
+        // Función para renderizar el panel de sugerencias (autocompletar genérico)
+        function handleGenericSuggestions(inputEl, containerEl, dataField) {
+            const val = inputEl.value.trim().toLowerCase();
+            if (val === '') {
+                containerEl.innerHTML = '';
+                containerEl.style.display = 'none';
+                return;
+            }
+
+            // Obtener valores únicos del campo de dbCursos que coincidan con la búsqueda
+            const matches = [];
+            const seen = new Set();
+            dbCursos.forEach(c => {
+                const rawValue = c[dataField];
+                if (rawValue) {
+                    const strValue = String(rawValue).trim();
+                    if (strValue.toLowerCase().includes(val) && !seen.has(strValue.toLowerCase())) {
+                        seen.add(strValue.toLowerCase());
+                        matches.push(strValue);
+                    }
+                }
+            });
+
+            containerEl.innerHTML = '';
+
+            if (matches.length === 0) {
+                containerEl.style.display = 'none';
+                return;
+            }
+
+            matches.sort().forEach(match => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = match;
+                
+                div.addEventListener('click', () => {
+                    inputEl.value = match;
+                    containerEl.innerHTML = '';
+                    containerEl.style.display = 'none';
+                });
+
+                containerEl.appendChild(div);
+            });
+
+            containerEl.style.display = 'block';
+        }
+
+        // Cerrar sugerencias al hacer clic fuera del control
+        document.addEventListener('click', (e) => {
+            const suggestions = [
+                { container: 'cursosSuggestions', input: 'newCurso' },
+                { container: 'areaSuggestions', input: 'newArea' },
+                { container: 'seccionSuggestions', input: 'newSeccion' },
+                { container: 'anioSuggestions', input: 'newAnio' }
+            ];
+            
+            suggestions.forEach(s => {
+                const containerEl = document.getElementById(s.container);
+                const inputEl = document.getElementById(s.input);
+                if (containerEl && e.target !== inputEl && !containerEl.contains(e.target)) {
+                    containerEl.style.display = 'none';
+                }
+            });
+        });
 
         // Renderizar la tabla con filtros
         function renderTable() {
@@ -1265,7 +1414,14 @@
             const seccion = document.getElementById('newSeccion').value.trim();
             const jornada = document.getElementById('newJornada').value;
             const semestre = document.getElementById('newSemestre').value;
-            const anio = parseInt(document.getElementById('newAnio').value, 10);
+            
+            const anioRaw = document.getElementById('newAnio').value.trim();
+            const anioReg = /^[0-9]{4}$/;
+            if (!anioReg.test(anioRaw)) {
+                alert("Por favor, ingrese un año válido de 4 dígitos (Ej. 2026).");
+                return;
+            }
+            const anio = parseInt(anioRaw, 10);
 
             if (!carrera || !area || !nombre_curso || isNaN(codigo_curso) || !seccion || !jornada || !semestre || isNaN(anio)) return;
 
@@ -1359,6 +1515,34 @@
         document.addEventListener('DOMContentLoaded', () => {
             populateYearFilter();
             renderTable();
+
+            // Event listener para mostrar sugerencias (autocompletar)
+            const newCursoInput = document.getElementById('newCurso');
+            if (newCursoInput) {
+                newCursoInput.addEventListener('input', handleCursoInput);
+                newCursoInput.addEventListener('focus', handleCursoInput);
+            }
+
+            const newAreaInput = document.getElementById('newArea');
+            const areaSuggestions = document.getElementById('areaSuggestions');
+            if (newAreaInput && areaSuggestions) {
+                newAreaInput.addEventListener('input', (e) => handleGenericSuggestions(newAreaInput, areaSuggestions, 'area'));
+                newAreaInput.addEventListener('focus', (e) => handleGenericSuggestions(newAreaInput, areaSuggestions, 'area'));
+            }
+
+            const newSeccionInput = document.getElementById('newSeccion');
+            const seccionSuggestions = document.getElementById('seccionSuggestions');
+            if (newSeccionInput && seccionSuggestions) {
+                newSeccionInput.addEventListener('input', (e) => handleGenericSuggestions(newSeccionInput, seccionSuggestions, 'seccion'));
+                newSeccionInput.addEventListener('focus', (e) => handleGenericSuggestions(newSeccionInput, seccionSuggestions, 'seccion'));
+            }
+
+            const newAnioInput = document.getElementById('newAnio');
+            const anioSuggestions = document.getElementById('anioSuggestions');
+            if (newAnioInput && anioSuggestions) {
+                newAnioInput.addEventListener('input', (e) => handleGenericSuggestions(newAnioInput, anioSuggestions, 'anio'));
+                newAnioInput.addEventListener('focus', (e) => handleGenericSuggestions(newAnioInput, anioSuggestions, 'anio'));
+            }
 
             // Listeners de filtros
             document.getElementById('searchInput').addEventListener('input', renderTable);
