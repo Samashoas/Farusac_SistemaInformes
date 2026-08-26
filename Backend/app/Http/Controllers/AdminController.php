@@ -142,34 +142,149 @@ class AdminController extends Controller
     }
 
     public function CargaUsuariosCsv(Request $request){
-        $request -> validate([
+        $request->validate([
             'archivo_csv' => 'required|mimes:csv,txt|max:5120',
         ]);
 
-        $archivo = $request -> file('archivo_csv');
+        $archivo = $request->file('archivo_csv');
         $handle = fopen($archivo->getRealPath(), 'r');
 
         $encabezados = fgetcsv($handle, 1000, ',');
 
-        $contador = 0;
+        $success_records = [];
+        $error_lines = [];
+        $line_number = 1;
 
-        while(($fila = fgetcsv($handle,1000,',')) !== FALSE){
-            if(count($fila) >= 3){
+        while(($fila = fgetcsv($handle, 1000, ',')) !== FALSE){
+            $line_number++;
+            if(count($fila) >= 4){
+                $nombre = trim($fila[0]);
                 $correo = trim($fila[1]);
+                $numero = trim($fila[2]);
+                $plaza = trim($fila[3]);
 
-                User::updateOrCreate(
-                    ['correo' => $correo],
-                    [
-                        'nombre' => trim($fila[0]),
-                        'rol' => strtolower(trim($fila[2])),
-                    ]
-                );
-                $contador++;
+                $es_correo_valido = filter_var($correo, FILTER_VALIDATE_EMAIL) && str_ends_with(strtolower($correo), '@farusac.edu.gt');
+                $plazas_validas = ['Titular', 'Titular+Ampliacion', 'Interino'];
+
+                if(!empty($nombre) && $es_correo_valido && in_array($plaza, $plazas_validas)){
+                    try {
+                        $usuario = User::updateOrCreate(
+                            ['correo' => $correo],
+                            [
+                                'nombre' => $nombre,
+                                'numero' => $numero,
+                                'plaza' => $plaza,
+                                'rol' => 'docente' // Por defecto
+                            ]
+                        );
+                        $success_records[] = [
+                            'id' => $usuario->id,
+                            'nombre' => $usuario->nombre,
+                            'correo' => $usuario->correo,
+                            'numero' => $usuario->numero ?? 'N/D',
+                            'rol' => $usuario->rol,
+                            'plaza' => $usuario->plaza ?? 'N/D',
+                            'estado' => $usuario->estado,
+                        ];
+                    } catch (\Exception $e) {
+                        $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Error en base de datos: " . $e->getMessage() . ")";
+                    }
+                } else {
+                    $error_reason = "";
+                    if (empty($nombre)) $error_reason = "Nombre vacío";
+                    elseif (!$es_correo_valido) $error_reason = "Correo inválido o no es @farusac.edu.gt";
+                    elseif (!in_array($plaza, $plazas_validas)) $error_reason = "Plaza inválida (Debe ser: Titular, Titular+Ampliacion o Interino)";
+                    $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " ($error_reason)";
+                }
+            } else {
+                $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Columnas insuficientes, requiere 4)";
             }
         }
 
         fclose($handle);
 
-        return back()->with('exito', "Se han cargado $contador usuarios exitosamente.");
+        return response()->json([
+            'success' => true,
+            'success_count' => count($success_records),
+            'error_count' => count($error_lines),
+            'success_records' => $success_records,
+            'error_lines' => $error_lines
+        ]);
+    }
+
+    public function CargaCursosCsv(Request $request){
+        $request->validate([
+            'archivo_csv' => 'required|mimes:csv,txt|max:5120',
+        ]);
+
+        $archivo = $request->file('archivo_csv');
+        $handle = fopen($archivo->getRealPath(), 'r');
+
+        $encabezados = fgetcsv($handle, 1000, ',');
+
+        $success_records = [];
+        $error_lines = [];
+        $line_number = 1;
+
+        while(($fila = fgetcsv($handle, 1000, ',')) !== FALSE){
+            $line_number++;
+            if(count($fila) >= 7){
+                $carrera = trim($fila[0]);
+                $area = trim($fila[1]);
+                $nombre_curso = trim($fila[2]);
+                $codigo_curso = intval(trim($fila[3]));
+                $seccion = trim($fila[4]);
+                $anio = intval(trim($fila[5]));
+                $semestre = trim($fila[6]);
+
+                $carreras_validas = ['Arquitectura', 'Diseño Gráfico'];
+                $semestres_validos = ['Primer Semestre', 'Segundo Semestre', 'Vacaciones Junio', 'Vacaciones Diciembre'];
+
+                if (in_array($carrera, $carreras_validas) && !empty($nombre_curso) && !empty($seccion) && $codigo_curso > 0 && $anio > 0 && in_array($semestre, $semestres_validos)) {
+                    try {
+                        $curso = Curso::updateOrCreate(
+                            [
+                                'carrera' => $carrera,
+                                'codigo_curso' => $codigo_curso,
+                                'seccion' => $seccion,
+                                'anio' => $anio,
+                                'semestre' => $semestre
+                            ],
+                            [
+                                'area' => $area,
+                                'nombre_curso' => $nombre_curso
+                            ]
+                        );
+                        $success_records[] = [
+                            'id' => $curso->id,
+                            'carrera' => $curso->carrera,
+                            'area' => $curso->area,
+                            'curso' => $curso->nombre_curso,
+                            'codigo' => $curso->codigo_curso,
+                            'seccion' => $curso->seccion,
+                            'jornada' => ($curso->seccion === 'B' || $curso->seccion === 'b') ? 'Vespertina' : 'Matutina',
+                            'semestre' => $curso->semestre,
+                            'anio' => $curso->anio
+                        ];
+                    } catch (\Exception $e) {
+                        $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Error en base de datos: " . $e->getMessage() . ")";
+                    }
+                } else {
+                    $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Datos inválidos)";
+                }
+            } else {
+                $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Columnas insuficientes)";
+            }
+        }
+
+        fclose($handle);
+
+        return response()->json([
+            'success' => true,
+            'success_count' => count($success_records),
+            'error_count' => count($error_lines),
+            'success_records' => $success_records,
+            'error_lines' => $error_lines
+        ]);
     }
 }

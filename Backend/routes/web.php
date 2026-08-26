@@ -33,5 +33,6 @@ Route::middleware('auth')->group(function () {
         Route::put('/admin/usuarios/{id}', [AdminController::class, 'editarUsuario'])->name('admin.usuarios.editar');
         Route::post('/admin/usuarios/{id}/toggle-status', [AdminController::class, 'toggleEstadoUsuario'])->name('admin.usuarios.toggle-status');
         Route::post('/admin/importar-usuarios', [AdminController::class, 'CargaUsuariosCsv'])->name('admin.importar');
+        Route::post('/admin/importar-cursos', [AdminController::class, 'CargaCursosCsv'])->name('admin.importar-cursos');
     });
 });
