@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Curso;
 
 class AdminController extends Controller
 {
@@ -21,7 +22,61 @@ class AdminController extends Controller
     }
 
     public function cursosView(){
-        return view('admin.cursos');
+        $cursos = Curso::all();
+        return view('admin.cursos', compact('cursos'));
+    }
+
+    public function crearCurso(Request $request){
+        $request->validate([
+            'carrera' => 'required|string|max:100',
+            'area' => 'required|string|max:150',
+            'nombre_curso' => 'required|string|max:150',
+            'codigo_curso' => 'required|integer',
+            'seccion' => 'required|string|max:10',
+            'anio' => 'required|integer',
+            'semestre' => 'required|string|max:30',
+        ]);
+
+        // Evitar duplicados basados en UNIQUE KEY uq_curso_periodo (carrera, codigo_curso, seccion, anio, semestre)
+        $existe = Curso::where('carrera', $request->carrera)
+            ->where('codigo_curso', $request->codigo_curso)
+            ->where('seccion', $request->seccion)
+            ->where('anio', $request->anio)
+            ->where('semestre', $request->semestre)
+            ->first();
+
+        if ($existe) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya existe un registro con la misma Carrera, Código, Sección, Año y Semestre.'
+            ], 422);
+        }
+
+        $curso = Curso::create([
+            'carrera' => $request->carrera,
+            'area' => $request->area,
+            'nombre_curso' => $request->nombre_curso,
+            'codigo_curso' => $request->codigo_curso,
+            'seccion' => $request->seccion,
+            'anio' => $request->anio,
+            'semestre' => $request->semestre,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Curso creado exitosamente',
+            'curso' => $curso
+        ]);
+    }
+
+    public function eliminarCurso($id){
+        $curso = Curso::findOrFail($id);
+        $curso->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Curso eliminado exitosamente'
+        ]);
     }
 
     public function crearUsuario(Request $request){

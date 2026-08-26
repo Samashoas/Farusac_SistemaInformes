@@ -1152,42 +1152,18 @@
 
     <!-- JavaScript para Interactividad y Filtros Locales (Dashboard Vivo) -->
     <script>
-        // Datos estáticos iniciales de cursos simulados para el maquetado del dashboard vivo
-        let dbCursos = [
-            {
-                id: 1,
-                carrera: "Arquitectura",
-                area: "Área Tecnología y Expresión",
-                curso: "Fotografía",
-                codigo: "30313",
-                seccion: "A",
-                jornada: "Matutina",
-                semestre: "Primer Semestre",
-                anio: "2026"
-            },
-            {
-                id: 2,
-                carrera: "Diseño Gráfico",
-                area: "Área de Comunicación",
-                curso: "Diseño Web I",
-                codigo: "10542",
-                seccion: "B",
-                jornada: "Vespertina",
-                semestre: "Segundo Semestre",
-                anio: "2026"
-            },
-            {
-                id: 3,
-                carrera: "Arquitectura",
-                area: "Área de Diseño",
-                curso: "Diseño Arquitectónico IV",
-                codigo: "40231",
-                seccion: "C",
-                jornada: "Matutina",
-                semestre: "Primer Semestre",
-                anio: "2025"
-            }
-        ];
+        // Datos de cursos cargados dinámicamente desde el backend
+        let dbCursos = @json($cursos).map(c => ({
+            id: c.id,
+            carrera: c.carrera,
+            area: c.area,
+            curso: c.nombre_curso,
+            codigo: String(c.codigo_curso),
+            seccion: c.seccion,
+            jornada: (c.seccion === 'B' || c.seccion === 'b') ? 'Vespertina' : 'Matutina',
+            semestre: c.semestre,
+            anio: String(c.anio)
+        }));
 
         let deleteTargetCourseId = null;
 
@@ -1258,32 +1234,61 @@
 
             const carrera = document.getElementById('newCarrera').value;
             const area = document.getElementById('newArea').value.trim();
-            const curso = document.getElementById('newCurso').value.trim();
-            const codigo = document.getElementById('newCodigo').value.trim();
+            const nombre_curso = document.getElementById('newCurso').value.trim();
+            const codigo_curso = parseInt(document.getElementById('newCodigo').value.trim(), 10);
             const seccion = document.getElementById('newSeccion').value.trim();
             const jornada = document.getElementById('newJornada').value;
             const semestre = document.getElementById('newSemestre').value;
-            const anio = document.getElementById('newAnio').value;
+            const anio = parseInt(document.getElementById('newAnio').value, 10);
 
-            if (!carrera || !area || !curso || !codigo || !seccion || !jornada || !semestre || !anio) return;
+            if (!carrera || !area || !nombre_curso || isNaN(codigo_curso) || !seccion || !jornada || !semestre || isNaN(anio)) return;
 
-            const newId = dbCursos.length > 0 ? Math.max(...dbCursos.map(c => c.id)) + 1 : 1;
-            const newC = {
-                id: newId,
-                carrera,
-                area,
-                curso,
-                codigo,
-                seccion,
-                jornada,
-                semestre,
-                anio
-            };
-
-            dbCursos.push(newC);
-
-            closeAddCourseModal();
-            renderTable();
+            fetch('/admin/cursos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    carrera,
+                    area,
+                    nombre_curso,
+                    codigo_curso,
+                    seccion,
+                    semestre,
+                    anio
+                })
+            })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => { throw err; });
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const c = data.curso;
+                    dbCursos.push({
+                        id: c.id,
+                        carrera: c.carrera,
+                        area: c.area,
+                        curso: c.nombre_curso,
+                        codigo: String(c.codigo_curso),
+                        seccion: c.seccion,
+                        jornada: jornada,
+                        semestre: c.semestre,
+                        anio: String(c.anio)
+                    });
+                    closeAddCourseModal();
+                    renderTable();
+                } else {
+                    alert(data.message || 'Error al agregar el curso');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert(err.message || 'Ocurrió un error al intentar agregar el curso.');
+            });
         }
 
         // --- ELIMINAR CURSO ---
@@ -1297,14 +1302,30 @@
             deleteTargetCourseId = null;
         }
 
-        // Simular eliminación en el dashboard de maquetado
         function executeDeleteCourse() {
             if (deleteTargetCourseId === null) return;
 
-            dbCursos = dbCursos.filter(c => c.id !== deleteTargetCourseId);
-
-            closeConfirmDeleteModal();
-            renderTable();
+            fetch(`/admin/cursos/${deleteTargetCourseId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    dbCursos = dbCursos.filter(c => c.id !== deleteTargetCourseId);
+                    closeConfirmDeleteModal();
+                    renderTable();
+                } else {
+                    alert(data.message || 'Error al eliminar el curso');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Ocurrió un error al intentar eliminar el curso.');
+            });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
