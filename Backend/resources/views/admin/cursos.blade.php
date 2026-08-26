@@ -1021,9 +1021,6 @@
                             <label for="anioFilter" class="label-with-info">Año</label>
                             <select id="anioFilter" class="select-filter">
                                 <option value="todos">Todos</option>
-                                <option value="2026">2026</option>
-                                <option value="2025">2025</option>
-                                <option value="2024">2024</option>
                             </select>
                         </div>
                     </div>
@@ -1167,6 +1164,35 @@
 
         let deleteTargetCourseId = null;
 
+        // Función para poblar dinámicamente el filtro de años basándose en los cursos registrados
+        function populateYearFilter() {
+            const anioFilter = document.getElementById('anioFilter');
+            if (!anioFilter) return;
+            const currentSelected = anioFilter.value;
+
+            // Obtener años únicos registrados de dbCursos
+            const years = [...new Set(dbCursos.map(c => c.anio))];
+            // Ordenar de forma descendente
+            years.sort((a, b) => b - a);
+
+            // Limpiar opciones manteniendo "Todos"
+            anioFilter.innerHTML = '<option value="todos">Todos</option>';
+
+            years.forEach(year => {
+                const opt = document.createElement('option');
+                opt.value = year;
+                opt.textContent = year;
+                anioFilter.appendChild(opt);
+            });
+
+            // Restaurar la selección anterior si el año aún existe
+            if (years.includes(currentSelected)) {
+                anioFilter.value = currentSelected;
+            } else {
+                anioFilter.value = 'todos';
+            }
+        }
+
         // Renderizar la tabla con filtros
         function renderTable() {
             const tableBody = document.getElementById('coursesTableBody');
@@ -1280,6 +1306,7 @@
                         anio: String(c.anio)
                     });
                     closeAddCourseModal();
+                    populateYearFilter();
                     renderTable();
                 } else {
                     alert(data.message || 'Error al agregar el curso');
@@ -1317,6 +1344,7 @@
                 if (data.success) {
                     dbCursos = dbCursos.filter(c => c.id !== deleteTargetCourseId);
                     closeConfirmDeleteModal();
+                    populateYearFilter();
                     renderTable();
                 } else {
                     alert(data.message || 'Error al eliminar el curso');
@@ -1329,6 +1357,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            populateYearFilter();
             renderTable();
 
             // Listeners de filtros
