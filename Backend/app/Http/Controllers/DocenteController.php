@@ -158,7 +158,7 @@ class DocenteController extends Controller
             'curso_id' => 'required|exists:cursos,id',
             'periodo' => 'required|string',
             'mes' => 'required|string',
-            'estudiantes_asignados' => 'required|integer|min:0',
+            'estudiantes_asignados' => 'required|integer|min:1',
             'listado_asistencia_url' => 'nullable|string|max:255',
             'enlace_evidencia_url' => 'nullable|string|max:255',
             'enlace_meet_zoom_url' => 'nullable|string|max:255',
@@ -174,6 +174,8 @@ class DocenteController extends Controller
             'curso_id.required' => 'Debe seleccionar un curso válido.',
             'periodo.required' => 'El periodo es obligatorio.',
             'mes.required' => 'El mes es obligatorio.',
+            'estudiantes_asignados.required' => 'La cantidad de estudiantes asignados es obligatoria.',
+            'estudiantes_asignados.min' => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
             'semanas.required' => 'Debe registrar al menos una semana de actividades.',
             'semanas.*.actividad_realizada.required' => 'El contenido o actividad realizada es obligatorio en cada semana.',
         ]);

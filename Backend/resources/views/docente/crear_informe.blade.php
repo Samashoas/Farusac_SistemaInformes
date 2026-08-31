@@ -481,6 +481,11 @@
             cursor: default;
         }
 
+        .input-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+        }
+
         .form-hint {
             font-size: 11px;
             color: var(--color-texto-claro);
@@ -981,14 +986,12 @@
                         <div class="form-row">
                             <div class="form-col">
                                 <label class="form-label">*Nombre del docente:</label>
-                                <input type="text" class="form-input input-readonly" value="{{ $user->nombre }}" readonly>
-                                <span class="form-hint">Se llena automáticamente</span>
+                                <input type="text" id="inputDocenteNombre" class="form-input input-readonly" value="{{ $user->nombre }}" readonly>
                             </div>
 
                             <div class="form-col">
                                 <label class="form-label">*Correo:</label>
-                                <input type="text" class="form-input input-readonly" value="{{ $user->correo }}" readonly>
-                                <span class="form-hint">Se llena automáticamente</span>
+                                <input type="text" id="inputDocenteCorreo" class="form-input input-readonly" value="{{ $user->correo }}" readonly>
                             </div>
 
                             <div class="form-col">
@@ -1009,18 +1012,16 @@
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
                                 </div>
-                                <span class="form-hint">Se llena automáticamente</span>
                             </div>
 
                             <div class="form-col form-col-small">
                                 <label class="form-label">*Sección:</label>
                                 <input type="text" id="inputSeccion" class="form-input input-readonly" value="{{ isset($selectedCurso) ? $selectedCurso->seccion : '' }}" readonly placeholder="—">
-                                <span class="form-hint">Se llena automáticamente</span>
                             </div>
 
                             <div class="form-col form-col-small">
                                 <label class="form-label" for="inputEstudiantesAsignados">*Estudiantes Asignados:</label>
-                                <input type="number" id="inputEstudiantesAsignados" class="form-input" min="0" value="0" required>
+                                <input type="number" id="inputEstudiantesAsignados" class="form-input" min="1" placeholder="Ej. 35" required>
                                 <span class="form-hint">Solo debe aceptar números</span>
                             </div>
                         </div>
@@ -1226,14 +1227,44 @@
             }
         }
 
-        // Navegación entre pasos
+        // Navegación entre pasos con validación estricta de campos obligatorios (*)
         function goToStep(step) {
             if (step === 2) {
-                // Validar campos obligatorios del paso 1
-                const cursoId = document.getElementById('cursoIdSelect').value;
-                if (!cursoId) {
-                    showToast('Por favor selecciona un curso para continuar.', 'error');
-                    document.getElementById('cursoIdSelect').focus();
+                // Limpiar errores visuales previos
+                document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+
+                let hasErrors = false;
+                let firstErrorEl = null;
+
+                const fieldsToValidate = [
+                    { id: 'cursoIdSelect', name: 'Curso' },
+                    { id: 'inputSeccion', name: 'Sección' },
+                    { id: 'inputEstudiantesAsignados', name: 'Estudiantes Asignados', isNumber: true },
+                    { id: 'selectPeriodo', name: 'Periodo' },
+                    { id: 'selectMes', name: 'Mes' }
+                ];
+
+                for (let field of fieldsToValidate) {
+                    const el = document.getElementById(field.id);
+                    if (!el) continue;
+                    const val = el.value.trim();
+
+                    if (!val || (field.isNumber && (isNaN(val) || parseInt(val) <= 0))) {
+                        el.classList.add('input-error');
+                        hasErrors = true;
+                        if (!firstErrorEl) firstErrorEl = el;
+                    }
+                }
+
+                if (hasErrors) {
+                    const estudiantesEl = document.getElementById('inputEstudiantesAsignados');
+                    const estudiantesVal = parseInt(estudiantesEl.value.trim());
+                    if (estudiantesEl.classList.contains('input-error') && (!estudiantesEl.value.trim() || estudiantesVal <= 0)) {
+                        showToast('La cantidad de estudiantes asignados debe ser mayor a 0.', 'error');
+                    } else {
+                        showToast('Por favor completa todos los campos obligatorios (*) antes de avanzar.', 'error');
+                    }
+                    if (firstErrorEl) firstErrorEl.focus();
                     return;
                 }
 
@@ -1353,6 +1384,17 @@
         // Enviar informe vía AJAX
         function executeSubmitInforme() {
             const btn = document.getElementById('btnConfirmSubmit');
+            const estudiantesAsignados = parseInt(document.getElementById('inputEstudiantesAsignados').value) || 0;
+
+            if (estudiantesAsignados <= 0) {
+                closeFinishModal();
+                showToast('La cantidad de estudiantes asignados debe ser mayor a 0.', 'error');
+                goToStep(1);
+                document.getElementById('inputEstudiantesAsignados').classList.add('input-error');
+                document.getElementById('inputEstudiantesAsignados').focus();
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'ENVIANDO...';
 
@@ -1361,7 +1403,7 @@
                 curso_id: document.getElementById('cursoIdSelect').value,
                 periodo: document.getElementById('selectPeriodo').value,
                 mes: document.getElementById('selectMes').value,
-                estudiantes_asignados: parseInt(document.getElementById('inputEstudiantesAsignados').value) || 0,
+                estudiantes_asignados: estudiantesAsignados,
                 listado_asistencia_url: document.getElementById('inputListadoAsistencia').value.trim() || null,
                 enlace_evidencia_url: document.getElementById('inputEnlaceEvidencia').value.trim() || null,
                 enlace_meet_zoom_url: document.getElementById('inputEnlaceMeet').value.trim() || null,
@@ -1457,6 +1499,15 @@
 
             docenteSidebar.addEventListener('click', (e) => {
                 e.stopPropagation();
+            });
+
+            // Limpiar clase de error al interactuar con los campos obligatorios
+            ['cursoIdSelect', 'inputEstudiantesAsignados', 'selectPeriodo', 'selectMes'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', () => el.classList.remove('input-error'));
+                    el.addEventListener('change', () => el.classList.remove('input-error'));
+                }
             });
 
             // Trigger inicial si ya hay curso seleccionado
