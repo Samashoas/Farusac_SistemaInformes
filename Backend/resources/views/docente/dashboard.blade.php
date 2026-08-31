@@ -688,6 +688,111 @@
             border-left: 4px solid #ef4444;
         }
 
+        /* CARD DE ALERTA PARA CONFIRMACIÓN / DESACTIVACIÓN (IDÉNTICO A GESTIÓN DE USUARIOS) */
+        .confirm-status-card {
+            background-color: #ffffff;
+            border-radius: var(--border-radius-card);
+            border: 2.5px solid #e53e3e;
+            padding: 35px 40px;
+            max-width: 460px;
+            width: 90%;
+            box-shadow: 0 20px 45px rgba(229, 62, 62, 0.15);
+            text-align: center;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active .confirm-status-card {
+            transform: scale(1);
+        }
+
+        .warning-triangle {
+            font-size: 52px;
+            color: #d69e2e;
+            /* Amarillo de advertencia */
+            margin-bottom: 15px;
+            line-height: 1;
+        }
+
+        .alert-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            color: #e53e3e;
+            /* Texto de la cabecera en rojo */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .alert-desc {
+            font-size: 13px;
+            color: #718096;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .modal-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+        }
+
+        .btn-submit {
+            background-color: #ffffff;
+            border: 2px solid #60a5fa;
+            color: #2563eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-submit:hover,
+        .btn-submit:active {
+            background-color: #93c5fd;
+            /* Azul claro */
+            color: var(--color-azul);
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(96, 165, 250, 0.25);
+        }
+
+        .btn-cancel {
+            background-color: #ffffff;
+            border: 2px solid #f87171;
+            color: #dc2626;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-cancel:hover,
+        .btn-cancel:active {
+            background-color: #fca5a5;
+            /* Rojo/Rosado claro */
+            color: #991b1b;
+            border-color: #ef4444;
+            box-shadow: 0 4px 12px rgba(248, 113, 113, 0.25);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -886,6 +991,21 @@
         </div>
     </div>
 
+    <!-- Modal Emergente: Confirmación de Alerta para Remover Curso (Idéntico a Gestión de Usuarios) -->
+    <div class="modal-overlay" id="confirmDeleteModalOverlay" onclick="closeConfirmDeleteModal()">
+        <div class="confirm-status-card" onclick="event.stopPropagation()">
+            <div class="alert-content">
+                <div class="warning-triangle">⚠</div>
+                <h3 class="alert-title" id="confirmModalTitle">¿ESTÁ SEGURO QUE DESEA REMOVER EL CURSO?</h3>
+                <p class="alert-desc" id="confirmModalDesc">El curso será eliminado de su lista de cursos asignados</p>
+            </div>
+            <div class="modal-footer" style="margin-top: 25px;">
+                <button type="button" class="modal-btn btn-submit" id="btnConfirmDelete">REMOVER</button>
+                <button type="button" class="modal-btn btn-cancel" onclick="closeConfirmDeleteModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div class="toast-notification" id="toastNotification">
         <span id="toastMessage"></span>
@@ -898,6 +1018,7 @@
 
         // Elementos DOM
         const modalOverlay = document.getElementById('addCourseModalOverlay');
+        const confirmDeleteModalOverlay = document.getElementById('confirmDeleteModalOverlay');
         const selectCarrera = document.getElementById('selectCarrera');
         const selectCurso = document.getElementById('selectCurso');
         const selectSeccion = document.getElementById('selectSeccion');
@@ -906,7 +1027,9 @@
         const coursesGrid = document.getElementById('coursesGrid');
         const btnOpenModal = document.getElementById('btnOpenModal');
 
-        // --- MANEJO DEL MODAL ---
+        let pendingUnassignCursoId = null;
+
+        // --- MANEJO DEL MODAL DE AGREGAR CURSO ---
         function openAddCourseModal() {
             resetModalForm();
             modalOverlay.classList.add('active');
@@ -932,6 +1055,66 @@
             modalErrorMessage.style.display = 'none';
             modalErrorMessage.textContent = '';
         }
+
+        // --- MANEJO DEL MODAL DE ADVERTENCIA / CONFIRMACIÓN ---
+        function unassignCourse(cursoId, nombreCurso, seccion) {
+            pendingUnassignCursoId = cursoId;
+            document.getElementById('confirmModalDesc').textContent = `El curso "${nombreCurso} - Sección ${seccion}" será eliminado de su lista de cursos asignados.`;
+            confirmDeleteModalOverlay.classList.add('active');
+        }
+
+        function closeConfirmDeleteModal() {
+            confirmDeleteModalOverlay.classList.remove('active');
+            pendingUnassignCursoId = null;
+        }
+
+        function handleConfirmBackdropClick(event) {
+            if (event.target === confirmDeleteModalOverlay) {
+                closeConfirmDeleteModal();
+            }
+        }
+
+        document.getElementById('btnConfirmDelete').addEventListener('click', () => {
+            if (!pendingUnassignCursoId) return;
+
+            const cursoId = pendingUnassignCursoId;
+            const btn = document.getElementById('btnConfirmDelete');
+            btn.disabled = true;
+            btn.textContent = 'Removiendo...';
+
+            fetch(`{{ url('/docente/cursos') }}/${cursoId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Remover';
+                closeConfirmDeleteModal();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    const el = document.getElementById(`curso-item-${cursoId}`);
+                    if (el) {
+                        el.style.opacity = '0';
+                        el.style.transform = 'scale(0.8)';
+                        setTimeout(() => el.remove(), 300);
+                    }
+                } else {
+                    showToast(data.message || 'No se pudo remover el curso.', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                btn.disabled = false;
+                btn.textContent = 'Remover';
+                closeConfirmDeleteModal();
+                showToast('Error de conexión al intentar remover el curso.', 'error');
+            });
+        });
 
         // --- SELECTORES EN CASCADA (CARRERA -> CURSO -> SECCIÓN) ---
 
@@ -1077,39 +1260,6 @@
                 btnSubmitCourse.textContent = 'Agregar Curso';
                 modalErrorMessage.textContent = 'Error de conexión con el servidor.';
                 modalErrorMessage.style.display = 'block';
-            });
-        }
-
-        // --- DESASIGNAR CURSO VÍA AJAX ---
-        function unassignCourse(cursoId, nombreCurso, seccion) {
-            if (!confirm(`¿Estás seguro de que deseas remover "${nombreCurso} - Sección ${seccion}" de tus cursos asignados?`)) {
-                return;
-            }
-
-            fetch(`{{ url('/docente/cursos') }}/${cursoId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    const el = document.getElementById(`curso-item-${cursoId}`);
-                    if (el) {
-                        el.style.opacity = '0';
-                        el.style.transform = 'scale(0.8)';
-                        setTimeout(() => el.remove(), 300);
-                    }
-                } else {
-                    showToast(data.message || 'No se pudo remover el curso.', 'error');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                showToast('Error de conexión al intentar remover el curso.', 'error');
             });
         }
 
