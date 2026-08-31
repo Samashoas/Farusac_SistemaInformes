@@ -19,4 +19,9 @@ class Curso extends Model
         'anio',
         'semestre',
     ];
+
+    public function docentes(){
+        return $this->belongsToMany(User::class, 'docente_cursos', 'curso_id', 'usuario_id')
+                    ->withTimestamps();
+    }
 }

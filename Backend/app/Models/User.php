@@ -25,4 +25,9 @@ class User extends Authenticatable{
     public function getAuthPassword(){
         return null;
     }
+
+    public function cursos(){
+        return $this->belongsToMany(Curso::class, 'docente_cursos', 'usuario_id', 'curso_id')
+                    ->withTimestamps();
+    }
 }

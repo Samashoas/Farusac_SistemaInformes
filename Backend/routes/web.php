@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\DocenteController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -15,7 +16,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
     
     Route::middleware('role:docente')->group(function () {
-        Route::get('/docente/panel', function () { return view('docente.dashboard'); })->name('docente.dashboard');
+        Route::get('/docente/panel', [DocenteController::class, 'dashboard'])->name('docente.dashboard');
+        Route::post('/docente/cursos/asignar', [DocenteController::class, 'asignarCurso'])->name('docente.cursos.asignar');
+        Route::delete('/docente/cursos/{id}', [DocenteController::class, 'desasignarCurso'])->name('docente.cursos.desasignar');
     });
 
     Route::middleware('role:jefe')->group(function () {
