@@ -870,7 +870,7 @@
                 </a>
 
                 <!-- Enlace Informes -->
-                <a href="#" class="sidebar-link sidebar-link-informes">
+                <a href="{{ route('docente.informes.crear') }}" class="sidebar-link sidebar-link-informes">
                     <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -887,8 +887,8 @@
 
                 <!-- Renderizado de Cursos Asignados -->
                 @foreach ($cursosAsignados as $curso)
-                    <div class="circle-card-item" id="curso-item-{{ $curso->id }}">
-                        <button type="button" class="btn-unassign-course" title="Remover curso" onclick="unassignCourse({{ $curso->id }}, '{{ addslashes($curso->nombre_curso) }}', '{{ $curso->seccion }}')">
+                    <div class="circle-card-item" id="curso-item-{{ $curso->id }}" onclick="window.location.href='{{ route('docente.informes.crear') }}?curso_id={{ $curso->id }}'">
+                        <button type="button" class="btn-unassign-course" title="Remover curso" onclick="event.stopPropagation(); unassignCourse({{ $curso->id }}, '{{ addslashes($curso->nombre_curso) }}', '{{ $curso->seccion }}')">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1229,8 +1229,11 @@
                     const cardDiv = document.createElement('div');
                     cardDiv.className = 'circle-card-item';
                     cardDiv.id = `curso-item-${c.id}`;
+                    cardDiv.onclick = () => {
+                        window.location.href = `{{ route('docente.informes.crear') }}?curso_id=${c.id}`;
+                    };
                     cardDiv.innerHTML = `
-                        <button type="button" class="btn-unassign-course" title="Remover curso" onclick="unassignCourse(${c.id}, '${escapeHtml(c.nombre_curso)}', '${c.seccion}')">
+                        <button type="button" class="btn-unassign-course" title="Remover curso" onclick="event.stopPropagation(); unassignCourse(${c.id}, '${escapeHtml(c.nombre_curso)}', '${c.seccion}')">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>

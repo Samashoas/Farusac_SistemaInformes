@@ -19,6 +19,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/docente/panel', [DocenteController::class, 'dashboard'])->name('docente.dashboard');
         Route::post('/docente/cursos/asignar', [DocenteController::class, 'asignarCurso'])->name('docente.cursos.asignar');
         Route::delete('/docente/cursos/{id}', [DocenteController::class, 'desasignarCurso'])->name('docente.cursos.desasignar');
+        Route::get('/docente/informes/crear', [DocenteController::class, 'crearInformeView'])->name('docente.informes.crear');
+        Route::post('/docente/informes', [DocenteController::class, 'guardarInforme'])->name('docente.informes.guardar');
     });
 
     Route::middleware('role:jefe')->group(function () {

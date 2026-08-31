@@ -30,4 +30,8 @@ class User extends Authenticatable{
         return $this->belongsToMany(Curso::class, 'docente_cursos', 'usuario_id', 'curso_id')
                     ->withTimestamps();
     }
+
+    public function informes(){
+        return $this->hasMany(Informe::class, 'usuario_id');
+    }
 }
