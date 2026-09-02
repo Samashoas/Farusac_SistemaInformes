@@ -1012,7 +1012,8 @@
                                         @foreach ($cursosAsignados as $c)
                                             <option value="{{ $c->id }}" 
                                                 data-seccion="{{ $c->seccion }}" 
-                                                data-periodo="{{ $c->semestre }} {{ $c->anio }}"
+                                                data-anio="{{ $c->anio }}"
+                                                data-semestre="{{ $c->semestre }}"
                                                 {{ (isset($selectedCurso) && $selectedCurso->id == $c->id) ? 'selected' : '' }}>
                                                 {{ $c->nombre_curso }}
                                             </option>
@@ -1035,16 +1036,21 @@
                             </div>
                         </div>
 
-                        <!-- Fila 2: Periodo y Mes -->
+                        <!-- Fila 2: Año, Periodo y Mes -->
                         <div class="form-row">
+                            <div class="form-col form-col-small">
+                                <label class="form-label" for="inputAnio">* Año:</label>
+                                <input type="text" id="inputAnio" class="form-input input-readonly" value="{{ isset($selectedCurso) ? $selectedCurso->anio : date('Y') }}" readonly placeholder="2026">
+                            </div>
+
                             <div class="form-col">
                                 <label class="form-label" for="selectPeriodo">* Periodo</label>
                                 <div class="select-container">
                                     <select id="selectPeriodo" class="form-select" required>
-                                        <option value="Primer Semestre 2026">Primer Semestre 2026</option>
-                                        <option value="Segundo Semestre 2026">Segundo Semestre 2026</option>
-                                        <option value="Vacaciones Junio 2026">Vacaciones Junio 2026</option>
-                                        <option value="Vacaciones Diciembre 2026">Vacaciones Diciembre 2026</option>
+                                        <option value="Primer Semestre">Primer Semestre</option>
+                                        <option value="Segundo Semestre">Segundo Semestre</option>
+                                        <option value="Vacaciones Junio">Vacaciones Junio</option>
+                                        <option value="Vacaciones Diciembre">Vacaciones Diciembre</option>
                                     </select>
                                     <svg class="select-custom-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -1228,19 +1234,24 @@
         let currentStep = 1;
         let semanaCount = 1;
 
-        // Auto-actualizar sección y periodo al seleccionar un curso
+        // Auto-actualizar sección, año y periodo al seleccionar un curso
         function onCursoSelected() {
             const select = document.getElementById('cursoIdSelect');
             const seccionInput = document.getElementById('inputSeccion');
+            const anioInput = document.getElementById('inputAnio');
             const periodoSelect = document.getElementById('selectPeriodo');
 
             const selectedOption = select.options[select.selectedIndex];
             if (selectedOption && selectedOption.value) {
                 seccionInput.value = selectedOption.getAttribute('data-seccion') || '';
-                const periodoVal = selectedOption.getAttribute('data-periodo');
-                if (periodoVal) {
+                anioInput.value = selectedOption.getAttribute('data-anio') || new Date().getFullYear();
+
+                const semestreVal = selectedOption.getAttribute('data-semestre') || '';
+                if (semestreVal) {
                     for (let opt of periodoSelect.options) {
-                        if (opt.value.toLowerCase().includes(periodoVal.toLowerCase())) {
+                        if (opt.value.toLowerCase().includes(semestreVal.toLowerCase()) || 
+                            (semestreVal === '1' && opt.value.includes('Primer')) || 
+                            (semestreVal === '2' && opt.value.includes('Segundo'))) {
                             periodoSelect.value = opt.value;
                             break;
                         }
@@ -1248,6 +1259,7 @@
                 }
             } else {
                 seccionInput.value = '';
+                anioInput.value = new Date().getFullYear();
             }
         }
 
@@ -1264,6 +1276,7 @@
                     { id: 'cursoIdSelect', name: 'Curso' },
                     { id: 'inputSeccion', name: 'Sección' },
                     { id: 'inputEstudiantesAsignados', name: 'Estudiantes Asignados', isNumber: true },
+                    { id: 'inputAnio', name: 'Año' },
                     { id: 'selectPeriodo', name: 'Periodo' },
                     { id: 'selectMes', name: 'Mes' }
                 ];
@@ -1422,9 +1435,12 @@
             btnConfirm.textContent = 'ENVIANDO...';
 
             // Recopilar datos de Fase 1
+            const anioVal = document.getElementById('inputAnio').value.trim() || new Date().getFullYear();
+            const periodoVal = document.getElementById('selectPeriodo').value.trim();
+
             const payload = {
                 curso_id: document.getElementById('cursoIdSelect').value,
-                periodo: document.getElementById('selectPeriodo').value,
+                periodo: `${periodoVal} ${anioVal}`,
                 mes: document.getElementById('selectMes').value,
                 estudiantes_asignados: estudiantesAsignados,
                 listado_asistencia_url: document.getElementById('inputListadoAsistencia').value.trim() || null,
@@ -1528,7 +1544,7 @@
             });
 
             // Limpiar clase de error al interactuar con los campos obligatorios
-            ['cursoIdSelect', 'inputEstudiantesAsignados', 'selectPeriodo', 'selectMes'].forEach(id => {
+            ['cursoIdSelect', 'inputEstudiantesAsignados', 'selectPeriodo', 'inputAnio', 'selectMes'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.addEventListener('input', () => el.classList.remove('input-error'));
