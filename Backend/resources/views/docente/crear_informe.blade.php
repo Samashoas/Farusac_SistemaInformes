@@ -768,6 +768,24 @@
             font-weight: 500;
         }
 
+        /* Estilo de éxito (verde) para confirmación de envío idéntico al de activación */
+        .confirm-status-card.success-style {
+            border-color: #38a169;
+            box-shadow: 0 20px 45px rgba(56, 161, 105, 0.15);
+        }
+
+        .confirm-status-card.success-style .alert-title {
+            color: #38a169;
+        }
+
+        .confirm-status-card.success-style .success-check-icon {
+            font-size: 52px;
+            color: #38a169;
+            margin-bottom: 15px;
+            line-height: 1;
+            font-weight: 700;
+        }
+
         .modal-footer {
             display: flex;
             align-items: center;
@@ -927,14 +945,6 @@
                     <span>Perfil</span>
                 </a>
 
-                <!-- Enlace Cursos -->
-                <a href="{{ route('docente.dashboard') }}" class="sidebar-link">
-                    <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <span>Cursos</span>
-                </a>
-
                 <!-- Enlace Informes (Activo) -->
                 <a href="{{ route('docente.informes.crear') }}" class="sidebar-link sidebar-link-informes">
                     <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -1022,7 +1032,6 @@
                             <div class="form-col form-col-small">
                                 <label class="form-label" for="inputEstudiantesAsignados">*Estudiantes Asignados:</label>
                                 <input type="number" id="inputEstudiantesAsignados" class="form-input" min="1" placeholder="Ej. 35" required>
-                                <span class="form-hint">Solo debe aceptar números</span>
                             </div>
                         </div>
 
@@ -1071,17 +1080,17 @@
                         <div class="form-row">
                             <div class="form-col">
                                 <label class="form-label" for="inputListadoAsistencia">Listado de asistencia:</label>
-                                <input type="url" id="inputListadoAsistencia" class="form-input" placeholder="Colocar ejemplo de enlace drive">
+                                <input type="url" id="inputListadoAsistencia" class="form-input" placeholder="https://drive.google.com/drive/folders/1aBcD...">
                             </div>
 
                             <div class="form-col">
                                 <label class="form-label" for="inputEnlaceEvidencia">Enlace de evidencia:</label>
-                                <input type="url" id="inputEnlaceEvidencia" class="form-input" placeholder="Colocar ejemplo de enlace drive">
+                                <input type="url" id="inputEnlaceEvidencia" class="form-input" placeholder="https://drive.google.com/drive/folders/1xYz...">
                             </div>
 
                             <div class="form-col">
                                 <label class="form-label" for="inputEnlaceMeet">Enlace de Meet o Zoom:</label>
-                                <input type="url" id="inputEnlaceMeet" class="form-input" placeholder="Colocar ejemplo de enlace meet">
+                                <input type="url" id="inputEnlaceMeet" class="form-input" placeholder="https://meet.google.com/abc-defg-hij">
                             </div>
                         </div>
 
@@ -1089,7 +1098,7 @@
                         <div class="form-row">
                             <div class="form-col-full">
                                 <label class="form-label" for="inputEnlaceClassroom">Enlace de classroom, campus virtual o google drive</label>
-                                <input type="url" id="inputEnlaceClassroom" class="form-input" placeholder="Colocar ejemplo de enlace classroom">
+                                <input type="url" id="inputEnlaceClassroom" class="form-input" placeholder="https://classroom.google.com/c/MzQ1Nj...">
                             </div>
                         </div>
 
@@ -1132,7 +1141,6 @@
                                     <div class="form-col form-col-small" style="flex: 0 0 180px;">
                                         <label class="form-label">No. Estudiantes que participaron</label>
                                         <input type="number" class="form-input semana-estudiantes" min="0" value="0">
-                                        <span class="form-hint">Solo debe aceptar números</span>
                                     </div>
 
                                     <div class="form-col">
@@ -1165,7 +1173,7 @@
                             <button type="button" class="btn-wizard btn-wizard-prev" onclick="goToStep(1)">
                                 &lt;- ANTERIOR
                             </button>
-                            <button type="button" class="btn-wizard btn-wizard-finish" onclick="openFinishModal()">
+                            <button type="button" class="btn-wizard btn-wizard-finish" id="btnFinishWizard" onclick="openFinishModal()">
                                 TERMINAR -&gt;
                             </button>
                         </div>
@@ -1177,7 +1185,7 @@
         </main>
     </div>
 
-    <!-- MODAL EMERGENTE: AVISO DE 3 DÍAS Y CONFIRMACIÓN DE ENVÍO -->
+    <!-- 1. MODAL DE CONFIRMACIÓN DE ENVÍO (ADVERTENCIA) -->
     <div class="modal-overlay" id="confirmFinishModal" onclick="closeFinishModal()">
         <div class="confirm-status-card" onclick="event.stopPropagation()">
             <div class="alert-content">
@@ -1190,6 +1198,22 @@
             <div class="modal-footer">
                 <button type="button" class="modal-btn btn-submit" id="btnConfirmSubmit" onclick="executeSubmitInforme()">CONFIRMAR</button>
                 <button type="button" class="modal-btn btn-cancel" onclick="closeFinishModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MODAL DE ÉXITO (NOTIFICACIÓN VERDE TRAS GUARDAR) -->
+    <div class="modal-overlay" id="successInformeModal">
+        <div class="confirm-status-card success-style" onclick="event.stopPropagation()">
+            <div class="alert-content">
+                <div class="success-check-icon">✓</div>
+                <h3 class="alert-title">¡INFORME ENVIADO EXITOSAMENTE!</h3>
+                <p class="alert-desc">
+                    El informe ha sido creado y enviado exitosamente. Recuerda que tienes un <b>máximo de 3 días</b> para editar o modificar tu informe antes de que se bloquee para revisión.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn btn-submit" id="btnSuccessConfirm" onclick="redirectToDashboard()">CONFIRMAR</button>
             </div>
         </div>
     </div>
@@ -1320,7 +1344,6 @@
                     <div class="form-col form-col-small" style="flex: 0 0 180px;">
                         <label class="form-label">No. Estudiantes que participaron</label>
                         <input type="number" class="form-input semana-estudiantes" min="0" value="0">
-                        <span class="form-hint">Solo debe aceptar números</span>
                     </div>
 
                     <div class="form-col">
@@ -1365,9 +1388,17 @@
             });
         }
 
-        // Modal de confirmación final
+        // 1. Abrir Modal de Confirmación previo a enviar
         function openFinishModal() {
-            // Validar que al menos la semana 1 tenga contenido
+            const estudiantesAsignados = parseInt(document.getElementById('inputEstudiantesAsignados').value) || 0;
+            if (estudiantesAsignados <= 0) {
+                showToast('La cantidad de estudiantes asignados debe ser mayor a 0.', 'error');
+                goToStep(1);
+                document.getElementById('inputEstudiantesAsignados').classList.add('input-error');
+                document.getElementById('inputEstudiantesAsignados').focus();
+                return;
+            }
+
             const primeraActividad = document.querySelector('.semana-actividad')?.value.trim();
             if (!primeraActividad) {
                 showToast('Por favor describe el contenido o actividad realizada en al menos una semana.', 'error');
@@ -1377,26 +1408,18 @@
             document.getElementById('confirmFinishModal').classList.add('active');
         }
 
+        // Cerrar Modal de Confirmación
         function closeFinishModal() {
             document.getElementById('confirmFinishModal').classList.remove('active');
         }
 
-        // Enviar informe vía AJAX
+        // 2. Enviar informe vía AJAX al confirmar en el modal de advertencia
         function executeSubmitInforme() {
-            const btn = document.getElementById('btnConfirmSubmit');
+            const btnConfirm = document.getElementById('btnConfirmSubmit');
             const estudiantesAsignados = parseInt(document.getElementById('inputEstudiantesAsignados').value) || 0;
 
-            if (estudiantesAsignados <= 0) {
-                closeFinishModal();
-                showToast('La cantidad de estudiantes asignados debe ser mayor a 0.', 'error');
-                goToStep(1);
-                document.getElementById('inputEstudiantesAsignados').classList.add('input-error');
-                document.getElementById('inputEstudiantesAsignados').focus();
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'ENVIANDO...';
+            btnConfirm.disabled = true;
+            btnConfirm.textContent = 'ENVIANDO...';
 
             // Recopilar datos de Fase 1
             const payload = {
@@ -1435,26 +1458,29 @@
             })
             .then(res => res.json().then(data => ({ status: res.status, body: data })))
             .then(({ status, body }) => {
-                btn.disabled = false;
-                btn.textContent = 'CONFIRMAR';
+                btnConfirm.disabled = false;
+                btnConfirm.textContent = 'CONFIRMAR';
                 closeFinishModal();
 
                 if (status === 200 && body.success) {
-                    showToast(body.message, 'success');
-                    setTimeout(() => {
-                        window.location.href = body.redirect_url || '{{ route("docente.dashboard") }}';
-                    }, 2200);
+                    // Abrir la notificación modal verde de éxito con botón único de confirmar
+                    document.getElementById('successInformeModal').classList.add('active');
                 } else {
                     showToast(body.message || 'Ocurrió un error al registrar el informe.', 'error');
                 }
             })
             .catch(err => {
                 console.error(err);
-                btn.disabled = false;
-                btn.textContent = 'CONFIRMAR';
+                btnConfirm.disabled = false;
+                btnConfirm.textContent = 'CONFIRMAR';
                 closeFinishModal();
                 showToast('Error de conexión con el servidor.', 'error');
             });
+        }
+
+        // 3. Redirigir a inicio al hacer clic en CONFIRMAR en la notificación verde de éxito
+        function redirectToDashboard() {
+            window.location.href = '{{ route("docente.dashboard") }}';
         }
 
         // Helper para Toasts
