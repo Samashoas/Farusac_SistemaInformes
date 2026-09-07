@@ -124,6 +124,41 @@ class DocenteController extends Controller
     }
 
     /**
+     * Muestra el Historial de Informes creados por el docente con filtros en tiempo real.
+     */
+    public function historialInformes(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        try {
+            $informes = Informe::with(['curso', 'semanas'])
+                ->where('usuario_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Extraer opciones únicas para filtros
+            $carreras = $informes->pluck('curso.carrera')->filter()->unique()->values();
+            $cursosDocente = $informes->pluck('curso.nombre_curso')->filter()->unique()->values();
+            $periodos = $informes->pluck('periodo')->filter()->map(function($p) {
+                return trim(preg_replace('/\d{4}/', '', $p));
+            })->filter()->unique()->values();
+            $anios = $informes->pluck('curso.anio')->filter()->unique()->values();
+            $meses = $informes->pluck('mes')->filter()->unique()->values();
+
+        } catch (\Exception $e) {
+            $informes = collect();
+            $carreras = collect();
+            $cursosDocente = collect();
+            $periodos = collect();
+            $anios = collect();
+            $meses = collect();
+        }
+
+        return view('docente.historial_informes', compact('user', 'informes', 'carreras', 'cursosDocente', 'periodos', 'anios', 'meses'));
+    }
+
+    /**
      * Muestra la vista de creación de informe (Wizard de 2 fases).
      */
     public function crearInformeView(Request $request)
@@ -226,5 +261,162 @@ class DocenteController extends Controller
                 'message' => 'Error al guardar el informe: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Muestra la vista de edición de informe cargando los datos previos.
+     */
+    public function editarInformeView($id)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $informe = Informe::with(['curso', 'semanas'])
+            ->where('usuario_id', $user->id)
+            ->findOrFail($id);
+
+        $estaBloqueado = false;
+        if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
+            $estaBloqueado = true;
+        }
+
+        try {
+            $cursosAsignados = $user->cursos()
+                ->orderBy('nombre_curso', 'asc')
+                ->orderBy('seccion', 'asc')
+                ->get();
+        } catch (\Exception $e) {
+            $cursosAsignados = collect();
+        }
+
+        $selectedCurso = $informe->curso;
+        $modoEdicion = true;
+
+        return view('docente.crear_informe', compact('user', 'cursosAsignados', 'selectedCurso', 'informe', 'modoEdicion', 'estaBloqueado'));
+    }
+
+    /**
+     * Actualiza un informe existente y sus semanas.
+     */
+    public function actualizarInforme(Request $request, $id)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $informe = Informe::where('usuario_id', $user->id)->findOrFail($id);
+
+        if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.'
+            ], 422);
+        }
+
+        $request->validate([
+            'curso_id' => 'required|exists:cursos,id',
+            'periodo' => 'required|string',
+            'mes' => 'required|string',
+            'estudiantes_asignados' => 'required|integer|min:1',
+            'listado_asistencia_url' => 'nullable|string|max:255',
+            'enlace_evidencia_url' => 'nullable|string|max:255',
+            'enlace_meet_zoom_url' => 'nullable|string|max:255',
+            'enlace_classroom_drive_url' => 'nullable|string|max:255',
+            'estrategias_evaluacion' => 'nullable|string',
+            'semanas' => 'required|array|min:1',
+            'semanas.*.numero_semana' => 'required|integer',
+            'semanas.*.actividad_realizada' => 'required|string',
+            'semanas.*.estudiantes_participaron' => 'nullable|integer|min:0',
+            'semanas.*.metodologias' => 'nullable|string',
+            'semanas.*.medios_comunicacion' => 'nullable|string',
+        ], [
+            'curso_id.required' => 'Debe seleccionar un curso válido.',
+            'periodo.required' => 'El periodo es obligatorio.',
+            'mes.required' => 'El mes es obligatorio.',
+            'estudiantes_asignados.required' => 'La cantidad de estudiantes asignados es obligatoria.',
+            'estudiantes_asignados.min' => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
+            'semanas.required' => 'Debe registrar al menos una semana de actividades.',
+            'semanas.*.actividad_realizada.required' => 'El contenido o actividad realizada es obligatorio en cada semana.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $informe->update([
+                'curso_id' => $request->input('curso_id'),
+                'periodo' => $request->input('periodo'),
+                'mes' => $request->input('mes'),
+                'estudiantes_asignados' => $request->input('estudiantes_asignados'),
+                'listado_asistencia_url' => $request->input('listado_asistencia_url'),
+                'enlace_evidencia_url' => $request->input('enlace_evidencia_url'),
+                'enlace_meet_zoom_url' => $request->input('enlace_meet_zoom_url'),
+                'enlace_classroom_drive_url' => $request->input('enlace_classroom_drive_url'),
+                'estrategias_evaluacion' => $request->input('estrategias_evaluacion'),
+            ]);
+
+            // Recrear semanas
+            $informe->semanas()->delete();
+            foreach ($request->input('semanas') as $sem) {
+                InformeSemana::create([
+                    'informe_id' => $informe->id,
+                    'numero_semana' => $sem['numero_semana'] ?? 1,
+                    'actividad_realizada' => $sem['actividad_realizada'] ?? '',
+                    'estudiantes_participaron' => $sem['estudiantes_participaron'] ?? 0,
+                    'metodologias' => $sem['metodologias'] ?? null,
+                    'medios_comunicacion' => $sem['medios_comunicacion'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Informe actualizado exitosamente.',
+                'redirect_url' => route('docente.informes')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el informe: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Elimina permanentemente un informe del docente.
+     */
+    public function eliminarInforme($id)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        try {
+            $informe = Informe::where('usuario_id', $user->id)->findOrFail($id);
+            $informe->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'El informe ha sido eliminado permanentemente.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el informe: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Genera la vista institucional del informe en formato lista para imprimir/PDF.
+     */
+    public function verInforme($id)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $informe = Informe::with(['curso', 'semanas'])
+            ->where('usuario_id', $user->id)
+            ->findOrFail($id);
+
+        return view('docente.ver_informe_pdf', compact('user', 'informe'));
     }
 }

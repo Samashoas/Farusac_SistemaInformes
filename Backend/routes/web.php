@@ -19,8 +19,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/docente/panel', [DocenteController::class, 'dashboard'])->name('docente.dashboard');
         Route::post('/docente/cursos/asignar', [DocenteController::class, 'asignarCurso'])->name('docente.cursos.asignar');
         Route::delete('/docente/cursos/{id}', [DocenteController::class, 'desasignarCurso'])->name('docente.cursos.desasignar');
+        Route::get('/docente/informes', [DocenteController::class, 'historialInformes'])->name('docente.informes');
         Route::get('/docente/informes/crear', [DocenteController::class, 'crearInformeView'])->name('docente.informes.crear');
         Route::post('/docente/informes', [DocenteController::class, 'guardarInforme'])->name('docente.informes.guardar');
+        Route::get('/docente/informes/{id}/editar', [DocenteController::class, 'editarInformeView'])->name('docente.informes.editar');
+        Route::put('/docente/informes/{id}', [DocenteController::class, 'actualizarInforme'])->name('docente.informes.actualizar');
+        Route::delete('/docente/informes/{id}', [DocenteController::class, 'eliminarInforme'])->name('docente.informes.eliminar');
+        Route::get('/docente/informes/{id}/ver', [DocenteController::class, 'verInforme'])->name('docente.informes.ver');
     });
 
     Route::middleware('role:jefe')->group(function () {

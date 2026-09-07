@@ -946,7 +946,7 @@
                 </a>
 
                 <!-- Enlace Informes (Activo) -->
-                <a href="{{ route('docente.informes.crear') }}" class="sidebar-link sidebar-link-informes">
+                <a href="{{ route('docente.informes') }}" class="sidebar-link sidebar-link-informes active">
                     <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -962,7 +962,14 @@
                 <!-- Botón de Ayuda Top-Right -->
                 <button type="button" class="help-btn" title="Ayuda y Requisitos">?</button>
 
-                <h2 class="wizard-title">Creación de Informe</h2>
+                <h2 class="wizard-title">{{ isset($modoEdicion) && $modoEdicion ? 'Edición de Informe' : 'Creación de Informe' }}</h2>
+
+                @if (isset($estaBloqueado) && $estaBloqueado)
+                    <div style="background-color: #fee2e2; border: 1.5px solid #ef4444; color: #991b1b; padding: 14px 20px; border-radius: 12px; margin-bottom: 20px; font-weight: 600; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 20px;">🔒</span>
+                        <span>Este informe se encuentra <b>bloqueado para edición</b> porque ha vencido el plazo máximo de 3 días desde su envío original.</span>
+                    </div>
+                @endif
 
                 <!-- INDICADOR DE FASES (STEPPER) -->
                 <div class="stepper-wrapper">
@@ -1010,11 +1017,19 @@
                                     <select id="cursoIdSelect" class="form-select" onchange="onCursoSelected()" required>
                                         <option value="">Seleccione un curso...</option>
                                         @foreach ($cursosAsignados as $c)
+                                            @php
+                                                $isSelected = false;
+                                                if (isset($informe) && $informe->curso_id == $c->id) {
+                                                    $isSelected = true;
+                                                } elseif (isset($selectedCurso) && $selectedCurso->id == $c->id) {
+                                                    $isSelected = true;
+                                                }
+                                            @endphp
                                             <option value="{{ $c->id }}" 
                                                 data-seccion="{{ $c->seccion }}" 
                                                 data-anio="{{ $c->anio }}"
                                                 data-semestre="{{ $c->semestre }}"
-                                                {{ (isset($selectedCurso) && $selectedCurso->id == $c->id) ? 'selected' : '' }}>
+                                                {{ $isSelected ? 'selected' : '' }}>
                                                 {{ $c->nombre_curso }}
                                             </option>
                                         @endforeach
@@ -1027,12 +1042,12 @@
 
                             <div class="form-col form-col-small">
                                 <label class="form-label">*Sección:</label>
-                                <input type="text" id="inputSeccion" class="form-input input-readonly" value="{{ isset($selectedCurso) ? $selectedCurso->seccion : '' }}" readonly placeholder="—">
+                                <input type="text" id="inputSeccion" class="form-input input-readonly" value="{{ isset($informe) ? $informe->curso->seccion : (isset($selectedCurso) ? $selectedCurso->seccion : '') }}" readonly placeholder="—">
                             </div>
 
                             <div class="form-col form-col-small">
                                 <label class="form-label" for="inputEstudiantesAsignados">*Estudiantes Asignados:</label>
-                                <input type="number" id="inputEstudiantesAsignados" class="form-input" min="1" placeholder="Ej. 35" required>
+                                <input type="number" id="inputEstudiantesAsignados" class="form-input" min="1" placeholder="Ej. 35" value="{{ isset($informe) ? $informe->estudiantes_asignados : '' }}" required>
                             </div>
                         </div>
 
@@ -1040,17 +1055,20 @@
                         <div class="form-row">
                             <div class="form-col form-col-small">
                                 <label class="form-label" for="inputAnio">* Año:</label>
-                                <input type="text" id="inputAnio" class="form-input input-readonly" value="{{ isset($selectedCurso) ? $selectedCurso->anio : date('Y') }}" readonly placeholder="2026">
+                                <input type="text" id="inputAnio" class="form-input input-readonly" value="{{ isset($informe) ? ($informe->curso->anio ?? date('Y')) : (isset($selectedCurso) ? $selectedCurso->anio : date('Y')) }}" readonly placeholder="2026">
                             </div>
 
                             <div class="form-col">
                                 <label class="form-label" for="selectPeriodo">* Periodo</label>
                                 <div class="select-container">
+                                    @php
+                                        $currentPeriodo = isset($informe) ? trim(preg_replace('/\d{4}/', '', $informe->periodo)) : '';
+                                    @endphp
                                     <select id="selectPeriodo" class="form-select" required>
-                                        <option value="Primer Semestre">Primer Semestre</option>
-                                        <option value="Segundo Semestre">Segundo Semestre</option>
-                                        <option value="Vacaciones Junio">Vacaciones Junio</option>
-                                        <option value="Vacaciones Diciembre">Vacaciones Diciembre</option>
+                                        <option value="Primer Semestre" {{ $currentPeriodo == 'Primer Semestre' ? 'selected' : '' }}>Primer Semestre</option>
+                                        <option value="Segundo Semestre" {{ $currentPeriodo == 'Segundo Semestre' ? 'selected' : '' }}>Segundo Semestre</option>
+                                        <option value="Vacaciones Junio" {{ $currentPeriodo == 'Vacaciones Junio' ? 'selected' : '' }}>Vacaciones Junio</option>
+                                        <option value="Vacaciones Diciembre" {{ $currentPeriodo == 'Vacaciones Diciembre' ? 'selected' : '' }}>Vacaciones Diciembre</option>
                                     </select>
                                     <svg class="select-custom-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -1061,19 +1079,13 @@
                             <div class="form-col">
                                 <label class="form-label" for="selectMes">* Mes</label>
                                 <div class="select-container">
+                                    @php
+                                        $currentMes = isset($informe) ? $informe->mes : '';
+                                    @endphp
                                     <select id="selectMes" class="form-select" required>
-                                        <option value="Enero">Enero</option>
-                                        <option value="Febrero">Febrero</option>
-                                        <option value="Marzo">Marzo</option>
-                                        <option value="Abril">Abril</option>
-                                        <option value="Mayo">Mayo</option>
-                                        <option value="Junio">Junio</option>
-                                        <option value="Julio">Julio</option>
-                                        <option value="Agosto">Agosto</option>
-                                        <option value="Septiembre">Septiembre</option>
-                                        <option value="Octubre">Octubre</option>
-                                        <option value="Noviembre">Noviembre</option>
-                                        <option value="Diciembre">Diciembre</option>
+                                        @foreach (['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'] as $m)
+                                            <option value="{{ $m }}" {{ $currentMes == $m ? 'selected' : '' }}>{{ $m }}</option>
+                                        @endforeach
                                     </select>
                                     <svg class="select-custom-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -1086,17 +1098,17 @@
                         <div class="form-row">
                             <div class="form-col">
                                 <label class="form-label" for="inputListadoAsistencia">Listado de asistencia:</label>
-                                <input type="url" id="inputListadoAsistencia" class="form-input" placeholder="https://drive.google.com/drive/folders/1aBcD...">
+                                <input type="url" id="inputListadoAsistencia" class="form-input" placeholder="https://drive.google.com/drive/folders/1aBcD..." value="{{ isset($informe) ? $informe->listado_asistencia_url : '' }}">
                             </div>
 
                             <div class="form-col">
                                 <label class="form-label" for="inputEnlaceEvidencia">Enlace de evidencia:</label>
-                                <input type="url" id="inputEnlaceEvidencia" class="form-input" placeholder="https://drive.google.com/drive/folders/1xYz...">
+                                <input type="url" id="inputEnlaceEvidencia" class="form-input" placeholder="https://drive.google.com/drive/folders/1xYz..." value="{{ isset($informe) ? $informe->enlace_evidencia_url : '' }}">
                             </div>
 
                             <div class="form-col">
                                 <label class="form-label" for="inputEnlaceMeet">Enlace de Meet o Zoom:</label>
-                                <input type="url" id="inputEnlaceMeet" class="form-input" placeholder="https://meet.google.com/abc-defg-hij">
+                                <input type="url" id="inputEnlaceMeet" class="form-input" placeholder="https://meet.google.com/abc-defg-hij" value="{{ isset($informe) ? $informe->enlace_meet_zoom_url : '' }}">
                             </div>
                         </div>
 
@@ -1104,7 +1116,7 @@
                         <div class="form-row">
                             <div class="form-col-full">
                                 <label class="form-label" for="inputEnlaceClassroom">Enlace de classroom, campus virtual o google drive</label>
-                                <input type="url" id="inputEnlaceClassroom" class="form-input" placeholder="https://classroom.google.com/c/MzQ1Nj...">
+                                <input type="url" id="inputEnlaceClassroom" class="form-input" placeholder="https://classroom.google.com/c/MzQ1Nj..." value="{{ isset($informe) ? $informe->enlace_classroom_drive_url : '' }}">
                             </div>
                         </div>
 
@@ -1112,7 +1124,7 @@
                         <div class="form-row">
                             <div class="form-col-full">
                                 <label class="form-label" for="inputEstrategias">Describa herramientas y/o estrategias de evaluación que utiliza dentro de su asignatura (Matrices de evaluación, rubricas, etc):</label>
-                                <textarea id="inputEstrategias" class="form-textarea" rows="3" placeholder="Escriba las herramientas y estrategias utilizadas..."></textarea>
+                                <textarea id="inputEstrategias" class="form-textarea" rows="3" placeholder="Escriba las herramientas y estrategias utilizadas...">{{ isset($informe) ? $informe->estrategias_evaluacion : '' }}</textarea>
                             </div>
                         </div>
 
@@ -1130,36 +1142,76 @@
 
                         <!-- Contenedor Dinámico de Semanas -->
                         <div class="semanas-list" id="semanasContainer">
-                            <!-- Semana 1 (Por defecto) -->
-                            <div class="semana-card" id="semanaCard-1" data-semana="1">
-                                <div class="semana-header">
-                                    <span class="semana-badge">SEMANA 1</span>
-                                </div>
+                            @if (isset($informe) && count($informe->semanas) > 0)
+                                @foreach ($informe->semanas as $index => $sem)
+                                    @php $numSem = $index + 1; @endphp
+                                    <div class="semana-card" id="semanaCard-{{ $numSem }}" data-semana="{{ $numSem }}">
+                                        <div class="semana-header">
+                                            <span class="semana-badge">SEMANA {{ $numSem }}</span>
+                                            @if ($numSem > 1)
+                                                <button type="button" class="btn-delete-semana" onclick="deleteSemana({{ $numSem }})" title="Eliminar semana">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                </button>
+                                            @endif
+                                        </div>
 
-                                <div class="form-row">
-                                    <div class="form-col-full">
-                                        <label class="form-label">Contenido/Actividad realizada</label>
-                                        <textarea class="form-textarea semana-actividad" rows="3" placeholder="Describa el contenido o actividad realizada durante la semana..."></textarea>
+                                        <div class="form-row">
+                                            <div class="form-col-full">
+                                                <label class="form-label">Contenido/Actividad realizada</label>
+                                                <textarea class="form-textarea semana-actividad" rows="3" placeholder="Describa el contenido o actividad realizada durante la semana...">{{ $sem->actividad_realizada }}</textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row">
+                                            <div class="form-col form-col-small" style="flex: 0 0 180px;">
+                                                <label class="form-label">No. Estudiantes que participaron</label>
+                                                <input type="number" class="form-input semana-estudiantes" min="0" value="{{ $sem->estudiantes_participaron ?? 0 }}">
+                                            </div>
+
+                                            <div class="form-col">
+                                                <label class="form-label">Metodologías utilizadas</label>
+                                                <textarea class="form-textarea semana-metodologias" rows="3" placeholder="Describa las metodologías...">{{ $sem->metodologias }}</textarea>
+                                            </div>
+
+                                            <div class="form-col">
+                                                <label class="form-label">Plataforma, aplicación o medios de comunicación</label>
+                                                <textarea class="form-textarea semana-medios" rows="3" placeholder="Ej. Google Meet, Classroom, WhatsApp...">{{ $sem->medios_comunicacion }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <!-- Semana 1 (Por defecto) -->
+                                <div class="semana-card" id="semanaCard-1" data-semana="1">
+                                    <div class="semana-header">
+                                        <span class="semana-badge">SEMANA 1</span>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-col-full">
+                                            <label class="form-label">Contenido/Actividad realizada</label>
+                                            <textarea class="form-textarea semana-actividad" rows="3" placeholder="Describa el contenido o actividad realizada durante la semana..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-col form-col-small" style="flex: 0 0 180px;">
+                                            <label class="form-label">No. Estudiantes que participaron</label>
+                                            <input type="number" class="form-input semana-estudiantes" min="0" value="0">
+                                        </div>
+
+                                        <div class="form-col">
+                                            <label class="form-label">Metodologías utilizadas</label>
+                                            <textarea class="form-textarea semana-metodologias" rows="3" placeholder="Describa las metodologías..."></textarea>
+                                        </div>
+
+                                        <div class="form-col">
+                                            <label class="form-label">Plataforma, aplicación o medios de comunicación</label>
+                                            <textarea class="form-textarea semana-medios" rows="3" placeholder="Ej. Google Meet, Classroom, WhatsApp..."></textarea>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div class="form-row">
-                                    <div class="form-col form-col-small" style="flex: 0 0 180px;">
-                                        <label class="form-label">No. Estudiantes que participaron</label>
-                                        <input type="number" class="form-input semana-estudiantes" min="0" value="0">
-                                    </div>
-
-                                    <div class="form-col">
-                                        <label class="form-label">Metodologías utilizadas</label>
-                                        <textarea class="form-textarea semana-metodologias" rows="3" placeholder="Describa las metodologías..."></textarea>
-                                    </div>
-
-                                    <div class="form-col">
-                                        <label class="form-label">Plataforma, aplicación o medios de comunicación</label>
-                                        <textarea class="form-textarea semana-medios" rows="3" placeholder="Ej. Google Meet, Classroom, WhatsApp..."></textarea>
-                                    </div>
-                                </div>
-                            </div>
+                            @endif
                         </div>
 
                         <!-- Botón Circular: Agregar otra Semana -->
@@ -1232,7 +1284,8 @@
     <!-- JAVASCRIPT: CONTROL DE WIZARD, SEMANAS DINÁMICAS Y AJAX -->
     <script>
         let currentStep = 1;
-        let semanaCount = 1;
+        let semanaCount = {{ isset($informe) && count($informe->semanas) > 0 ? count($informe->semanas) : 1 }};
+        const isEditMode = {{ isset($modoEdicion) && $modoEdicion ? 'true' : 'false' }};
 
         // Auto-actualizar sección, año y periodo al seleccionar un curso
         function onCursoSelected() {
@@ -1247,7 +1300,7 @@
                 anioInput.value = selectedOption.getAttribute('data-anio') || new Date().getFullYear();
 
                 const semestreVal = selectedOption.getAttribute('data-semestre') || '';
-                if (semestreVal) {
+                if (semestreVal && !isEditMode) {
                     for (let opt of periodoSelect.options) {
                         if (opt.value.toLowerCase().includes(semestreVal.toLowerCase()) || 
                             (semestreVal === '1' && opt.value.includes('Primer')) || 
@@ -1257,7 +1310,7 @@
                         }
                     }
                 }
-            } else {
+            } else if (!isEditMode) {
                 seccionInput.value = '';
                 anioInput.value = new Date().getFullYear();
             }
@@ -1294,33 +1347,22 @@
                 }
 
                 if (hasErrors) {
-                    const estudiantesEl = document.getElementById('inputEstudiantesAsignados');
-                    const estudiantesVal = parseInt(estudiantesEl.value.trim());
-                    if (estudiantesEl.classList.contains('input-error') && (!estudiantesEl.value.trim() || estudiantesVal <= 0)) {
-                        showToast('La cantidad de estudiantes asignados debe ser mayor a 0.', 'error');
-                    } else {
-                        showToast('Por favor completa todos los campos obligatorios (*) antes de avanzar.', 'error');
-                    }
+                    showToast('Por favor completa todos los campos obligatorios (*) antes de avanzar.', 'error');
                     if (firstErrorEl) firstErrorEl.focus();
                     return;
                 }
-
-                currentStep = 2;
-                document.getElementById('phase1Panel').style.display = 'none';
-                document.getElementById('phase2Panel').style.display = 'block';
-
-                document.getElementById('stepIndicator1').classList.remove('active');
-                document.getElementById('stepIndicator1').classList.add('completed');
-                document.getElementById('stepIndicator2').classList.add('active');
-            } else {
-                currentStep = 1;
-                document.getElementById('phase2Panel').style.display = 'none';
-                document.getElementById('phase1Panel').style.display = 'block';
-
-                document.getElementById('stepIndicator2').classList.remove('active');
-                document.getElementById('stepIndicator1').classList.add('active');
-                document.getElementById('stepIndicator1').classList.remove('completed');
             }
+
+            currentStep = step;
+
+            // Actualizar paneles
+            document.getElementById('phase1Panel').style.display = (step === 1) ? 'block' : 'none';
+            document.getElementById('phase2Panel').style.display = (step === 2) ? 'block' : 'none';
+
+            // Actualizar Stepper
+            document.getElementById('stepIndicator1').classList.toggle('active', step === 1);
+            document.getElementById('stepIndicator2').classList.toggle('active', step === 2);
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -1337,12 +1379,8 @@
             semanaDiv.innerHTML = `
                 <div class="semana-header">
                     <span class="semana-badge">SEMANA ${semanaCount}</span>
-                    <button type="button" class="btn-delete-semana" onclick="deleteSemana(${semanaCount})">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                        Eliminar
+                    <button type="button" class="btn-delete-semana" onclick="deleteSemana(${semanaCount})" title="Eliminar semana">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                 </div>
 
@@ -1463,8 +1501,11 @@
                 });
             });
 
-            fetch('{{ route("docente.informes.guardar") }}', {
-                method: 'POST',
+            const targetUrl = isEditMode ? '/docente/informes/{{ $informe->id ?? 0 }}' : '{{ route("docente.informes.guardar") }}';
+            const targetMethod = isEditMode ? 'PUT' : 'POST';
+
+            fetch(targetUrl, {
+                method: targetMethod,
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1496,7 +1537,7 @@
 
         // 3. Redirigir a inicio al hacer clic en CONFIRMAR en la notificación verde de éxito
         function redirectToDashboard() {
-            window.location.href = '{{ route("docente.dashboard") }}';
+            window.location.href = isEditMode ? '{{ route("docente.informes") }}' : '{{ route("docente.dashboard") }}';
         }
 
         // Helper para Toasts
@@ -1553,7 +1594,9 @@
             });
 
             // Trigger inicial si ya hay curso seleccionado
-            onCursoSelected();
+            if (!isEditMode) {
+                onCursoSelected();
+            }
         });
     </script>
 </body>
