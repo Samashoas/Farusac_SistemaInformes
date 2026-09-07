@@ -389,15 +389,19 @@ class DocenteController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
+        DB::beginTransaction();
         try {
             $informe = Informe::where('usuario_id', $user->id)->findOrFail($id);
+            $informe->semanas()->delete();
             $informe->delete();
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'El informe ha sido eliminado permanentemente.'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Error al eliminar el informe: ' . $e->getMessage()

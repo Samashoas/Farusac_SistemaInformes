@@ -89,22 +89,39 @@
         }
 
         .doc-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
             border-bottom: 2.5px solid var(--color-azul-oscuro);
             padding-bottom: 20px;
             margin-bottom: 25px;
         }
 
-        .doc-logo {
-            height: 65px;
-            width: auto;
+        .header-logos-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 18px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            flex-wrap: nowrap;
+        }
+
+        .logo-item {
             object-fit: contain;
+            display: block;
+        }
+
+        .logo-usac-farusac {
+            height: 54px;
+            max-width: 240px;
+        }
+
+        .logo-acreditadora {
+            height: 46px;
+            max-width: 140px;
         }
 
         .doc-title-block {
-            text-align: right;
+            text-align: center;
         }
 
         .doc-institution {
@@ -113,7 +130,7 @@
             font-weight: 800;
             color: var(--color-azul-oscuro);
             text-transform: uppercase;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.03em;
         }
 
         .doc-faculty {
@@ -121,7 +138,9 @@
             font-size: 13px;
             font-weight: 700;
             color: #475569;
-            margin-bottom: 4px;
+            margin-top: 3px;
+            margin-bottom: 5px;
+            letter-spacing: 0.02em;
         }
 
         .doc-report-name {
@@ -130,7 +149,7 @@
             font-weight: 800;
             color: #b91c1c;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
         }
 
         /* --- SECCIONES Y TABLAS --- */
@@ -263,6 +282,18 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+            .header-logos-container {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                gap: 15px !important;
+                padding-bottom: 16px !important;
+                border-bottom: 1px solid #cbd5e1 !important;
+            }
+            .logo-item {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
@@ -285,7 +316,12 @@
         
         <!-- ENCABEZADO OFICIAL FARUSAC -->
         <div class="doc-header">
-            <img src="{{ asset('img/farusac.png') }}" alt="FARUSAC" class="doc-logo">
+            <div class="header-logos-container">
+                <img src="{{ asset('images/InformePDF/logos-usac-farusac.png') }}" alt="Logo USAC - FARUSAC" class="logo-item logo-usac-farusac">
+                <img src="{{ asset('images/InformePDF/LOGOS ACREDITADORAS 2026 HCERES (1).png') }}" alt="Logo Acreditadora HCÉRES" class="logo-item logo-acreditadora">
+                <img src="{{ asset('images/InformePDF/LOGOS ACREDITADORAS 2026 CCA (1).png') }}" alt="Logo Acreditadora CCA" class="logo-item logo-acreditadora">
+                <img src="{{ asset('images/InformePDF/LOGOS ACREDITADORAS 2026 CEAI (1).png') }}" alt="Logo Acreditadora CEAI" class="logo-item logo-acreditadora">
+            </div>
             <div class="doc-title-block">
                 <div class="doc-institution">UNIVERSIDAD DE SAN CARLOS DE GUATEMALA</div>
                 <div class="doc-faculty">FACULTAD DE ARQUITECTURA</div>

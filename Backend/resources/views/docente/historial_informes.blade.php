@@ -1055,8 +1055,6 @@
 
     <!-- JAVASCRIPT: FILTRADO EN TIEMPO REAL, ELIMINACIÓN Y MENÚS -->
     <script>
-        let informeToDeleteId = null;
-
         // 1. Filtrado en Tiempo Real (Buscador y Selectores)
         function applyFilters() {
             const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -1090,18 +1088,36 @@
                 if (matchesSearch && matchesCarrera && matchesCurso && matchesPeriodo && matchesAnio && matchesMes) {
                     row.style.display = '';
                     visibleCount++;
+                    const idCol = row.querySelector('.td-id');
+                    if (idCol) {
+                        idCol.textContent = `${visibleCount}.`;
+                    }
                 } else {
                     row.style.display = 'none';
                 }
             });
 
             const noResultsRow = document.getElementById('noResultsRow');
+            let noDataRow = document.getElementById('noDataRow');
 
-            if (noResultsRow) {
-                if (rows.length > 0 && visibleCount === 0) {
-                    noResultsRow.style.display = '';
-                } else {
-                    noResultsRow.style.display = 'none';
+            if (rows.length === 0) {
+                if (!noDataRow) {
+                    const tbody = document.getElementById('informesTableBody');
+                    noDataRow = document.createElement('tr');
+                    noDataRow.id = 'noDataRow';
+                    noDataRow.innerHTML = `<td colspan="8" class="no-records-row">No se han registrado informes todavía.</td>`;
+                    tbody.appendChild(noDataRow);
+                }
+                noDataRow.style.display = '';
+                if (noResultsRow) noResultsRow.style.display = 'none';
+            } else {
+                if (noDataRow) noDataRow.style.display = 'none';
+                if (noResultsRow) {
+                    if (visibleCount === 0) {
+                        noResultsRow.style.display = '';
+                    } else {
+                        noResultsRow.style.display = 'none';
+                    }
                 }
             }
         }
@@ -1113,6 +1129,8 @@
         document.getElementById('filterPeriodo').addEventListener('change', applyFilters);
         document.getElementById('filterAnio').addEventListener('change', applyFilters);
         document.getElementById('filterMes').addEventListener('change', applyFilters);
+
+        let informeToDeleteId = null;
 
         // 2. Modal de Eliminación
         function openDeleteModal(id, cursoNombre) {
@@ -1126,45 +1144,56 @@
             document.getElementById('deleteInformeModal').classList.remove('active');
         }
 
-        function executeDeleteInforme() {
+        async function executeDeleteInforme() {
             if (!informeToDeleteId) return;
 
+            const targetId = informeToDeleteId;
             const btn = document.getElementById('btnConfirmDelete');
             btn.disabled = true;
             btn.textContent = 'ELIMINANDO...';
 
-            fetch(`/docente/informes/${informeToDeleteId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(res => res.json().then(data => ({ status: res.status, body: data })))
-            .then(({ status, body }) => {
+            try {
+                const response = await fetch(`{{ url('/docente/informes') }}/${targetId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
                 btn.disabled = false;
                 btn.textContent = 'CONFIRMAR';
                 closeDeleteModal();
 
-                if (status === 200 && body.success) {
-                    showToast(body.message, 'success');
-                    const row = document.getElementById(`row-informe-${informeToDeleteId}`);
+                if (response.ok && data.success) {
+                    showToast(data.message || 'Informe eliminado permanentemente.', 'success');
+
+                    // Remover la fila de la tabla inmediatamente con animación
+                    const row = document.getElementById(`row-informe-${targetId}`);
                     if (row) {
-                        row.remove();
+                        row.style.transition = 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+                        row.style.opacity = '0';
+                        row.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            row.remove();
+                            applyFilters(); // Recalcular numeración 1., 2., 3. y estado vacío si aplica
+                        }, 250);
+                    } else {
+                        applyFilters();
                     }
-                    applyFilters();
                 } else {
-                    showToast(body.message || 'Error al eliminar el informe.', 'error');
+                    showToast(data.message || 'Error al eliminar el informe.', 'error');
                 }
-            })
-            .catch(err => {
-                console.error(err);
+            } catch (err) {
+                console.error('Error al eliminar informe:', err);
                 btn.disabled = false;
                 btn.textContent = 'CONFIRMAR';
                 closeDeleteModal();
                 showToast('Error de conexión con el servidor.', 'error');
-            });
+            }
         }
 
         // 3. Helper de Toast
