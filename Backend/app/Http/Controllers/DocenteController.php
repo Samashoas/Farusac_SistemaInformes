@@ -423,4 +423,46 @@ class DocenteController extends Controller
 
         return view('docente.ver_informe_pdf', compact('user', 'informe'));
     }
+
+    /**
+     * Muestra la vista de perfil del docente.
+     */
+    public function perfilView()
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return view('docente.perfil', compact('user'));
+    }
+
+    /**
+     * Actualiza la información editable del perfil del docente (Teléfono).
+     */
+    public function actualizarPerfil(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $request->validate([
+            'numero' => 'nullable|string|max:20',
+        ], [
+            'numero.max' => 'El número de teléfono no puede exceder los 20 caracteres.',
+        ]);
+
+        try {
+            $user->numero = $request->input('numero');
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Perfil actualizado exitosamente.',
+                'numero' => $user->numero
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el perfil: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
