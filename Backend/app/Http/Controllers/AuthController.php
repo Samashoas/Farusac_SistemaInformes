@@ -73,18 +73,19 @@ class AuthController extends Controller{
     }
     
     private function redirectBasedOnRole($rol){
-            switch($rol){
-                case 'administrador':
-                    return redirect()->route('admin.dashboard');
-                case 'jefe':
-                    return redirect()->route('jefe.dashboard');
-                case 'docente':
-                    return redirect()->route('docente.dashboard');
-                default:
-                    Auth::logout();
-                    return redirect('/')->withErrors(['correo' => 'Rol invalido']);
-            }
+        $rolClean = strtolower(trim($rol));
+        switch($rolClean){
+            case 'administrador':
+                return redirect()->route('admin.dashboard');
+            case 'coordinador':
+                return redirect()->route('coordinador.dashboard');
+            case 'docente':
+                return redirect()->route('docente.dashboard');
+            default:
+                Auth::logout();
+                return redirect('/')->withErrors(['correo' => 'Rol invalido (' . $rol . ')']);
         }
+    }
     
     public function logout(Request $request){
         Auth::Logout();

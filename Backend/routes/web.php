@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DocenteController;
+use App\Http\Controllers\CoordinadorController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -30,8 +31,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/docente/informes/{id}/ver', [DocenteController::class, 'verInforme'])->name('docente.informes.ver');
     });
 
-    Route::middleware('role:jefe')->group(function () {
-        Route::get('/jefe/panel', function () { return view('jefe.dashboard'); })->name('jefe.dashboard');
+    Route::middleware('role:coordinador')->group(function () {
+        Route::get('/coordinador/panel', [CoordinadorController::class, 'dashboard'])->name('coordinador.dashboard');
+        Route::post('/coordinador/area/seleccionar', [CoordinadorController::class, 'seleccionarArea'])->name('coordinador.area.seleccionar');
+        Route::get('/coordinador/perfil', [CoordinadorController::class, 'perfilView'])->name('coordinador.perfil');
+        Route::put('/coordinador/perfil', [CoordinadorController::class, 'actualizarPerfil'])->name('coordinador.perfil.actualizar');
+        Route::post('/coordinador/cursos/asignar', [CoordinadorController::class, 'asignarCurso'])->name('coordinador.cursos.asignar');
+        Route::delete('/coordinador/cursos/{id}', [CoordinadorController::class, 'desasignarCurso'])->name('coordinador.cursos.desasignar');
+        Route::get('/coordinador/informes', [CoordinadorController::class, 'historialInformes'])->name('coordinador.informes');
+        Route::get('/coordinador/informes/crear', [CoordinadorController::class, 'crearInformeView'])->name('coordinador.informes.crear');
+        Route::post('/coordinador/informes', [CoordinadorController::class, 'guardarInforme'])->name('coordinador.informes.guardar');
+        Route::get('/coordinador/informes/{id}/editar', [CoordinadorController::class, 'editarInformeView'])->name('coordinador.informes.editar');
+        Route::put('/coordinador/informes/{id}', [CoordinadorController::class, 'actualizarInforme'])->name('coordinador.informes.actualizar');
+        Route::delete('/coordinador/informes/{id}', [CoordinadorController::class, 'eliminarInforme'])->name('coordinador.informes.eliminar');
+        Route::get('/coordinador/informes/{id}/ver', [CoordinadorController::class, 'verInforme'])->name('coordinador.informes.ver');
     });
 
     Route::middleware('role:administrador')->group(function () {

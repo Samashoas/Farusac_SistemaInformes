@@ -1089,8 +1089,8 @@
                             <select id="rolFilter" class="select-filter">
                                 <option value="todos">Todos</option>
                                 <option value="administrador">Administrador</option>
+                                <option value="coordinador">Coordinador</option>
                                 <option value="docente">Docente</option>
-                                <option value="jefe">Jefe</option>
                             </select>
                         </div>
 
@@ -1179,9 +1179,9 @@
                 <div class="form-group">
                     <label for="newUserRole" class="modal-form-label">Rol</label>
                     <select id="newUserRole" class="select-filter" style="width: 100%;" required>
-                        <option value="administrador">Administrador</option>
-                        <option value="jefe">Jefe</option>
                         <option value="docente">Docente</option>
+                        <option value="coordinador">Coordinador</option>
+                        <option value="administrador">Administrador</option>
                     </select>
                 </div>
 
@@ -1230,9 +1230,9 @@
                 <div class="form-group">
                     <label for="editUserRole" class="modal-form-label">Rol</label>
                     <select id="editUserRole" class="select-filter" style="width: 100%;" required>
-                        <option value="administrador">Administrador</option>
-                        <option value="jefe">Jefe</option>
                         <option value="docente">Docente</option>
+                        <option value="coordinador">Coordinador</option>
+                        <option value="administrador">Administrador</option>
                     </select>
                 </div>
 

@@ -732,7 +732,7 @@
         const moduleInfo = {
             carga: {
                 title: 'Carga de Datos',
-                description: 'Este módulo permite la carga masiva de usuarios (docentes, jefes y administradores) mediante un archivo estructurado en formato CSV. Facilita la administración rápida de cuentas autorizadas para acceder al sistema.',
+                description: 'Este módulo permite la carga masiva de usuarios (docentes, coordinadores y administradores) mediante un archivo estructurado en formato CSV. Facilita la administración rápida de cuentas autorizadas para acceder al sistema.',
                 image: "{{ asset('images/Admin/CargaDatos.png') }}"
             },
             usuarios: {

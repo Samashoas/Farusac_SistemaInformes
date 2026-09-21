@@ -18,6 +18,7 @@ class User extends Authenticatable{
         'numero',
         'rol',
         'plaza',
+        'area',
         'estado',
         'google_id',
     ];

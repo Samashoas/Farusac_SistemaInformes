@@ -84,7 +84,7 @@ class AdminController extends Controller
             'nombre' => 'required|string|max:150',
             'correo' => 'required|email|max:100|unique:usuarios,correo',
             'numero' => 'required|string|max:30',
-            'rol' => 'required|in:docente,jefe,administrador',
+            'rol' => 'required|in:docente,coordinador,administrador',
             'plaza' => 'required|in:titular + ampliacion,titular,interino',
         ]);
 
@@ -109,7 +109,7 @@ class AdminController extends Controller
 
         $request->validate([
             'numero' => 'required|string|max:30',
-            'rol' => 'required|in:docente,jefe,administrador',
+            'rol' => 'required|in:docente,coordinador,administrador',
             'plaza' => 'required|in:titular + ampliacion,titular,interino',
         ]);
 
