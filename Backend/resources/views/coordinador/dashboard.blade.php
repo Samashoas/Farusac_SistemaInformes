@@ -303,10 +303,24 @@
             align-items: center;
             justify-content: center;
             min-height: calc(100vh - 90px);
+            position: relative;
         }
 
         .main-content.expanded {
             margin-left: 0;
+        }
+
+        /* SECCIÓN SUPERIOR ANCLADA ARRIBA (ÁREA + SWITCH) */
+        .dashboard-top-section {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 10;
         }
 
         /* BANNER DE ÁREA A CARGO */
@@ -318,9 +332,9 @@
             background: #ffffff;
             border: 1.5px solid #cbd5e1;
             border-radius: 30px;
-            padding: 8px 24px;
+            padding: 6px 20px;
             box-shadow: 0 4px 15px rgba(0, 45, 114, 0.06);
-            margin-bottom: 25px;
+            margin: 0;
             animation: fadeIn 0.4s ease;
         }
 
@@ -340,14 +354,144 @@
         }
 
         .area-name-pill {
-            background: linear-gradient(135deg, var(--color-azul), #1d4ed8);
-            color: #ffffff;
-            padding: 5px 16px;
+            background: linear-gradient(135deg, rgba(0, 45, 114, 0.09) 0%, rgba(172, 132, 0, 0.13) 50%, rgba(185, 71, 0, 0.09) 100%);
+            color: var(--color-azul);
+            border: 1px solid rgba(0, 45, 114, 0.16);
+            padding: 4px 16px;
             border-radius: 20px;
             font-family: 'Outfit', sans-serif;
             font-size: 13px;
             font-weight: 700;
             letter-spacing: 0.02em;
+            box-shadow: 0 2px 6px rgba(0, 45, 114, 0.04);
+        }
+
+        /* --- SWITCH DE VISTAS (DOCENTE / COORDINADOR) --- */
+        .view-switch-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            width: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view-switch {
+            display: inline-flex;
+            background-color: #e2e8f0;
+            border-radius: 35px;
+            padding: 5px;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06);
+            gap: 6px;
+        }
+
+        .switch-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 24px;
+            border: none;
+            background: transparent;
+            border-radius: 30px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            user-select: none;
+        }
+
+        .switch-btn .switch-icon {
+            width: 18px;
+            height: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .switch-btn:hover:not(.active) {
+            color: var(--color-azul);
+        }
+
+        .switch-btn.active {
+            background: linear-gradient(135deg, var(--color-azul), #1d4ed8);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(0, 45, 114, 0.25);
+        }
+
+        .switch-btn.active .switch-icon {
+            color: #ffffff;
+        }
+
+        /* --- SECCIÓN VISTA COORDINADOR --- */
+        .coordinador-content-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 1000px;
+            animation: fadeIn 0.4s ease;
+            margin: auto 0;
+            padding: 20px;
+        }
+
+        .coordinador-placeholder-card {
+            background: #ffffff;
+            border-radius: var(--border-radius-card);
+            border: 1.5px solid var(--color-borde);
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 750px;
+            text-align: center;
+            box-shadow: var(--shadow-premium);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .coordinador-placeholder-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--color-azul), var(--color-oro), var(--color-terracota));
+        }
+
+        .coordinador-placeholder-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px auto;
+            border-radius: 50%;
+            background: rgba(0, 45, 114, 0.07);
+            color: var(--color-azul);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .coordinador-placeholder-icon svg {
+            width: 36px;
+            height: 36px;
+        }
+
+        .coordinador-placeholder-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--color-texto-principal);
+            margin-bottom: 10px;
+        }
+
+        .coordinador-placeholder-subtitle {
+            font-size: 14px;
+            color: var(--color-texto-secundario);
+            line-height: 1.6;
+            max-width: 520px;
+            margin: 0 auto;
         }
 
         /* --- CONTENEDOR DE CÍRCULOS (GRID / LISTA) --- */
@@ -910,58 +1054,96 @@
         <!-- Cuerpo Principal -->
         <main class="main-content expanded" id="mainContent">
 
-            @php
-                $areaActual = $user->area ?? session('coordinador_area');
-            @endphp
-
-            @if ($areaActual)
-                <!-- Banner de Área a Cargo -->
-                <div class="area-badge-banner">
-                    <div class="area-badge-info">
-                        <span class="area-label-title">Área a Cargo:</span>
-                        <span class="area-name-pill" id="currentAreaDisplay">{{ $areaActual }}</span>
-                    </div>
-                </div>
-            @endif
-
-            <!-- CONTENEDOR DE CÍRCULOS (GRID DE CURSOS DEL COORDINADOR) -->
-            <div class="circles-dashboard-container" id="coursesGrid">
-
-                <!-- Renderizado de Cursos Asignados -->
-                @foreach ($cursosAsignados as $curso)
-                    <div class="circle-card-item" id="curso-item-{{ $curso->id }}" onclick="window.location.href='{{ route('coordinador.informes.crear') }}?curso_id={{ $curso->id }}'">
-                        <button type="button" class="btn-unassign-course" title="Remover curso" onclick="event.stopPropagation(); unassignCourse({{ $curso->id }}, '{{ addslashes($curso->nombre_curso) }}', '{{ $curso->seccion }}')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                        <div class="circle-shape">
-                            <svg class="circle-course-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <!-- BARRA SUPERIOR DE CONTROL (SWITCH ARRIBA + ÁREA DEBAJO) -->
+            <div class="dashboard-top-section">
+                <!-- 1. SWITCH DE VISTAS (INFORMES DOCENTE / INFORMES DE COORDINADOR) -->
+                <div class="view-switch-container">
+                    <div class="view-switch">
+                        <button type="button" class="switch-btn active" id="btnSwitchDocente" onclick="switchView('docente')">
+                            <svg class="switch-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
-                        </div>
-                        <div class="circle-label">
-                            {{ $curso->nombre_curso }} - {{ $curso->seccion }}
-                        </div>
-                    </div>
-                @endforeach
-
-                <!-- Círculo: Agregar nuevo Curso -->
-                <div class="circle-card-item circle-card-add" id="btnOpenModal" onclick="openAddCourseModal()">
-                    <div class="circle-add-shape">
-                        <div class="circle-inner-dashed">
-                            <svg class="circle-add-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <span>Informes Docente</span>
+                        </button>
+                        <button type="button" class="switch-btn" id="btnSwitchCoordinador" onclick="switchView('coordinador')">
+                            <svg class="switch-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                        </div>
-                    </div>
-                    <div class="circle-label">
-                        Agregar nuevo Curso
+                            <span>Informes de Coordinador</span>
+                        </button>
                     </div>
                 </div>
 
+                @php
+                    $areaActual = $user->area ?? session('coordinador_area');
+                @endphp
+
+                @if ($areaActual)
+                    <!-- 2. Banner de Área a Cargo (Color diferenciado) -->
+                    <div class="area-badge-banner">
+                        <div class="area-badge-info">
+                            <span class="area-label-title">Área a Cargo:</span>
+                            <span class="area-name-pill" id="currentAreaDisplay">{{ $areaActual }}</span>
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+            <!-- 1. VISTA: INFORMES DOCENTE (CÍRCULOS DE CURSOS ASIGNADOS) -->
+            <div id="docenteViewSection" style="display: flex; width: 100%; justify-content: center;">
+                <div class="circles-dashboard-container" id="coursesGrid">
+
+                    <!-- Renderizado de Cursos Asignados -->
+                    @foreach ($cursosAsignados as $curso)
+                        <div class="circle-card-item" id="curso-item-{{ $curso->id }}" onclick="window.location.href='{{ route('coordinador.informes.crear') }}?curso_id={{ $curso->id }}'">
+                            <button type="button" class="btn-unassign-course" title="Remover curso" onclick="event.stopPropagation(); unassignCourse({{ $curso->id }}, '{{ addslashes($curso->nombre_curso) }}', '{{ $curso->seccion }}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                            <div class="circle-shape">
+                                <svg class="circle-course-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                            </div>
+                            <div class="circle-label">
+                                {{ $curso->nombre_curso }} - {{ $curso->seccion }}
+                            </div>
+                        </div>
+                    @endforeach
+
+                    <!-- Círculo: Agregar nuevo Curso -->
+                    <div class="circle-card-item circle-card-add" id="btnOpenModal" onclick="openAddCourseModal()">
+                        <div class="circle-add-shape">
+                            <div class="circle-inner-dashed">
+                                <svg class="circle-add-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="circle-label">
+                            Agregar nuevo Curso
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 2. VISTA: INFORMES DE COORDINADOR (ESTRUCTURA PARA FORMULARIO/GESTIÓN) -->
+            <div id="coordinadorViewSection" class="coordinador-content-section">
+                <div class="coordinador-placeholder-card">
+                    <div class="coordinador-placeholder-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="coordinador-placeholder-title">Módulo de Informes de Coordinador</h3>
+                    <p class="coordinador-placeholder-subtitle">
+                        Vista de coordinación para el <strong>{{ $areaActual ?? 'Área Asignada' }}</strong>. Este espacio está preparado para el formulario y control de informes del coordinador.
+                    </p>
+                </div>
             </div>
 
         </main>
@@ -1439,8 +1621,37 @@
             }, 3500);
         }
 
+        // --- CONTROL DEL SWITCH DE VISTAS (DOCENTE / COORDINADOR) ---
+        function switchView(view) {
+            const btnDocente = document.getElementById('btnSwitchDocente');
+            const btnCoordinador = document.getElementById('btnSwitchCoordinador');
+            const docenteSection = document.getElementById('docenteViewSection');
+            const coordinadorSection = document.getElementById('coordinadorViewSection');
+
+            if (!btnDocente || !btnCoordinador || !docenteSection || !coordinadorSection) return;
+
+            if (view === 'docente') {
+                btnDocente.classList.add('active');
+                btnCoordinador.classList.remove('active');
+                docenteSection.style.display = 'flex';
+                coordinadorSection.style.display = 'none';
+                try { localStorage.setItem('coordinador_active_view', 'docente'); } catch(e){}
+            } else {
+                btnCoordinador.classList.add('active');
+                btnDocente.classList.remove('active');
+                docenteSection.style.display = 'none';
+                coordinadorSection.style.display = 'flex';
+                try { localStorage.setItem('coordinador_active_view', 'coordinador'); } catch(e){}
+            }
+        }
+
         // --- TOGGLE DE HEADER Y SIDEBAR ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Restaurar vista seleccionada previamente
+            let savedView = 'docente';
+            try { savedView = localStorage.getItem('coordinador_active_view') || 'docente'; } catch(e){}
+            switchView(savedView);
+
             const profileToggle = document.getElementById('profileToggle');
             const profileDropdown = document.getElementById('profileDropdown');
             const hamburgerBtn = document.getElementById('hamburgerBtn');
