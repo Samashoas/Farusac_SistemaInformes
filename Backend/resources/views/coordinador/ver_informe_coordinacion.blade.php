@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informe - {{ $informe->curso->nombre_curso ?? 'Curso' }} - {{ $informe->mes }}
-        {{ $informe->curso->anio ?? '' }}</title>
+    <title>Informe de Coordinación - {{ $informe->area }} - {{ $informe->mes }} {{ $informe->anio }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,12 +31,12 @@
             color: var(--color-texto);
             background-color: #f1f5f9;
             padding: 40px 20px;
-            font-size: 13px;
+            font-size: 12.5px;
             line-height: 1.5;
         }
 
         .no-print-bar {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto 20px auto;
             display: flex;
             align-items: center;
@@ -83,7 +82,7 @@
 
         /* --- HOJA DEL DOCUMENTO OFICIAL --- */
         .document-page {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background-color: #ffffff;
             padding: 0;
@@ -157,7 +156,6 @@
             margin-bottom: 12px;
             padding-bottom: 12px;
             border-bottom: 1px solid #e2e8f0;
-            flex-wrap: nowrap;
             width: 100%;
         }
 
@@ -207,132 +205,138 @@
             font-family: 'Outfit', sans-serif;
             font-size: 16px;
             font-weight: 800;
-            color: #b91c1c;
+            color: var(--color-azul-oscuro);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.04em;
             line-height: 1.2;
         }
 
-        /* --- SECCIONES Y TABLAS --- */
+        .general-info-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .info-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .field-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .field-val {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-texto);
+            word-break: break-word;
+        }
+
         .section-box {
             margin-bottom: 20px;
             break-inside: auto;
             page-break-inside: auto;
         }
 
-        .section-title {
+        .section-header-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 13px;
+            font-size: 13.5px;
             font-weight: 800;
             color: var(--color-azul-oscuro);
             text-transform: uppercase;
-            letter-spacing: 0.03em;
-            background-color: #f1f5f9;
-            padding: 6px 12px;
-            border-left: 4px solid var(--color-azul-oscuro);
-            margin-bottom: 12px;
+            margin-bottom: 5px;
+            letter-spacing: 0.02em;
         }
 
-        .grid-info {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px 16px;
-            font-size: 12.5px;
-            width: 100%;
-        }
-
-        .info-row {
-            display: flex;
-            gap: 6px;
-            min-width: 0;
-            align-items: baseline;
-        }
-
-        .info-label {
-            font-weight: 700;
-            color: #475569;
-            white-space: nowrap;
-            flex-shrink: 0;
+        .section-subtitle {
             font-size: 11.5px;
+            color: #64748b;
+            margin-bottom: 8px;
+            font-style: italic;
         }
 
-        .info-value {
-            font-weight: 500;
-            color: #0f172a;
+        .competencia-content {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 12.5px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            word-break: break-word;
+        }
+
+        /* TABLAS FORMALIZADAS */
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+            margin-top: 8px;
+            border: 1px solid #cbd5e1;
+            table-layout: fixed;
+        }
+
+        .doc-table th {
+            background-color: #f1f5f9;
+            color: var(--color-azul-oscuro);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            padding: 7px 8px;
+            border: 1px solid #cbd5e1;
+            text-align: left;
+            font-size: 10.5px;
+            text-transform: uppercase;
             word-break: break-word;
             overflow-wrap: break-word;
-            min-width: 0;
-            font-size: 12.5px;
         }
 
-        .info-value a {
+        .doc-table td {
+            padding: 7px 8px;
+            border: 1px solid #cbd5e1;
+            vertical-align: middle;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .doc-table tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .tag-si {
+            color: #166534;
+            font-weight: 700;
+        }
+
+        .tag-no {
+            color: #991b1b;
+            font-weight: 700;
+        }
+
+        .link-url {
             color: #2563eb;
             text-decoration: none;
             word-break: break-all;
         }
 
-        .info-value a:hover {
+        .link-url:hover {
             text-decoration: underline;
         }
 
-        /* Tabla de semanas */
-        .table-semanas {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 12px;
-            table-layout: fixed;
-            border: 1px solid var(--color-borde);
-        }
-
-        .table-semanas th {
-            background-color: #f8fafc;
-            color: var(--color-azul-oscuro);
-            font-family: 'Outfit', sans-serif;
-            font-weight: 800;
-            text-align: left;
-            padding: 8px 10px;
-            border: 1px solid var(--color-borde);
-            text-transform: uppercase;
-            font-size: 11px;
-            word-break: break-word;
-            overflow-wrap: break-word;
-        }
-
-        .table-semanas td {
-            padding: 8px 10px;
-            border: 1px solid var(--color-borde);
-            vertical-align: top;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            line-height: 1.4;
-        }
-
-        .table-semanas tr {
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-
-        .badge-semana {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 800;
-            color: var(--color-azul-oscuro);
-            white-space: nowrap;
-        }
-
-        .text-block-value {
-            background-color: #f8fafc;
-            border: 1px solid var(--color-borde);
-            border-radius: 6px;
-            padding: 12px 14px;
-            font-size: 12.5px;
-            line-height: 1.55;
-            color: #334155;
-            white-space: pre-line;
-            word-break: break-word;
-        }
-
-        /* --- PIE DE PÁGINA INSTITUCIONAL FARUSAC --- */
+        /* --- PIE DE PÁGINA INSTITUCIONAL --- */
         .doc-footer-official {
             margin: 0;
             width: 100%;
@@ -343,7 +347,7 @@
             font-family: 'Outfit', sans-serif;
             font-size: 12.5px;
             font-weight: 700;
-            color: #0b2341;
+            color: var(--color-azul-oscuro);
             padding-bottom: 8px;
             background-color: #ffffff;
             letter-spacing: 0.01em;
@@ -438,7 +442,6 @@
             flex-shrink: 0;
         }
 
-        /* --- IMPRESIÓN --- */
         @media print {
             @page {
                 size: letter portrait;
@@ -561,89 +564,64 @@
                 margin-bottom: 8px !important;
             }
 
+            .general-info-box {
+                padding: 7px 12px !important;
+                gap: 8px !important;
+                margin-bottom: 10px !important;
+            }
+
+            .field-label {
+                font-size: 9.5px !important;
+            }
+
+            .field-val {
+                font-size: 11.5px !important;
+            }
+
             .section-box {
                 margin-bottom: 12px !important;
             }
 
-            .section-title {
-                font-size: 11.5px !important;
-                padding: 4px 8px !important;
-                margin-bottom: 8px !important;
-                background-color: #f1f5f9 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+            .section-header-title {
+                font-size: 12px !important;
+                margin-bottom: 2px !important;
             }
 
-            .grid-info {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-                gap: 4px 12px !important;
-                width: 100% !important;
-                font-size: 11px !important;
+            .section-subtitle {
+                font-size: 10.5px !important;
+                margin-bottom: 4px !important;
             }
 
-            .info-row {
-                display: flex !important;
-                gap: 4px !important;
-                min-width: 0 !important;
-                align-items: baseline !important;
-            }
-
-            .info-label {
-                font-size: 11px !important;
-                font-weight: 700 !important;
-                color: #475569 !important;
-                white-space: nowrap !important;
-                flex-shrink: 0 !important;
-            }
-
-            .info-value {
-                font-size: 11px !important;
-                font-weight: 500 !important;
-                color: #0f172a !important;
-                word-break: break-word !important;
-                overflow-wrap: break-word !important;
-                min-width: 0 !important;
-            }
-
-            .info-value a {
-                word-break: break-all !important;
-                font-size: 10px !important;
-            }
-
-            .table-semanas {
-                font-size: 10px !important;
+            .doc-table {
+                font-size: 9.5px !important;
                 width: 100% !important;
                 table-layout: fixed !important;
                 border-collapse: collapse !important;
             }
 
-            .table-semanas th {
-                background-color: #f1f5f9 !important;
-                padding: 4px 5px !important;
-                font-size: 10px !important;
+            .doc-table th {
+                padding: 4px 4px !important;
+                font-size: 9px !important;
                 line-height: 1.2 !important;
                 word-break: break-word !important;
                 overflow-wrap: break-word !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
 
-            .table-semanas td {
-                padding: 4px 5px !important;
-                font-size: 10px !important;
-                line-height: 1.3 !important;
+            .doc-table td {
+                padding: 4px 4px !important;
+                font-size: 9.5px !important;
+                line-height: 1.25 !important;
                 word-break: break-word !important;
                 overflow-wrap: break-word !important;
             }
 
-            .table-semanas tr {
+            .doc-table tr {
                 page-break-inside: avoid;
                 break-inside: avoid;
             }
 
-            .text-block-value {
-                padding: 8px 10px !important;
+            .competencia-content {
+                padding: 6px 10px !important;
                 font-size: 10.5px !important;
             }
 
@@ -725,70 +703,37 @@
                 print-color-adjust: exact !important;
             }
         }
-
-        @if(request()->has('embed'))
-            body {
-                padding: 15px 12px;
-                background-color: #f8fafc;
-            }
-
-            .document-page {
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-                border-radius: 12px;
-                margin: 0 auto;
-                padding: 0;
-            }
-
-            .report-header-wrapper {
-                padding: 20px 20px 0 20px;
-            }
-
-            .report-body-wrapper {
-                padding: 10px 20px 20px 20px;
-            }
-
-            .report-footer-wrapper {
-                padding: 0;
-            }
-
-        @endif
     </style>
 </head>
 
 <body>
 
-    @if(!request()->has('embed'))
-        <!-- BARRA SUPERIOR DE ACCIONES -->
-        <div class="no-print-bar">
-            @php
-                $backRoute = (Auth::user() && Auth::user()->rol === 'coordinador') ? route('coordinador.informes') : route('docente.informes');
-            @endphp
-            <a href="{{ $backRoute }}" class="btn-action btn-back">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-                Volver al Historial
-            </a>
-            <button type="button" class="btn-action btn-print" onclick="window.print()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                Imprimir / Guardar PDF
-            </button>
-        </div>
-    @endif
+    <div class="no-print-bar">
+        <a href="{{ route('coordinador.dashboard') }}" class="btn-action btn-back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Volver al Panel</span>
+        </a>
+        <button type="button" class="btn-action btn-print" onclick="window.print()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            <span>Imprimir / Exportar PDF</span>
+        </button>
+    </div>
 
-    <!-- PÁGINA DEL INFORME -->
     <div class="document-page">
         <table class="report-table-layout">
             <thead>
                 <tr>
                     <td>
                         <div class="report-header-wrapper">
-                            <!-- ENCABEZADO OFICIAL FARUSAC -->
-                            <div class="doc-header">
+                            <!-- Header con Logos Oficiales FARUSAC -->
+                            <header class="doc-header">
                                 <div class="header-logos-container">
                                     <img src="{{ asset('images/InformePDF/logos-usac-farusac.png') }}"
                                         alt="Logo USAC - FARUSAC" class="logo-item logo-usac-farusac">
@@ -800,9 +745,9 @@
                                         alt="Logo Acreditadora CEAI" class="logo-item logo-acreditadora">
                                 </div>
                                 <div class="doc-title-block">
-                                    <div class="doc-report-name">INFORME MENSUAL DE ACTIVIDADES DOCENTES</div>
+                                    <div class="doc-report-name">INFORME MENSUAL DE ACTIVIDADES DE COORDINACIÓN</div>
                                 </div>
-                            </div>
+                            </header>
                         </div>
                     </td>
                 </tr>
@@ -819,151 +764,237 @@
                 <tr>
                     <td>
                         <div class="report-body-wrapper">
-                            <!-- 1. INFORMACIÓN GENERAL -->
-                            <div class="section-box">
-                                <div class="section-title">1. INFORMACIÓN GENERAL DEL CURSO Y DOCENTE</div>
-                                <div class="grid-info">
-                                    <div class="info-row">
-                                        <span class="info-label">Docente:</span>
-                                        <span class="info-value">{{ $user->nombre }}</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Correo Institucional:</span>
-                                        <span class="info-value">{{ $user->correo }}</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Curso:</span>
-                                        <span
-                                            class="info-value">{{ $informe->curso->nombre_curso ?? 'Sin asignar' }}</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Código de Curso:</span>
-                                        <span class="info-value">{{ $informe->curso->codigo_curso ?? '—' }}</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Sección:</span>
-                                        <span class="info-value">{{ $informe->curso->seccion ?? '—' }}</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Carrera / Área:</span>
-                                        <span class="info-value">{{ $informe->curso->carrera ?? '—' }}
-                                            ({{ $informe->curso->area ?? '—' }})</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Año y Periodo:</span>
-                                        <span class="info-value">{{ $informe->curso->anio ?? '' }} -
-                                            {{ $informe->periodo }}</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Mes Reportado:</span>
-                                        <span class="info-value"
-                                            style="font-weight: 700; color: var(--color-azul-oscuro);">{{ $informe->mes }}</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Estudiantes Asignados:</span>
-                                        <span class="info-value">{{ $informe->estudiantes_asignados }}</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Fecha de Envío:</span>
-                                        <span
-                                            class="info-value">{{ date('d/m/Y H:i', strtotime($informe->created_at)) }}</span>
-                                    </div>
+                            <!-- Datos Generales -->
+                            <div class="general-info-box">
+                                <div class="info-field-group">
+                                    <span class="field-label">Área:</span>
+                                    <span class="field-val">{{ $informe->area }}</span>
+                                </div>
+                                <div class="info-field-group">
+                                    <span class="field-label">Mes y año:</span>
+                                    <span class="field-val">{{ $informe->mes }} {{ $informe->anio }}</span>
+                                </div>
+                                <div class="info-field-group">
+                                    <span class="field-label">Coordinador(a):</span>
+                                    <span class="field-val">{{ $informe->usuario->nombre ?? $user->nombre }}</span>
                                 </div>
                             </div>
 
-                            <!-- 2. ENLACES Y PLATAFORMAS -->
-                            <div class="section-box">
-                                <div class="section-title">2. ENLACES DE EVIDENCIA Y PLATAFORMAS VIRTUALES</div>
-                                <div class="grid-info" style="grid-template-columns: 1fr;">
-                                    <div class="info-row">
-                                        <span class="info-label">Listado Oficial de Asistencia:</span>
-                                        <span class="info-value">
-                                            @if ($informe->listado_asistencia_url)
-                                                <a href="{{ $informe->listado_asistencia_url }}"
-                                                    target="_blank">{{ $informe->listado_asistencia_url }}</a>
-                                            @else
-                                                <span style="color: #94a3b8;">No especificado</span>
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Enlace a Evidencias (Drive):</span>
-                                        <span class="info-value">
-                                            @if ($informe->enlace_evidencia_url)
-                                                <a href="{{ $informe->enlace_evidencia_url }}"
-                                                    target="_blank">{{ $informe->enlace_evidencia_url }}</a>
-                                            @else
-                                                <span style="color: #94a3b8;">No especificado</span>
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Enlace de Clases (Meet / Zoom):</span>
-                                        <span class="info-value">
-                                            @if ($informe->enlace_meet_zoom_url)
-                                                <a href="{{ $informe->enlace_meet_zoom_url }}"
-                                                    target="_blank">{{ $informe->enlace_meet_zoom_url }}</a>
-                                            @else
-                                                <span style="color: #94a3b8;">No especificado</span>
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="info-label">Enlace de Aula (Classroom / Drive):</span>
-                                        <span class="info-value">
-                                            @if ($informe->enlace_classroom_drive_url)
-                                                <a href="{{ $informe->enlace_classroom_drive_url }}"
-                                                    target="_blank">{{ $informe->enlace_classroom_drive_url }}</a>
-                                            @else
-                                                <span style="color: #94a3b8;">No especificado</span>
-                                            @endif
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 3. ESTRATEGIAS DE EVALUACIÓN -->
-                            @if ($informe->estrategias_evaluacion)
-                                <div class="section-box">
-                                    <div class="section-title">3. ESTRATEGIAS DE EVALUACIÓN APLICADAS</div>
-                                    <div class="text-block-value">
-                                        {{ $informe->estrategias_evaluacion }}
-                                    </div>
-                                </div>
-                            @endif
-
-                            <!-- 4. REGISTRO SEMANAL DE ACTIVIDADES -->
-                            <div class="section-box">
-                                <div class="section-title">4. REGISTRO SEMANAL DE ACTIVIDADES Y METODOLOGÍAS</div>
-                                <table class="table-semanas">
+                            <!-- 1. COMPETENCIA DEL ÁREA -->
+                            <section class="section-box">
+                                <h2 class="section-header-title">1. COMPETENCIA DEL ÁREA:</h2>
+                                <p class="section-subtitle">Programas de las asignaturas (Solo en el primer mes del
+                                    semestre):</p>
+                                <table class="doc-table">
                                     <thead>
                                         <tr>
-                                            <th style="width: 13%;">Semana</th>
-                                            <th style="width: 35%;">Contenido y Actividad Realizada</th>
-                                            <th style="width: 12%; text-align: center;">Estudiantes Participantes</th>
-                                            <th style="width: 23%;">Metodologías Empleadas</th>
-                                            <th style="width: 17%;">Medios de Comunicación</th>
+                                            <th style="width: 35%;">Asignatura</th>
+                                            <th style="width: 65%;">Enlace a programa</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse ($informe->semanas as $sem)
+                                        @forelse ($informe->programas as $p)
                                             <tr>
-                                                <td class="badge-semana">Semana {{ $sem->numero_semana }}</td>
-                                                <td>{{ $sem->actividad_realizada }}</td>
-                                                <td style="text-align: center; font-weight: 700;">
-                                                    {{ $sem->estudiantes_participaron }}</td>
-                                                <td>{{ $sem->metodologias ?? '—' }}</td>
-                                                <td>{{ $sem->medios_comunicacion ?? '—' }}</td>
+                                                <td><strong>{{ $p->asignatura }}</strong></td>
+                                                <td>
+                                                    @if ($p->enlace_programa)
+                                                        <a href="{{ $p->enlace_programa }}" target="_blank"
+                                                            class="link-url">{{ $p->enlace_programa }}</a>
+                                                    @else
+                                                        <span style="color: #94a3b8;">No provisto</span>
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="5" style="text-align: center; color: #94a3b8;">No se
-                                                    registraron semanas de actividad.</td>
+                                                <td colspan="2" style="text-align: center; color: #94a3b8;">Sin programas
+                                                    registrados.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
                                 </table>
-                            </div>
+                            </section>
+
+                            <!-- 2. INFORMACIÓN GENERAL DE ASIGNATURAS IMPARTIDAS EN EL ÁREA -->
+                            <section class="section-box">
+                                <h2 class="section-header-title">2. INFORMACIÓN GENERAL DE ASIGNATURAS IMPARTIDAS EN EL
+                                    ÁREA:</h2>
+                                <p class="section-subtitle">Se coloca una fila por cada sección de asignatura.</p>
+
+                                <table class="doc-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">Docente a cargo</th>
+                                            <th style="width: 15%;">Asignatura</th>
+                                            <th style="width: 6%; text-align: center;">Sección</th>
+                                            <th style="width: 10%; text-align: center;">Presentó informe</th>
+                                            <th style="width: 9%; text-align: center;">Sala reuniones</th>
+                                            <th style="width: 9%; text-align: center;">Classroom / Meet</th>
+                                            <th style="width: 9%; text-align: center;">Eval.</th>
+                                            <th style="width: 9%; text-align: center;">Evidencias</th>
+                                            <th style="width: 18%;">Observaciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($informe->asignaturas as $asig)
+                                            <tr>
+                                                <td><strong>{{ $asig->docente_nombre }}</strong></td>
+                                                <td>{{ $asig->asignatura }}</td>
+                                                <td style="text-align: center;">{{ $asig->seccion }}</td>
+                                                <td style="text-align: center;">
+                                                    {!! $asig->presento_informe ? '<span class="tag-si">Sí</span>' : '<span class="tag-no">No</span>' !!}
+                                                </td>
+                                                <td style="text-align: center;">
+                                                    {!! $asig->tiene_sala_reuniones ? '<span class="tag-si">Sí</span>' : '<span class="tag-no">No</span>' !!}
+                                                </td>
+                                                <td style="text-align: center;">
+                                                    {!! $asig->funciona_enlace_virtual ? '<span class="tag-si">Sí</span>' : '<span class="tag-no">No</span>' !!}
+                                                </td>
+                                                <td style="text-align: center;">
+                                                    {!! $asig->funciona_enlace_evaluacion ? '<span class="tag-si">Sí</span>' : '<span class="tag-no">No</span>' !!}
+                                                </td>
+                                                <td style="text-align: center;">
+                                                    {!! $asig->evidencias_generales ? '<span class="tag-si">Sí</span>' : '<span class="tag-no">No</span>' !!}
+                                                </td>
+                                                <td>{{ $asig->observaciones ?? '—' }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="9" style="text-align: center; color: #94a3b8;">Sin asignaturas
+                                                    registradas.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+
+                                <div style="margin-top: 15px;">
+                                    <p><strong>Herramientas virtuales utilizadas para la docencia en línea:</strong></p>
+                                    <div class="competencia-content" style="margin-top: 6px;">
+                                        {{ $informe->herramientas_virtuales ?? 'No especificadas.' }}
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- 3. SÍNTESIS DE LOS INFORMES PRESENTADOS POR LOS DOCENTES -->
+                            <section class="section-box">
+                                <h2 class="section-header-title">3. SÍNTESIS DE LOS INFORMES PRESENTADOS POR LOS
+                                    DOCENTES</h2>
+
+                                <h3
+                                    style="font-size: 12.5px; font-weight: 700; color: var(--color-azul-oscuro); margin-top: 10px; margin-bottom: 4px;">
+                                    3.1. Avance del curso con relación a la programación mensual:
+                                </h3>
+                                <p class="section-subtitle">Se coloca una fila por cada sección de asignatura.</p>
+
+                                <table class="doc-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 22%;">Docente a cargo</th>
+                                            <th style="width: 22%;">Asignatura</th>
+                                            <th style="width: 8%; text-align: center;">Sección</th>
+                                            <th style="width: 12%; text-align: center;">% de avance</th>
+                                            <th style="width: 36%;">Observaciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($informe->avances as $av)
+                                            <tr>
+                                                <td><strong>{{ $av->docente_nombre }}</strong></td>
+                                                <td>{{ $av->asignatura }}</td>
+                                                <td style="text-align: center;">{{ $av->seccion }}</td>
+                                                <td style="text-align: center; font-weight: 700;">
+                                                    {{ $av->porcentaje_avance }}%</td>
+                                                <td>{{ $av->observaciones ?? '—' }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" style="text-align: center; color: #94a3b8;">Sin registros de
+                                                    avance.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+
+                                <h3
+                                    style="font-size: 12.5px; font-weight: 700; color: var(--color-azul-oscuro); margin-top: 20px; margin-bottom: 4px;">
+                                    3.2. Reporte de estudiantes con problemas para recibir el curso en línea:
+                                </h3>
+                                <table class="doc-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 28%;">Asignatura</th>
+                                            <th style="width: 8%; text-align: center;">Sección</th>
+                                            <th style="width: 24%; text-align: center;">Cantidad de estudiantes</th>
+                                            <th style="width: 40%;">Carné de los estudiantes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($informe->estudiantes as $est)
+                                            <tr>
+                                                <td><strong>{{ $est->asignatura }}</strong></td>
+                                                <td style="text-align: center;">{{ $est->seccion }}</td>
+                                                <td style="text-align: center; font-weight: 700;">
+                                                    {{ $est->cantidad_estudiantes }}</td>
+                                                <td>{{ $est->carne_estudiantes ?? '—' }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" style="text-align: center; color: #94a3b8;">Sin estudiantes
+                                                    reportados con inconvenientes.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </section>
+
+                            <!-- 4. INFORME DE ACTIVIDADES DE COORDINACIÓN DE ÁREA Y OBSERVACIONES GENERALES -->
+                            <section class="section-box">
+                                <h2 class="section-header-title">4. INFORME DE ACTIVIDADES DE COORDINACIÓN DE ÁREA Y
+                                    OBSERVACIONES GENERALES:</h2>
+                                <div class="competencia-content">
+                                    @if ($informe->enlace_actividades_coordinacion)
+                                        <p style="margin-bottom: 4px;"><strong>Enlace al informe de actividades y
+                                                observaciones:</strong></p>
+                                        <a href="{{ $informe->enlace_actividades_coordinacion }}" target="_blank"
+                                            class="link-url">{{ $informe->enlace_actividades_coordinacion }}</a>
+                                    @else
+                                        <span style="color: #94a3b8;">Sin informe de actividades de coordinación adicional
+                                            adjunto.</span>
+                                    @endif
+                                </div>
+                            </section>
+
+                            <!-- 5. INFORME DE AUXILIARES (DE HABERLOS) -->
+                            <section class="section-box">
+                                <h2 class="section-header-title">5. INFORME DE AUXILIARES (DE HABERLOS):</h2>
+                                <div class="competencia-content">
+                                    @if ($informe->enlace_informe_auxiliares)
+                                        <p style="margin-bottom: 4px;"><strong>Enlace al informe de auxiliares:</strong></p>
+                                        <a href="{{ $informe->enlace_informe_auxiliares }}" target="_blank"
+                                            class="link-url">{{ $informe->enlace_informe_auxiliares }}</a>
+                                    @else
+                                        <span style="color: #94a3b8;">No aplica / Sin informes de auxiliares
+                                            adjuntos.</span>
+                                    @endif
+                                </div>
+                            </section>
+
+                            <!-- 6. INFORME DE DOCENTES CON PERMISO LABORAL, SUSPENSIÓN Y/O INASISTENCIA -->
+                            <section class="section-box">
+                                <h2 class="section-header-title">6. INFORME DE DOCENTES CON PERMISO LABORAL, SUSPENSIÓN
+                                    Y/O INASISTENCIA:</h2>
+                                <div class="competencia-content">
+                                    @if ($informe->enlace_docentes_permisos)
+                                        <p style="margin-bottom: 4px;"><strong>Enlace a constancias, permisos e
+                                                inasistencias:</strong></p>
+                                        <a href="{{ $informe->enlace_docentes_permisos }}" target="_blank"
+                                            class="link-url">{{ $informe->enlace_docentes_permisos }}</a>
+                                    @else
+                                        <span style="color: #94a3b8;">Sin incidencias o permisos reportados en el
+                                            período.</span>
+                                    @endif
+                                </div>
+                            </section>
 
                         </div> <!-- /report-body-wrapper -->
                     </td>

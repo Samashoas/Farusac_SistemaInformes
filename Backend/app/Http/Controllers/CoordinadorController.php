@@ -9,19 +9,24 @@ use App\Models\Curso;
 use App\Models\User;
 use App\Models\Informe;
 use App\Models\InformeSemana;
+use App\Models\InformeCoordinacion;
+use App\Models\InformeCoordinacionPrograma;
+use App\Models\InformeCoordinacionAsignatura;
+use App\Models\InformeCoordinacionAvance;
+use App\Models\InformeCoordinacionEstudiante;
 use Carbon\Carbon;
 
-class CoordinadorController extends Controller
+class CoordinadorController extends DocenteController
 {
     /**
      * Dashboard principal del coordinador.
      */
-    public function dashboard(Request $request)
+    public function dashboard(?Request $request = null)
     {
         /** @var User $user */
         $user = Auth::user();
 
-        // Cursos asignados al coordinador
+        // Cursos asignados al coordinador (como docente)
         try {
             $cursosAsignados = $user->cursos()
                 ->orderBy('nombre_curso', 'asc')
@@ -56,7 +61,17 @@ class CoordinadorController extends Controller
             $areasDisponibles = collect();
         }
 
-        return view('coordinador.dashboard', compact('user', 'cursosAsignados', 'catalogoCursos', 'carreras', 'areasDisponibles'));
+        // Informes mensuales de coordinación generados por este usuario
+        try {
+            $informesCoordinacion = InformeCoordinacion::where('usuario_id', $user->id)
+                ->orderBy('anio', 'desc')
+                ->orderBy('id', 'desc')
+                ->get();
+        } catch (\Exception $e) {
+            $informesCoordinacion = collect();
+        }
+
+        return view('coordinador.dashboard', compact('user', 'cursosAsignados', 'catalogoCursos', 'carreras', 'areasDisponibles', 'informesCoordinacion'));
     }
 
     /**
@@ -96,405 +111,671 @@ class CoordinadorController extends Controller
     }
 
     /**
-     * Muestra la vista de perfil del coordinador.
+     * Retorna los datos completos de un informe de docente en formato JSON para el modal interactivo.
      */
-    public function perfilView()
+    public function obtenerDetalleInformeDocenteJson($id)
     {
         /** @var User $user */
         $user = Auth::user();
 
-        // Obtener área desde el usuario o la sesión
-        if (!$user->area && session()->has('coordinador_area')) {
-            $user->area = session()->get('coordinador_area');
-        }
+        $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
 
-        return view('coordinador.perfil', compact('user'));
-    }
-
-    /**
-     * Actualiza los datos editables del perfil del coordinador (Teléfono).
-     */
-    public function actualizarPerfil(Request $request)
-    {
-        /** @var User $user */
-        $user = Auth::user();
-
-        $request->validate([
-            'numero' => 'nullable|string|max:20',
-        ], [
-            'numero.max' => 'El número de teléfono no puede exceder los 20 caracteres.',
+        return response()->json([
+            'success' => true,
+            'informe' => [
+                'id' => $informe->id,
+                'docente_nombre' => $informe->usuario->nombre ?? 'Docente no asignado',
+                'docente_correo' => $informe->usuario->correo ?? '',
+                'asignatura' => $informe->curso->nombre_curso ?? 'Curso',
+                'seccion' => $informe->curso->seccion ?? '',
+                'periodo' => $informe->periodo,
+                'mes' => $informe->mes,
+                'estudiantes_asignados' => $informe->estudiantes_asignados,
+                'listado_asistencia_url' => $informe->listado_asistencia_url,
+                'enlace_evidencia_url' => $informe->enlace_evidencia_url,
+                'enlace_meet_zoom_url' => $informe->enlace_meet_zoom_url,
+                'enlace_classroom_drive_url' => $informe->enlace_classroom_drive_url,
+                'estrategias_evaluacion' => $informe->estrategias_evaluacion,
+                'estado' => $informe->estado,
+                'created_at' => $informe->created_at ? $informe->created_at->format('d/m/Y H:i') : '',
+                'semanas' => $informe->semanas->map(function ($s) {
+                    return [
+                        'numero_semana' => $s->numero_semana,
+                        'actividad_realizada' => $s->actividad_realizada,
+                        'estudiantes_participaron' => $s->estudiantes_participaron,
+                        'metodologias' => $s->metodologias,
+                        'medios_comunicacion' => $s->medios_comunicacion,
+                    ];
+                }),
+            ]
         ]);
-
-        try {
-            $user->numero = $request->input('numero');
-            $user->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Perfil actualizado exitosamente.',
-                'numero' => $user->numero
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar el perfil: ' . $e->getMessage()
-            ], 500);
-        }
     }
 
     /**
-     * Asigna un curso seleccionado al coordinador.
+     * Obtiene todos los cursos asociados a un área de coordinación de manera flexible.
      */
-    public function asignarCurso(Request $request)
+    private function getCursosPorArea($area)
     {
-        $request->validate([
-            'curso_id' => 'required|exists:cursos,id'
-        ], [
-            'curso_id.required' => 'Debes seleccionar una sección válida.',
-            'curso_id.exists' => 'El curso seleccionado no existe en el sistema.'
-        ]);
-
-        /** @var User $user */
-        $user = Auth::user();
-        $cursoId = $request->input('curso_id');
-
-        if ($user->cursos()->where('cursos.id', $cursoId)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Este curso y sección ya se encuentran asignados a tu cuenta.'
-            ], 422);
+        if (empty($area)) {
+            return collect();
         }
 
-        try {
-            $user->cursos()->attach($cursoId);
-            $curso = Curso::find($cursoId);
+        $cleanArea = trim(str_ireplace(['Área de ', 'Area de ', 'Área ', 'Area '], '', $area));
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Curso asignado exitosamente.',
-                'curso' => [
-                    'id' => $curso->id,
-                    'nombre_curso' => $curso->nombre_curso,
-                    'seccion' => $curso->seccion,
-                    'carrera' => $curso->carrera,
-                    'area' => $curso->area,
-                    'codigo_curso' => $curso->codigo_curso,
-                    'anio' => $curso->anio,
-                    'semestre' => $curso->semestre
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al asignar el curso: ' . $e->getMessage()
-            ], 500);
-        }
-    }
+        // Separar palabras significativas (de más de 2 caracteres)
+        $palabras = array_filter(explode(' ', $cleanArea), function($p) {
+            $p = trim($p);
+            return mb_strlen($p) > 2 && !in_array(mb_strtolower($p), ['para', 'sobre', 'con', 'del', 'las', 'los', 'por', 'que', 'una', 'uno', 'y', 'de', 'la', 'el']);
+        });
 
-    /**
-     * Elimina la asignación de un curso del coordinador.
-     */
-    public function desasignarCurso($id)
-    {
-        /** @var User $user */
-        $user = Auth::user();
+        $query = Curso::where(function ($q) use ($area, $cleanArea, $palabras) {
+            $q->where('area', $area)
+              ->orWhere('area', trim($area))
+              ->orWhere('area', 'LIKE', '%' . $cleanArea . '%')
+              ->orWhere('area', 'LIKE', '%' . $area . '%');
 
-        try {
-            $user->cursos()->detach($id);
+            foreach ($palabras as $palabra) {
+                $q->orWhere('area', 'LIKE', '%' . $palabra . '%');
+            }
+        });
 
-            return response()->json([
-                'success' => true,
-                'message' => 'El curso ha sido removido de tu panel exitosamente.'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al remover la asignación: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Muestra el Historial de Informes del coordinador.
-     */
-    public function historialInformes(Request $request)
-    {
-        /** @var User $user */
-        $user = Auth::user();
-
-        try {
-            $informes = Informe::with(['curso', 'semanas'])
-                ->where('usuario_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            $carreras = $informes->pluck('curso.carrera')->filter()->unique()->values();
-            $cursosDocente = $informes->pluck('curso.nombre_curso')->filter()->unique()->values();
-            $periodos = $informes->pluck('periodo')->filter()->map(function($p) {
-                return trim(preg_replace('/\d{4}/', '', $p));
-            })->filter()->unique()->values();
-            $anios = $informes->pluck('curso.anio')->filter()->unique()->values();
-            $meses = $informes->pluck('mes')->filter()->unique()->values();
-
-        } catch (\Exception $e) {
-            $informes = collect();
-            $carreras = collect();
-            $cursosDocente = collect();
-            $periodos = collect();
-            $anios = collect();
-            $meses = collect();
-        }
-
-        return view('coordinador.historial_informes', compact('user', 'informes', 'carreras', 'cursosDocente', 'periodos', 'anios', 'meses'));
-    }
-
-    /**
-     * Muestra el formulario para crear un nuevo informe mensual.
-     */
-    public function crearInformeView(Request $request)
-    {
-        /** @var User $user */
-        $user = Auth::user();
-
-        $cursosAsignados = $user->cursos()
-            ->orderBy('nombre_curso', 'asc')
+        $cursos = $query->orderBy('nombre_curso', 'asc')
             ->orderBy('seccion', 'asc')
             ->get();
 
-        $cursoPreseleccionadoId = $request->query('curso_id');
+        // Si por alguna razón no encuentra cursos con esa área, buscar también en los cursos asignados al usuario
+        if ($cursos->isEmpty()) {
+            /** @var User $user */
+            $user = Auth::user();
+            if ($user) {
+                $cursos = $user->cursos()->orderBy('nombre_curso', 'asc')->orderBy('seccion', 'asc')->get();
+            }
+        }
 
-        return view('coordinador.crear_informe', compact('user', 'cursosAsignados', 'cursoPreseleccionadoId'));
+        return $cursos;
     }
 
     /**
-     * Guarda un nuevo informe mensual en la base de datos.
+     * Obtiene dinámicamente los informes entregados por los docentes del área para un periodo y mes.
      */
-    public function guardarInforme(Request $request)
+    public function obtenerDatosDocentesArea(Request $request)
     {
         /** @var User $user */
         $user = Auth::user();
+        $area = $user->area ?? session('coordinador_area');
+
+        $periodo = $request->query('periodo');
+        $mes = $request->query('mes');
+
+        if (!$area) {
+            return response()->json(['success' => false, 'message' => 'Sin área asignada'], 400);
+        }
+
+        $cursosArea = $this->getCursosPorArea($area);
+        $cursoIds = $cursosArea->pluck('id')->toArray();
+
+        $asignaciones = DB::table('docente_cursos')
+            ->join('usuarios', 'usuarios.id', '=', 'docente_cursos.usuario_id')
+            ->whereIn('docente_cursos.curso_id', $cursoIds)
+            ->select('docente_cursos.curso_id', 'usuarios.nombre as docente_nombre', 'usuarios.correo as docente_correo')
+            ->get()
+            ->keyBy('curso_id');
+
+        $docenteInformesQuery = Informe::with(['usuario', 'semanas'])
+            ->whereIn('curso_id', $cursoIds)
+            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado']);
+
+        // El mes es el filtro principal y estricto
+        if (!empty($mes)) {
+            $docenteInformesQuery->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower(trim($mes))]);
+        }
+
+        // Si se proporciona periodo, se filtra también de forma flexible
+        if (!empty($periodo)) {
+            $cleanPeriodo = trim(preg_replace('/\d{4}/', '', $periodo));
+            $docenteInformesQuery->where(function ($q) use ($periodo, $cleanPeriodo) {
+                $q->where('periodo', trim($periodo))
+                  ->orWhere('periodo', 'LIKE', '%' . $cleanPeriodo . '%');
+            });
+        }
+
+        $docenteInformes = $docenteInformesQuery->get()->keyBy('curso_id');
+
+        $asignaturasUnicas = $cursosArea->pluck('nombre_curso')->unique()->values();
+
+        $programas = $asignaturasUnicas->map(function ($nombreCurso) use ($cursosArea, $docenteInformes) {
+            $cursoIds = $cursosArea->where('nombre_curso', $nombreCurso)->pluck('id');
+            $enlaceProg = null;
+            foreach ($cursoIds as $cId) {
+                $inf = $docenteInformes->get($cId);
+                if ($inf && !empty($inf->enlace_classroom_drive_url)) {
+                    $enlaceProg = $inf->enlace_classroom_drive_url;
+                    break;
+                }
+            }
+            return [
+                'asignatura' => $nombreCurso,
+                'enlace_programa' => $enlaceProg,
+            ];
+        });
+
+        $datos = $cursosArea->map(function ($curso) use ($asignaciones, $docenteInformes) {
+            $docente = $asignaciones->get($curso->id);
+            $inf = $docenteInformes->get($curso->id);
+
+            $presento = $inf ? true : false;
+            $sala = $inf && !empty($inf->enlace_meet_zoom_url);
+            $virtual = $inf && !empty($inf->enlace_classroom_drive_url);
+            $eval = $inf && !empty($inf->estrategias_evaluacion);
+            $evid = $inf && (!empty($inf->enlace_evidencia_url) || !empty($inf->listado_asistencia_url));
+
+            return [
+                'curso_id' => $curso->id,
+                'docente_nombre' => $docente ? $docente->docente_nombre : 'Sin docente asignado',
+                'asignatura' => $curso->nombre_curso,
+                'seccion' => $curso->seccion,
+                'presento_informe' => $presento,
+                'tiene_sala_reuniones' => $sala,
+                'funciona_enlace_virtual' => $virtual,
+                'funciona_enlace_evaluacion' => $eval,
+                'evidencias_generales' => $evid,
+                'observaciones' => '',
+                'porcentaje_avance' => 100,
+                'docente_informe_id' => $inf ? $inf->id : null,
+                'informe_detalles' => $inf ? [
+                    'id' => $inf->id,
+                    'estudiantes_asignados' => $inf->estudiantes_asignados,
+                    'listado_asistencia_url' => $inf->listado_asistencia_url,
+                    'enlace_evidencia_url' => $inf->enlace_evidencia_url,
+                    'enlace_meet_zoom_url' => $inf->enlace_meet_zoom_url,
+                    'enlace_classroom_drive_url' => $inf->enlace_classroom_drive_url,
+                    'estrategias_evaluacion' => $inf->estrategias_evaluacion,
+                    'semanas_registradas' => $inf->semanas->count(),
+                ] : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'datos' => $datos,
+            'programas' => $programas,
+        ]);
+    }
+
+    // =========================================================================
+    // MÓDULO DE INFORMES MENSUALES DE COORDINACIÓN (OFICIAL FARUSAC)
+    // =========================================================================
+
+    /**
+     * Muestra el formulario para crear un Informe Mensual de Coordinación.
+     */
+    public function crearInformeCoordinacionView(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $area = $user->area ?? session('coordinador_area');
+
+        if (!$area) {
+            return redirect()->route('coordinador.dashboard')
+                ->with('error', 'Debe seleccionar un área de coordinación primero.');
+        }
+
+        // Obtener cursos del área asignada
+        $cursosArea = $this->getCursosPorArea($area);
+
+        // Obtener docentes asignados a estos cursos
+        $cursoIds = $cursosArea->pluck('id')->toArray();
+        $asignaciones = DB::table('docente_cursos')
+            ->join('usuarios', 'usuarios.id', '=', 'docente_cursos.usuario_id')
+            ->whereIn('docente_cursos.curso_id', $cursoIds)
+            ->select('docente_cursos.curso_id', 'usuarios.nombre as docente_nombre', 'usuarios.correo as docente_correo')
+            ->get()
+            ->keyBy('curso_id');
+
+        // Nombres únicos de asignaturas del área (para Inciso 1 - Programas)
+        $asignaturasUnicas = $cursosArea->pluck('nombre_curso')->unique()->values();
+
+        // Determinar mes y periodo sugerido según la fecha actual o query params
+        $mesDefecto = $request->query('mes') ?? ucfirst(\Carbon\Carbon::now()->locale('es')->translatedFormat('F'));
+        $currentMonthNum = intval(date('n'));
+        $periodoSugerido = ($currentMonthNum >= 7 && $currentMonthNum <= 11)
+            ? ('Segundo Semestre ' . date('Y'))
+            : (($currentMonthNum == 6) ? ('Vacaciones Junio ' . date('Y')) : (($currentMonthNum == 12) ? ('Vacaciones Diciembre ' . date('Y')) : ('Primer Semestre ' . date('Y'))));
+        $periodoDefecto = $request->query('periodo', $periodoSugerido);
+
+        // Buscar informes entregados por docentes para los cursos del área en el mes especificado
+        $docenteInformesQuery = Informe::with(['usuario', 'semanas'])
+            ->whereIn('curso_id', $cursoIds)
+            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado']);
+
+        if (!empty($mesDefecto)) {
+            $docenteInformesQuery->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower(trim($mesDefecto))]);
+        }
+
+        if (!empty($periodoDefecto)) {
+            $cleanPeriodo = trim(preg_replace('/\d{4}/', '', $periodoDefecto));
+            $docenteInformesQuery->where(function ($q) use ($periodoDefecto, $cleanPeriodo) {
+                $q->where('periodo', trim($periodoDefecto))
+                  ->orWhere('periodo', 'LIKE', '%' . $cleanPeriodo . '%');
+            });
+        }
+
+        $docenteInformes = $docenteInformesQuery->get()->keyBy('curso_id');
+
+        // Mapear programas iniciales de forma automática con todos los cursos únicos del área
+        $programasIniciales = $asignaturasUnicas->map(function ($nombreCurso) use ($cursosArea, $docenteInformes) {
+            $cursoIds = $cursosArea->where('nombre_curso', $nombreCurso)->pluck('id');
+            $enlaceProg = null;
+            foreach ($cursoIds as $cId) {
+                $inf = $docenteInformes->get($cId);
+                if ($inf && !empty($inf->enlace_classroom_drive_url)) {
+                    $enlaceProg = $inf->enlace_classroom_drive_url;
+                    break;
+                }
+            }
+            return [
+                'asignatura' => $nombreCurso,
+                'enlace_programa' => $enlaceProg,
+            ];
+        });
+
+        // Mapear filas iniciales para Inciso 2 e Inciso 3.1
+        $filasAsignaturas = $cursosArea->map(function ($curso) use ($asignaciones, $docenteInformes) {
+            $docente = $asignaciones->get($curso->id);
+            $inf = $docenteInformes->get($curso->id);
+
+            $presento = $inf ? true : false;
+            $sala = $inf && !empty($inf->enlace_meet_zoom_url);
+            $virtual = $inf && !empty($inf->enlace_classroom_drive_url);
+            $eval = $inf && !empty($inf->estrategias_evaluacion);
+            $evid = $inf && (!empty($inf->enlace_evidencia_url) || !empty($inf->listado_asistencia_url));
+
+            return [
+                'curso_id' => $curso->id,
+                'docente_nombre' => $docente ? $docente->docente_nombre : 'Sin docente asignado',
+                'asignatura' => $curso->nombre_curso,
+                'seccion' => $curso->seccion,
+                'presento_informe' => $presento,
+                'tiene_sala_reuniones' => $sala,
+                'funciona_enlace_virtual' => $virtual,
+                'funciona_enlace_evaluacion' => $eval,
+                'evidencias_generales' => $evid,
+                'observaciones' => '',
+                'porcentaje_avance' => 100,
+                'docente_informe_id' => $inf ? $inf->id : null,
+                'informe_detalles' => $inf ? [
+                    'id' => $inf->id,
+                    'estudiantes_asignados' => $inf->estudiantes_asignados,
+                    'listado_asistencia_url' => $inf->listado_asistencia_url,
+                    'enlace_evidencia_url' => $inf->enlace_evidencia_url,
+                    'enlace_meet_zoom_url' => $inf->enlace_meet_zoom_url,
+                    'enlace_classroom_drive_url' => $inf->enlace_classroom_drive_url,
+                    'estrategias_evaluacion' => $inf->estrategias_evaluacion,
+                    'semanas_registradas' => $inf->semanas->count(),
+                ] : null,
+            ];
+        });
+
+        return view('coordinador.crear_informe_coordinacion', compact('user', 'area', 'cursosArea', 'asignaturasUnicas', 'filasAsignaturas', 'docenteInformes', 'programasIniciales', 'periodoDefecto', 'mesDefecto'));
+    }
+
+    /**
+     * Guarda un nuevo Informe Mensual de Coordinación en la base de datos.
+     */
+    public function guardarInformeCoordinacion(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $area = $user->area ?? session('coordinador_area');
 
         $request->validate([
-            'curso_id' => 'required|exists:cursos,id',
-            'periodo' => 'required|string',
-            'mes' => 'required|string',
-            'estudiantes_asignados' => 'required|integer|min:1',
-            'listado_asistencia_url' => 'nullable|string|max:255',
-            'enlace_evidencia_url' => 'nullable|string|max:255',
-            'enlace_meet_zoom_url' => 'nullable|string|max:255',
-            'enlace_classroom_drive_url' => 'nullable|string|max:255',
-            'estrategias_evaluacion' => 'nullable|string',
-            'semanas' => 'required|array|min:1',
-            'semanas.*.numero_semana' => 'required|integer',
-            'semanas.*.actividad_realizada' => 'required|string',
-            'semanas.*.estudiantes_participaron' => 'nullable|integer|min:0',
-            'semanas.*.metodologias' => 'nullable|string',
-            'semanas.*.medios_comunicacion' => 'nullable|string',
-        ], [
-            'curso_id.required' => 'Debe seleccionar un curso válido.',
-            'periodo.required' => 'El periodo es obligatorio.',
-            'mes.required' => 'El mes es obligatorio.',
-            'estudiantes_asignados.required' => 'La cantidad de estudiantes asignados es obligatoria.',
-            'estudiantes_asignados.min' => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
-            'semanas.required' => 'Debe registrar al menos una semana de actividades.',
-            'semanas.*.actividad_realizada.required' => 'El contenido o actividad realizada es obligatorio en cada semana.',
+            'periodo' => 'required|string|max:100',
+            'mes' => 'required|string|max:50',
+            'anio' => 'required|integer',
+            'herramientas_virtuales' => 'nullable|string',
+            'enlace_actividades_coordinacion' => 'nullable|string|max:255',
+            'enlace_informe_auxiliares' => 'nullable|string|max:255',
+            'enlace_docentes_permisos' => 'nullable|string|max:255',
+            'estado' => 'nullable|in:borrador,enviado',
         ]);
+
+        $estado = $request->input('estado', 'enviado');
+        $bloqueadoEn = ($estado === 'enviado') ? Carbon::now()->addDays(3) : null;
 
         DB::beginTransaction();
         try {
-            $bloqueadoEn = Carbon::now()->addDays(3);
-
-            $informe = Informe::create([
+            $informe = InformeCoordinacion::create([
                 'usuario_id' => $user->id,
-                'curso_id' => $request->input('curso_id'),
+                'area' => $area,
                 'periodo' => $request->input('periodo'),
                 'mes' => $request->input('mes'),
-                'estudiantes_asignados' => $request->input('estudiantes_asignados'),
-                'listado_asistencia_url' => $request->input('listado_asistencia_url'),
-                'enlace_evidencia_url' => $request->input('enlace_evidencia_url'),
-                'enlace_meet_zoom_url' => $request->input('enlace_meet_zoom_url'),
-                'enlace_classroom_drive_url' => $request->input('enlace_classroom_drive_url'),
-                'estrategias_evaluacion' => $request->input('estrategias_evaluacion'),
-                'estado' => 'entregado',
+                'anio' => $request->input('anio'),
+                'herramientas_virtuales' => $request->input('herramientas_virtuales'),
+                'enlace_actividades_coordinacion' => $request->input('enlace_actividades_coordinacion'),
+                'enlace_informe_auxiliares' => $request->input('enlace_informe_auxiliares'),
+                'enlace_docentes_permisos' => $request->input('enlace_docentes_permisos'),
+                'estado' => $estado,
                 'bloqueado_en' => $bloqueadoEn,
             ]);
 
-            foreach ($request->input('semanas') as $sem) {
-                InformeSemana::create([
-                    'informe_id' => $informe->id,
-                    'numero_semana' => $sem['numero_semana'] ?? 1,
-                    'actividad_realizada' => $sem['actividad_realizada'] ?? '',
-                    'estudiantes_participaron' => $sem['estudiantes_participaron'] ?? 0,
-                    'metodologias' => $sem['metodologias'] ?? null,
-                    'medios_comunicacion' => $sem['medios_comunicacion'] ?? null,
-                ]);
+            // 1. Programas de asignaturas (Inciso 1)
+            $programas = $request->input('programas', []);
+            if (is_array($programas)) {
+                foreach ($programas as $prog) {
+                    if (!empty($prog['asignatura'])) {
+                        InformeCoordinacionPrograma::create([
+                            'informe_coordinacion_id' => $informe->id,
+                            'asignatura' => $prog['asignatura'],
+                            'enlace_programa' => $prog['enlace_programa'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            // 2. Info general de asignaturas (Inciso 2)
+            $asignaturas = $request->input('asignaturas', []);
+            if (is_array($asignaturas)) {
+                foreach ($asignaturas as $asig) {
+                    if (!empty($asig['asignatura'])) {
+                        InformeCoordinacionAsignatura::create([
+                            'informe_coordinacion_id' => $informe->id,
+                            'curso_id' => !empty($asig['curso_id']) ? $asig['curso_id'] : null,
+                            'docente_nombre' => $asig['docente_nombre'] ?? '—',
+                            'asignatura' => $asig['asignatura'],
+                            'seccion' => $asig['seccion'] ?? '—',
+                            'presento_informe' => filter_var($asig['presento_informe'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'tiene_sala_reuniones' => filter_var($asig['tiene_sala_reuniones'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'funciona_enlace_virtual' => filter_var($asig['funciona_enlace_virtual'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'funciona_enlace_evaluacion' => filter_var($asig['funciona_enlace_evaluacion'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'evidencias_generales' => filter_var($asig['evidencias_generales'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'observaciones' => $asig['observaciones'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            // 3. Avance de contenidos (Inciso 3.1)
+            $avances = $request->input('avances', []);
+            if (is_array($avances)) {
+                foreach ($avances as $av) {
+                    if (!empty($av['asignatura'])) {
+                        InformeCoordinacionAvance::create([
+                            'informe_coordinacion_id' => $informe->id,
+                            'curso_id' => !empty($av['curso_id']) ? $av['curso_id'] : null,
+                            'docente_nombre' => $av['docente_nombre'] ?? '—',
+                            'asignatura' => $av['asignatura'],
+                            'seccion' => $av['seccion'] ?? '—',
+                            'porcentaje_avance' => intval($av['porcentaje_avance'] ?? 0),
+                            'observaciones' => $av['observaciones'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            // 4. Reporte de estudiantes con problemas (Inciso 3.2)
+            $estudiantes = $request->input('estudiantes', []);
+            if (is_array($estudiantes)) {
+                foreach ($estudiantes as $est) {
+                    if (!empty($est['asignatura'])) {
+                        InformeCoordinacionEstudiante::create([
+                            'informe_coordinacion_id' => $informe->id,
+                            'asignatura' => $est['asignatura'],
+                            'seccion' => $est['seccion'] ?? '—',
+                            'cantidad_estudiantes' => intval($est['cantidad_estudiantes'] ?? 0),
+                            'carne_estudiantes' => $est['carne_estudiantes'] ?? null,
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Informe guardado exitosamente.',
-                'redirect_url' => route('coordinador.informes')
+                'message' => 'Informe mensual de coordinación guardado exitosamente.',
+                'redirect_url' => route('coordinador.dashboard')
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar el informe: ' . $e->getMessage()
+                'message' => 'Error al guardar el informe de coordinación: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Muestra la vista de edición de un informe existente.
+     * Muestra la vista para editar un informe de coordinación existente.
      */
-    public function editarInformeView($id)
+    public function editarInformeCoordinacionView($id)
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = Informe::with(['curso', 'semanas'])
+        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes'])
             ->where('usuario_id', $user->id)
             ->findOrFail($id);
 
-        if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
-            return redirect()->route('coordinador.informes')->with('error', 'El plazo de edición de 3 días para este informe ha finalizado.');
-        }
+        $area = $informe->area;
 
-        $cursosAsignados = $user->cursos()
-            ->orderBy('nombre_curso', 'asc')
-            ->orderBy('seccion', 'asc')
-            ->get();
+        // Cursos del área
+        $cursosArea = $this->getCursosPorArea($area);
 
-        return view('coordinador.crear_informe', compact('user', 'informe', 'cursosAsignados'));
+        $cursoIds = $cursosArea->pluck('id')->toArray();
+        $asignaturasUnicas = $cursosArea->pluck('nombre_curso')->unique()->values();
+
+        // Buscar informes entregados por docentes para los cursos del área en este periodo y mes
+        $docenteInformes = Informe::with(['usuario', 'semanas'])
+            ->whereIn('curso_id', $cursoIds)
+            ->where('periodo', $informe->periodo)
+            ->where('mes', $informe->mes)
+            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado'])
+            ->get()
+            ->keyBy('curso_id');
+
+        // Combinar programas guardados con todos los cursos del área para asegurar que aparezcan automáticamente
+        $programasGuardados = $informe->programas->keyBy('asignatura');
+        $programasCompletos = $asignaturasUnicas->map(function ($nombreCurso) use ($programasGuardados, $cursosArea, $docenteInformes) {
+            $p = $programasGuardados->get($nombreCurso);
+            $enlace = $p ? $p->enlace_programa : null;
+            if (!$enlace) {
+                $cursoIds = $cursosArea->where('nombre_curso', $nombreCurso)->pluck('id');
+                foreach ($cursoIds as $cId) {
+                    $inf = $docenteInformes->get($cId);
+                    if ($inf && !empty($inf->enlace_classroom_drive_url)) {
+                        $enlace = $inf->enlace_classroom_drive_url;
+                        break;
+                    }
+                }
+            }
+            return [
+                'asignatura' => $nombreCurso,
+                'enlace_programa' => $enlace,
+            ];
+        });
+
+        $isLocked = ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en));
+
+        return view('coordinador.crear_informe_coordinacion', compact('user', 'area', 'informe', 'cursosArea', 'asignaturasUnicas', 'isLocked', 'docenteInformes', 'programasCompletos'));
     }
 
     /**
-     * Actualiza un informe mensual.
+     * Actualiza un informe de coordinación existente.
      */
-    public function actualizarInforme(Request $request, $id)
+    public function actualizarInformeCoordinacion(Request $request, $id)
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = Informe::where('usuario_id', $user->id)->findOrFail($id);
+        $informe = InformeCoordinacion::where('usuario_id', $user->id)->findOrFail($id);
 
+        // Validar si está bloqueado por el límite de 3 días
         if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.'
-            ], 422);
+                'message' => 'El informe está bloqueado para edición (plazo máximo de 3 días vencido).'
+            ], 403);
         }
 
         $request->validate([
-            'curso_id' => 'required|exists:cursos,id',
-            'periodo' => 'required|string',
-            'mes' => 'required|string',
-            'estudiantes_asignados' => 'required|integer|min:1',
-            'listado_asistencia_url' => 'nullable|string|max:255',
-            'enlace_evidencia_url' => 'nullable|string|max:255',
-            'enlace_meet_zoom_url' => 'nullable|string|max:255',
-            'enlace_classroom_drive_url' => 'nullable|string|max:255',
-            'estrategias_evaluacion' => 'nullable|string',
-            'semanas' => 'required|array|min:1',
-            'semanas.*.numero_semana' => 'required|integer',
-            'semanas.*.actividad_realizada' => 'required|string',
-            'semanas.*.estudiantes_participaron' => 'nullable|integer|min:0',
-            'semanas.*.metodologias' => 'nullable|string',
-            'semanas.*.medios_comunicacion' => 'nullable|string',
-        ], [
-            'curso_id.required' => 'Debe seleccionar un curso válido.',
-            'periodo.required' => 'El periodo es obligatorio.',
-            'mes.required' => 'El mes es obligatorio.',
-            'estudiantes_asignados.required' => 'La cantidad de estudiantes asignados es obligatoria.',
-            'estudiantes_asignados.min' => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
-            'semanas.required' => 'Debe registrar al menos una semana de actividades.',
-            'semanas.*.actividad_realizada.required' => 'El contenido o actividad realizada es obligatorio en cada semana.',
+            'periodo' => 'required|string|max:100',
+            'mes' => 'required|string|max:50',
+            'anio' => 'required|integer',
+            'herramientas_virtuales' => 'nullable|string',
+            'enlace_actividades_coordinacion' => 'nullable|string|max:255',
+            'enlace_informe_auxiliares' => 'nullable|string|max:255',
+            'enlace_docentes_permisos' => 'nullable|string|max:255',
+            'estado' => 'nullable|in:borrador,enviado',
         ]);
+
+        $estado = $request->input('estado', $informe->estado);
 
         DB::beginTransaction();
         try {
             $informe->update([
-                'curso_id' => $request->input('curso_id'),
                 'periodo' => $request->input('periodo'),
                 'mes' => $request->input('mes'),
-                'estudiantes_asignados' => $request->input('estudiantes_asignados'),
-                'listado_asistencia_url' => $request->input('listado_asistencia_url'),
-                'enlace_evidencia_url' => $request->input('enlace_evidencia_url'),
-                'enlace_meet_zoom_url' => $request->input('enlace_meet_zoom_url'),
-                'enlace_classroom_drive_url' => $request->input('enlace_classroom_drive_url'),
-                'estrategias_evaluacion' => $request->input('estrategias_evaluacion'),
+                'anio' => $request->input('anio'),
+                'herramientas_virtuales' => $request->input('herramientas_virtuales'),
+                'enlace_actividades_coordinacion' => $request->input('enlace_actividades_coordinacion'),
+                'enlace_informe_auxiliares' => $request->input('enlace_informe_auxiliares'),
+                'enlace_docentes_permisos' => $request->input('enlace_docentes_permisos'),
+                'estado' => $estado,
             ]);
 
-            $informe->semanas()->delete();
-            foreach ($request->input('semanas') as $sem) {
-                InformeSemana::create([
-                    'informe_id' => $informe->id,
-                    'numero_semana' => $sem['numero_semana'] ?? 1,
-                    'actividad_realizada' => $sem['actividad_realizada'] ?? '',
-                    'estudiantes_participaron' => $sem['estudiantes_participaron'] ?? 0,
-                    'metodologias' => $sem['metodologias'] ?? null,
-                    'medios_comunicacion' => $sem['medios_comunicacion'] ?? null,
-                ]);
+            // Reemplazar programas (Inciso 1)
+            $informe->programas()->delete();
+            $programas = $request->input('programas', []);
+            if (is_array($programas)) {
+                foreach ($programas as $prog) {
+                    if (!empty($prog['asignatura'])) {
+                        InformeCoordinacionPrograma::create([
+                            'informe_coordinacion_id' => $informe->id,
+                            'asignatura' => $prog['asignatura'],
+                            'enlace_programa' => $prog['enlace_programa'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            // Reemplazar asignaturas (Inciso 2)
+            $informe->asignaturas()->delete();
+            $asignaturas = $request->input('asignaturas', []);
+            if (is_array($asignaturas)) {
+                foreach ($asignaturas as $asig) {
+                    if (!empty($asig['asignatura'])) {
+                        InformeCoordinacionAsignatura::create([
+                            'informe_coordinacion_id' => $informe->id,
+                            'curso_id' => !empty($asig['curso_id']) ? $asig['curso_id'] : null,
+                            'docente_nombre' => $asig['docente_nombre'] ?? '—',
+                            'asignatura' => $asig['asignatura'],
+                            'seccion' => $asig['seccion'] ?? '—',
+                            'presento_informe' => filter_var($asig['presento_informe'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'tiene_sala_reuniones' => filter_var($asig['tiene_sala_reuniones'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'funciona_enlace_virtual' => filter_var($asig['funciona_enlace_virtual'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'funciona_enlace_evaluacion' => filter_var($asig['funciona_enlace_evaluacion'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'evidencias_generales' => filter_var($asig['evidencias_generales'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                            'observaciones' => $asig['observaciones'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            // Reemplazar avances (Inciso 3.1)
+            $informe->avances()->delete();
+            $avances = $request->input('avances', []);
+            if (is_array($avances)) {
+                foreach ($avances as $av) {
+                    if (!empty($av['asignatura'])) {
+                        InformeCoordinacionAvance::create([
+                            'informe_coordinacion_id' => $informe->id,
+                            'curso_id' => !empty($av['curso_id']) ? $av['curso_id'] : null,
+                            'docente_nombre' => $av['docente_nombre'] ?? '—',
+                            'asignatura' => $av['asignatura'],
+                            'seccion' => $av['seccion'] ?? '—',
+                            'porcentaje_avance' => intval($av['porcentaje_avance'] ?? 0),
+                            'observaciones' => $av['observaciones'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            // Reemplazar estudiantes (Inciso 3.2)
+            $informe->estudiantes()->delete();
+            $estudiantes = $request->input('estudiantes', []);
+            if (is_array($estudiantes)) {
+                foreach ($estudiantes as $est) {
+                    if (!empty($est['asignatura'])) {
+                        InformeCoordinacionEstudiante::create([
+                            'informe_coordinacion_id' => $informe->id,
+                            'asignatura' => $est['asignatura'],
+                            'seccion' => $est['seccion'] ?? '—',
+                            'cantidad_estudiantes' => intval($est['cantidad_estudiantes'] ?? 0),
+                            'carne_estudiantes' => $est['carne_estudiantes'] ?? null,
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Informe actualizado exitosamente.',
-                'redirect_url' => route('coordinador.informes')
+                'message' => 'Informe de coordinación actualizado correctamente.',
+                'redirect_url' => route('coordinador.dashboard')
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el informe: ' . $e->getMessage()
+                'message' => 'Error al actualizar el informe de coordinación: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Elimina permanentemente un informe del coordinador.
+     * Elimina un informe de coordinación permanentemente.
      */
-    public function eliminarInforme($id)
+    public function eliminarInformeCoordinacion($id)
     {
         /** @var User $user */
         $user = Auth::user();
 
         DB::beginTransaction();
         try {
-            $informe = Informe::where('usuario_id', $user->id)->findOrFail($id);
-            $informe->semanas()->delete();
+            $informe = InformeCoordinacion::where('usuario_id', $user->id)->findOrFail($id);
+            $informe->programas()->delete();
+            $informe->asignaturas()->delete();
+            $informe->avances()->delete();
+            $informe->estudiantes()->delete();
             $informe->delete();
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'El informe ha sido eliminado permanentemente.'
+                'message' => 'El informe de coordinación ha sido eliminado permanentemente.'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe: ' . $e->getMessage()
+                'message' => 'Error al eliminar el informe de coordinación: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Genera la vista institucional del informe para imprimir / PDF.
+     * Genera la vista institucional del informe de coordinación para consultar / imprimir.
      */
-    public function verInforme($id)
+    public function verInformeCoordinacion($id)
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = Informe::with(['curso', 'semanas'])
+        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes'])
             ->where('usuario_id', $user->id)
             ->findOrFail($id);
 
-        return view('docente.ver_informe_pdf', compact('user', 'informe'));
+        return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
     }
 }

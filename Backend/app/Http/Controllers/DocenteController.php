@@ -17,7 +17,7 @@ class DocenteController extends Controller
      * Muestra el Dashboard principal del docente con sus cursos asignados
      * y el catálogo de cursos para la ventana modal.
      */
-    public function dashboard()
+    public function dashboard(?Request $request = null)
     {
         /** @var User $user */
         $user = Auth::user();
@@ -155,7 +155,8 @@ class DocenteController extends Controller
             $meses = collect();
         }
 
-        return view('docente.historial_informes', compact('user', 'informes', 'carreras', 'cursosDocente', 'periodos', 'anios', 'meses'));
+        $vista = ($user->rol === 'coordinador') ? 'coordinador.historial_informes' : 'docente.historial_informes';
+        return view($vista, compact('user', 'informes', 'carreras', 'cursosDocente', 'periodos', 'anios', 'meses'));
     }
 
     /**
@@ -181,7 +182,9 @@ class DocenteController extends Controller
             $selectedCurso = $cursosAsignados->firstWhere('id', $selectedCursoId) ?? Curso::find($selectedCursoId);
         }
 
-        return view('docente.crear_informe', compact('user', 'cursosAsignados', 'selectedCurso'));
+        $vista = ($user->rol === 'coordinador') ? 'coordinador.crear_informe' : 'docente.crear_informe';
+        $cursoPreseleccionadoId = $selectedCursoId;
+        return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'cursoPreseleccionadoId'));
     }
 
     /**
@@ -248,11 +251,13 @@ class DocenteController extends Controller
 
             DB::commit();
 
+            $redirectUrl = ($user->rol === 'coordinador') ? route('coordinador.dashboard') : route('docente.dashboard');
+
             return response()->json([
                 'success' => true,
                 'message' => 'El informe ha sido creado y enviado exitosamente. Recuerda que tienes un máximo de 3 días para editar o modificar tu informe antes de que se bloquee para revisión.',
                 'informe_id' => $informe->id,
-                'redirect_url' => route('docente.dashboard')
+                'redirect_url' => $redirectUrl
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -292,7 +297,9 @@ class DocenteController extends Controller
         $selectedCurso = $informe->curso;
         $modoEdicion = true;
 
-        return view('docente.crear_informe', compact('user', 'cursosAsignados', 'selectedCurso', 'informe', 'modoEdicion', 'estaBloqueado'));
+        $vista = ($user->rol === 'coordinador') ? 'coordinador.crear_informe' : 'docente.crear_informe';
+
+        return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'informe', 'modoEdicion', 'estaBloqueado'));
     }
 
     /**
@@ -367,10 +374,12 @@ class DocenteController extends Controller
 
             DB::commit();
 
+            $redirectUrl = ($user->rol === 'coordinador') ? route('coordinador.informes') : route('docente.informes');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Informe actualizado exitosamente.',
-                'redirect_url' => route('docente.informes')
+                'redirect_url' => $redirectUrl
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -417,9 +426,11 @@ class DocenteController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = Informe::with(['curso', 'semanas'])
-            ->where('usuario_id', $user->id)
-            ->findOrFail($id);
+        $query = Informe::with(['curso', 'semanas', 'usuario']);
+        if ($user->rol !== 'coordinador' && $user->rol !== 'administrador') {
+            $query->where('usuario_id', $user->id);
+        }
+        $informe = $query->findOrFail($id);
 
         return view('docente.ver_informe_pdf', compact('user', 'informe'));
     }
@@ -431,6 +442,13 @@ class DocenteController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
+
+        if ($user->rol === 'coordinador') {
+            if (!$user->area && session()->has('coordinador_area')) {
+                $user->area = session()->get('coordinador_area');
+            }
+            return view('coordinador.perfil', compact('user'));
+        }
 
         return view('docente.perfil', compact('user'));
     }

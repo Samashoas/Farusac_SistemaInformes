@@ -430,68 +430,214 @@
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1050px;
             animation: fadeIn 0.4s ease;
-            margin: auto 0;
-            padding: 20px;
+            margin-top: 100px;
+            margin-bottom: 40px;
+            padding: 0 20px;
         }
 
-        .coordinador-placeholder-card {
+        .coord-reports-card {
             background: #ffffff;
             border-radius: var(--border-radius-card);
             border: 1.5px solid var(--color-borde);
-            padding: 50px 40px;
+            padding: 30px 35px;
             width: 100%;
-            max-width: 750px;
-            text-align: center;
             box-shadow: var(--shadow-premium);
             position: relative;
             overflow: hidden;
         }
 
-        .coordinador-placeholder-card::before {
+        .coord-reports-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 5px;
+            height: 4px;
             background: linear-gradient(90deg, var(--color-azul), var(--color-oro), var(--color-terracota));
         }
 
-        .coordinador-placeholder-icon {
-            width: 70px;
-            height: 70px;
-            margin: 0 auto 20px auto;
+        .coord-reports-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 18px;
+            border-bottom: 1.5px solid #f1f5f9;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .coord-reports-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--color-azul);
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .coord-reports-subtitle {
+            font-size: 13.5px;
+            color: var(--color-texto-secundario);
+            margin-top: 4px;
+        }
+
+        .btn-create-coord-report {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, var(--color-azul) 0%, #1e40af 100%);
+            color: #ffffff;
+            border-radius: 25px;
+            text-decoration: none;
+            font-family: 'Outfit', sans-serif;
+            font-size: 13.5px;
+            font-weight: 700;
+            box-shadow: 0 4px 14px rgba(0, 45, 114, 0.25);
+            transition: var(--transition-smooth);
+        }
+
+        .btn-create-coord-report:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0, 45, 114, 0.35);
+        }
+
+        .coord-table-container {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+        }
+
+        .coord-reports-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+            text-align: left;
+        }
+
+        .coord-reports-table th {
+            background-color: #f8fafc;
+            color: var(--color-azul);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            padding: 12px 16px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .coord-reports-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--color-texto-principal);
+            vertical-align: middle;
+        }
+
+        .coord-reports-table tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .badge-status.enviado {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-status.borrador {
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-status.bloqueado {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .actions-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-table-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-table-view {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-color: #bfdbfe;
+        }
+
+        .btn-table-view:hover {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+
+        .btn-table-edit {
+            background-color: #fefce8;
+            color: #ca8a04;
+            border-color: #fef08a;
+        }
+
+        .btn-table-edit:hover {
+            background-color: #ca8a04;
+            color: #ffffff;
+        }
+
+        .btn-table-delete {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
+        .btn-table-delete:hover {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+
+        .empty-coord-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .empty-coord-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px auto;
             border-radius: 50%;
-            background: rgba(0, 45, 114, 0.07);
+            background: rgba(0, 45, 114, 0.06);
             color: var(--color-azul);
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .coordinador-placeholder-icon svg {
-            width: 36px;
-            height: 36px;
-        }
-
-        .coordinador-placeholder-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--color-texto-principal);
-            margin-bottom: 10px;
-        }
-
-        .coordinador-placeholder-subtitle {
-            font-size: 14px;
-            color: var(--color-texto-secundario);
-            line-height: 1.6;
-            max-width: 520px;
-            margin: 0 auto;
         }
 
         /* --- CONTENEDOR DE CÍRCULOS (GRID / LISTA) --- */
@@ -1131,18 +1277,93 @@
                 </div>
             </div>
 
-            <!-- 2. VISTA: INFORMES DE COORDINADOR (ESTRUCTURA PARA FORMULARIO/GESTIÓN) -->
+            <!-- 2. VISTA: INFORMES DE COORDINADOR (GESTIÓN Y CONTROL OFICIAL FARUSAC) -->
             <div id="coordinadorViewSection" class="coordinador-content-section">
-                <div class="coordinador-placeholder-card">
-                    <div class="coordinador-placeholder-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                <div class="coord-reports-card">
+                    <div class="coord-reports-header">
+                        <div>
+                            <div class="coord-reports-title">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <span>Informes Mensuales de Coordinación</span>
+                            </div>
+                            <p class="coord-reports-subtitle">
+                                Registro y entrega oficial de informes mensuales del <strong>{{ $areaActual ?? 'Área Asignada' }}</strong>.
+                            </p>
+                        </div>
+                        <a href="{{ route('coordinador.informes-coordinacion.crear') }}" class="btn-create-coord-report">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            <span>Crear Informe de Coordinación</span>
+                        </a>
                     </div>
-                    <h3 class="coordinador-placeholder-title">Módulo de Informes de Coordinador</h3>
-                    <p class="coordinador-placeholder-subtitle">
-                        Vista de coordinación para el <strong>{{ $areaActual ?? 'Área Asignada' }}</strong>. Este espacio está preparado para el formulario y control de informes del coordinador.
-                    </p>
+
+                    @if (isset($informesCoordinacion) && $informesCoordinacion->count() > 0)
+                        <div class="coord-table-container">
+                            <table class="coord-reports-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mes y Periodo</th>
+                                        <th>Área</th>
+                                        <th>Fecha de Creación</th>
+                                        <th>Estado</th>
+                                        <th style="text-align: center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($informesCoordinacion as $inf)
+                                        @php
+                                            $isLocked = ($inf->bloqueado_en && \Carbon\Carbon::now()->greaterThan($inf->bloqueado_en));
+                                            $estadoClass = $isLocked ? 'bloqueado' : ($inf->estado == 'enviado' ? 'enviado' : 'borrador');
+                                            $estadoTexto = $isLocked ? 'Bloqueado (Plazo Vencido)' : ucfirst($inf->estado);
+                                        @endphp
+                                        <tr id="coord-report-row-{{ $inf->id }}">
+                                            <td>
+                                                <strong style="color: var(--color-azul);">{{ $inf->mes }} {{ $inf->anio }}</strong>
+                                                <div style="font-size: 12px; color: #64748b;">{{ $inf->periodo }}</div>
+                                            </td>
+                                            <td>{{ $inf->area }}</td>
+                                            <td>{{ $inf->created_at ? $inf->created_at->format('d/m/Y H:i') : '—' }}</td>
+                                            <td>
+                                                <span class="badge-status {{ $estadoClass }}">{{ $estadoTexto }}</span>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <div class="actions-btn-group" style="justify-content: center;">
+                                                    <a href="{{ route('coordinador.informes-coordinacion.ver', $inf->id) }}" class="btn-table-action btn-table-view" title="Ver / Imprimir">
+                                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                                        Ver
+                                                    </a>
+                                                    @if (!$isLocked)
+                                                        <a href="{{ route('coordinador.informes-coordinacion.editar', $inf->id) }}" class="btn-table-action btn-table-edit" title="Editar">
+                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                            Editar
+                                                        </a>
+                                                    @endif
+                                                    <button type="button" class="btn-table-action btn-table-delete" title="Eliminar" onclick="confirmDeleteCoordReport({{ $inf->id }}, '{{ $inf->mes }} {{ $inf->anio }}')">
+                                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="empty-coord-state">
+                            <div class="empty-coord-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <h4 style="font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 700; color: var(--color-texto-principal); margin-bottom: 6px;">
+                                No hay informes de coordinación registrados
+                            </h4>
+                            <p style="font-size: 13.5px; color: var(--color-texto-secundario); max-width: 480px; margin: 0 auto 20px auto;">
+                                Aún no has creado ningún informe mensual para el área de <strong>{{ $areaActual ?? 'Coordinación' }}</strong>.
+                            </p>
+                            <a href="{{ route('coordinador.informes-coordinacion.crear') }}" class="btn-create-coord-report">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <span>Crear Primer Informe de Coordinación</span>
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -1393,15 +1614,30 @@
         }
 
         // --- MANEJO DEL MODAL DE ADVERTENCIA / CONFIRMACIÓN ---
+        let currentConfirmAction = null;
+
         function unassignCourse(cursoId, nombreCurso, seccion) {
             pendingUnassignCursoId = cursoId;
+            document.getElementById('confirmModalTitle').textContent = '¿ESTÁ SEGURO QUE DESEA REMOVER EL CURSO?';
             document.getElementById('confirmModalDesc').textContent = `El curso "${nombreCurso} - Sección ${seccion}" será eliminado de su lista de cursos asignados.`;
+            currentConfirmAction = executeUnassignCourse;
+            confirmDeleteModalOverlay.classList.add('active');
+        }
+
+        let pendingDeleteCoordReportId = null;
+        function confirmDeleteCoordReport(id, mesAnio) {
+            pendingDeleteCoordReportId = id;
+            document.getElementById('confirmModalTitle').textContent = '¿DESEA ELIMINAR EL INFORME DE COORDINACIÓN?';
+            document.getElementById('confirmModalDesc').textContent = `El informe de ${mesAnio} será eliminado permanentemente.`;
+            currentConfirmAction = executeDeleteCoordReport;
             confirmDeleteModalOverlay.classList.add('active');
         }
 
         function closeConfirmDeleteModal() {
             confirmDeleteModalOverlay.classList.remove('active');
             pendingUnassignCursoId = null;
+            pendingDeleteCoordReportId = null;
+            currentConfirmAction = null;
         }
 
         function handleConfirmBackdropClick(event) {
@@ -1411,6 +1647,12 @@
         }
 
         document.getElementById('btnConfirmDelete').addEventListener('click', () => {
+            if (typeof currentConfirmAction === 'function') {
+                currentConfirmAction();
+            }
+        });
+
+        function executeUnassignCourse() {
             if (!pendingUnassignCursoId) return;
 
             const cursoId = pendingUnassignCursoId;
@@ -1450,7 +1692,47 @@
                 closeConfirmDeleteModal();
                 showToast('Error de conexión al intentar remover el curso.', 'error');
             });
-        });
+        }
+
+        function executeDeleteCoordReport() {
+            if (!pendingDeleteCoordReportId) return;
+            const id = pendingDeleteCoordReportId;
+            const btn = document.getElementById('btnConfirmDelete');
+            btn.disabled = true;
+            btn.textContent = 'Eliminando...';
+
+            fetch(`/coordinador/informes-coordinacion/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Remover';
+                closeConfirmDeleteModal();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    const row = document.getElementById(`coord-report-row-${id}`);
+                    if (row) {
+                        row.style.opacity = '0';
+                        setTimeout(() => row.remove(), 300);
+                    }
+                } else {
+                    showToast(data.message || 'No se pudo eliminar el informe.', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                btn.disabled = false;
+                btn.textContent = 'Remover';
+                closeConfirmDeleteModal();
+                showToast('Error de conexión al intentar eliminar el informe.', 'error');
+            });
+        }
 
         // --- SELECTORES EN CASCADA (CARRERA -> CURSO -> SECCIÓN) ---
 

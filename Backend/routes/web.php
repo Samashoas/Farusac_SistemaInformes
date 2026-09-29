@@ -45,6 +45,16 @@ Route::middleware('auth')->group(function () {
         Route::put('/coordinador/informes/{id}', [CoordinadorController::class, 'actualizarInforme'])->name('coordinador.informes.actualizar');
         Route::delete('/coordinador/informes/{id}', [CoordinadorController::class, 'eliminarInforme'])->name('coordinador.informes.eliminar');
         Route::get('/coordinador/informes/{id}/ver', [CoordinadorController::class, 'verInforme'])->name('coordinador.informes.ver');
+        Route::get('/coordinador/informes/{id}/detalle-json', [CoordinadorController::class, 'obtenerDetalleInformeDocenteJson'])->name('coordinador.informes.detalle-json');
+
+        // Módulo de Informes de Coordinación de Área (Oficial FARUSAC)
+        Route::get('/coordinador/informes-coordinacion/datos-docentes', [CoordinadorController::class, 'obtenerDatosDocentesArea'])->name('coordinador.informes-coordinacion.datos-docentes');
+        Route::get('/coordinador/informes-coordinacion/crear', [CoordinadorController::class, 'crearInformeCoordinacionView'])->name('coordinador.informes-coordinacion.crear');
+        Route::post('/coordinador/informes-coordinacion', [CoordinadorController::class, 'guardarInformeCoordinacion'])->name('coordinador.informes-coordinacion.guardar');
+        Route::get('/coordinador/informes-coordinacion/{id}/editar', [CoordinadorController::class, 'editarInformeCoordinacionView'])->name('coordinador.informes-coordinacion.editar');
+        Route::put('/coordinador/informes-coordinacion/{id}', [CoordinadorController::class, 'actualizarInformeCoordinacion'])->name('coordinador.informes-coordinacion.actualizar');
+        Route::delete('/coordinador/informes-coordinacion/{id}', [CoordinadorController::class, 'eliminarInformeCoordinacion'])->name('coordinador.informes-coordinacion.eliminar');
+        Route::get('/coordinador/informes-coordinacion/{id}/ver', [CoordinadorController::class, 'verInformeCoordinacion'])->name('coordinador.informes-coordinacion.ver');
     });
 
     Route::middleware('role:administrador')->group(function () {
