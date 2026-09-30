@@ -582,26 +582,39 @@ class AdminController extends Controller
     }
 
     /**
-     * Convierte imágenes a data-URI base64 para que el HTML y Dompdf carguen las imágenes sin problemas de rutas.
+     * Convierte imágenes a data-URI base64 para que el HTML y Dompdf carguen las imágenes sin problemas de rutas o encoding.
      */
     protected function embeberImagenesBase64($html)
     {
         $logos = [
-            'images/InformePDF/logos-usac-farusac.png' => public_path('images/InformePDF/logos-usac-farusac.png'),
-            'images/InformePDF/LOGOS ACREDITADORAS 2026 HCERES (1).png' => public_path('images/InformePDF/LOGOS ACREDITADORAS 2026 HCERES (1).png'),
-            'images/InformePDF/LOGOS ACREDITADORAS 2026 CCA (1).png' => public_path('images/InformePDF/LOGOS ACREDITADORAS 2026 CCA (1).png'),
-            'images/InformePDF/LOGOS ACREDITADORAS 2026 CEAI (1).png' => public_path('images/InformePDF/LOGOS ACREDITADORAS 2026 CEAI (1).png'),
-            'images/FarusacLogo.png' => public_path('images/FarusacLogo.png'),
+            'logos-usac-farusac.png' => public_path('images/InformePDF/logos-usac-farusac.png'),
+            'LOGOS ACREDITADORAS 2026 HCERES (1).png' => public_path('images/InformePDF/LOGOS ACREDITADORAS 2026 HCERES (1).png'),
+            'LOGOS ACREDITADORAS 2026 CCA (1).png' => public_path('images/InformePDF/LOGOS ACREDITADORAS 2026 CCA (1).png'),
+            'LOGOS ACREDITADORAS 2026 CEAI (1).png' => public_path('images/InformePDF/LOGOS ACREDITADORAS 2026 CEAI (1).png'),
+            'FarusacLogo.png' => public_path('images/FarusacLogo.png'),
         ];
 
-        foreach ($logos as $urlPart => $fullPath) {
+        foreach ($logos as $filename => $fullPath) {
             if (file_exists($fullPath)) {
                 $type = pathinfo($fullPath, PATHINFO_EXTENSION);
                 $data = file_get_contents($fullPath);
                 $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
-                $html = str_replace(asset($urlPart), $base64, $html);
-                $html = str_replace(url($urlPart), $base64, $html);
-                $html = str_replace($urlPart, $base64, $html);
+
+                $variants = [
+                    asset('images/InformePDF/' . $filename),
+                    url('images/InformePDF/' . $filename),
+                    'images/InformePDF/' . $filename,
+                    asset('images/InformePDF/' . rawurlencode($filename)),
+                    url('images/InformePDF/' . rawurlencode($filename)),
+                    'images/InformePDF/' . rawurlencode($filename),
+                    asset('images/' . $filename),
+                    url('images/' . $filename),
+                    'images/' . $filename,
+                ];
+
+                foreach ($variants as $v) {
+                    $html = str_replace($v, $base64, $html);
+                }
             }
         }
 
