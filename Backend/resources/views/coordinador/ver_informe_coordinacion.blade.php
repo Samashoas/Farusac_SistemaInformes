@@ -703,18 +703,308 @@
                 print-color-adjust: exact !important;
             }
         }
+
+        @if(isset($isPdf))
+            @page {
+                size: letter portrait;
+                margin: 8mm 10mm 8mm 10mm;
+            }
+
+            body {
+                font-family: Helvetica, Arial, sans-serif !important;
+                font-size: 11px !important;
+                color: #1e293b !important;
+                background-color: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                line-height: 1.4 !important;
+            }
+
+            .no-print-bar {
+                display: none !important;
+            }
+
+            .document-page {
+                max-width: 100% !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                background-color: #ffffff !important;
+            }
+
+            .report-table-layout {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .report-header-wrapper {
+                padding: 0 0 6px 0 !important;
+                width: 100% !important;
+            }
+
+            .report-body-wrapper {
+                padding: 0 !important;
+                width: 100% !important;
+            }
+
+            .report-footer-spacer {
+                display: none !important;
+            }
+
+            .doc-header {
+                border-bottom: 2.5px solid #002D72 !important;
+                padding-bottom: 6px !important;
+                margin-bottom: 8px !important;
+            }
+
+            .header-logos-container {
+                display: block !important;
+                text-align: center !important;
+                width: 100% !important;
+                margin-bottom: 6px !important;
+                padding-bottom: 6px !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+                white-space: nowrap !important;
+            }
+
+            .header-logos-container .logo-item {
+                display: inline-block !important;
+                vertical-align: middle !important;
+                margin: 0 4px !important;
+            }
+
+            .logo-usac-farusac {
+                height: 42px !important;
+                width: auto !important;
+                max-width: 200px !important;
+            }
+
+            .logo-acreditadora {
+                height: 32px !important;
+                width: auto !important;
+                max-width: 90px !important;
+            }
+
+            .doc-title-block {
+                text-align: center !important;
+            }
+
+            .doc-report-name {
+                font-family: Helvetica, Arial, sans-serif !important;
+                font-size: 13.5px !important;
+                font-weight: bold !important;
+                color: #002D72 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+            }
+
+            .general-info-box {
+                display: block !important;
+                background-color: #f8fafc !important;
+                border: 1px solid #e2e8f0 !important;
+                padding: 6px 10px !important;
+                margin-bottom: 10px !important;
+            }
+
+            .info-field-group {
+                display: inline-block !important;
+                width: 32.5% !important;
+                vertical-align: top !important;
+                margin-bottom: 4px !important;
+            }
+
+            .field-label {
+                display: block !important;
+                font-size: 9.5px !important;
+                font-weight: bold !important;
+                color: #64748b !important;
+                text-transform: uppercase !important;
+            }
+
+            .field-val {
+                display: block !important;
+                font-size: 11px !important;
+                font-weight: bold !important;
+                color: #1e293b !important;
+            }
+
+            .section-box {
+                margin-bottom: 10px !important;
+            }
+
+            .section-header-title {
+                font-family: Helvetica, Arial, sans-serif !important;
+                font-size: 11.5px !important;
+                font-weight: bold !important;
+                color: #002D72 !important;
+                text-transform: uppercase !important;
+                background-color: #f1f5f9 !important;
+                padding: 4px 8px !important;
+                border-left: 4px solid #002D72 !important;
+                margin-top: 8px !important;
+                margin-bottom: 4px !important;
+            }
+
+            .section-subtitle {
+                font-size: 10px !important;
+                color: #64748b !important;
+                font-style: italic !important;
+                margin-bottom: 6px !important;
+            }
+
+            .doc-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 10px !important;
+                margin-top: 6px !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+
+            .doc-table th {
+                background-color: #f8fafc !important;
+                color: #002D72 !important;
+                font-weight: bold !important;
+                padding: 5px 6px !important;
+                border: 1px solid #cbd5e1 !important;
+                font-size: 9.5px !important;
+                text-transform: uppercase !important;
+            }
+
+            .doc-table td {
+                padding: 5px 6px !important;
+                border: 1px solid #cbd5e1 !important;
+                vertical-align: top !important;
+                font-size: 10px !important;
+                line-height: 1.3 !important;
+            }
+
+            .doc-table tr {
+                page-break-inside: avoid !important;
+            }
+
+            .tag-si {
+                display: inline-block !important;
+                background-color: #dcfce7 !important;
+                color: #166534 !important;
+                font-weight: bold !important;
+                padding: 1px 5px !important;
+                border-radius: 3px !important;
+                font-size: 9px !important;
+            }
+
+            .tag-no {
+                display: inline-block !important;
+                background-color: #fee2e2 !important;
+                color: #991b1b !important;
+                font-weight: bold !important;
+                padding: 1px 5px !important;
+                border-radius: 3px !important;
+                font-size: 9px !important;
+            }
+
+            .competencia-content {
+                background-color: #f8fafc !important;
+                border: 1px solid #e2e8f0 !important;
+                padding: 6px 10px !important;
+                font-size: 10.5px !important;
+                line-height: 1.4 !important;
+            }
+
+            .report-footer-wrapper {
+                padding: 0 !important;
+                width: 100% !important;
+                margin-top: 15px !important;
+                page-break-inside: avoid !important;
+            }
+
+            .doc-footer-official {
+                margin: 0 !important;
+                width: 100% !important;
+            }
+
+            .footer-top-text {
+                text-align: center !important;
+                font-size: 10px !important;
+                font-weight: bold !important;
+                color: #0b2341 !important;
+                padding-bottom: 4px !important;
+                background-color: #ffffff !important;
+            }
+
+            .footer-gold-bar {
+                height: 3px !important;
+                background-color: #f3b228 !important;
+                width: 100% !important;
+            }
+
+            .footer-navy-bar {
+                background-color: #0b2341 !important;
+                color: #ffffff !important;
+                padding: 6px 15px !important;
+                width: 100% !important;
+                display: table !important;
+            }
+
+            .footer-left-content {
+                display: table-cell !important;
+                text-align: left !important;
+                vertical-align: middle !important;
+                color: #ffffff !important;
+                font-size: 9.5px !important;
+            }
+
+            .footer-social-icons {
+                display: none !important;
+            }
+
+            .footer-links-text {
+                display: inline !important;
+                color: #ffffff !important;
+            }
+
+            .footer-web {
+                display: inline !important;
+                color: #ffffff !important;
+                font-weight: bold !important;
+                font-size: 9.5px !important;
+                margin-right: 8px !important;
+            }
+
+            .footer-handle {
+                display: inline !important;
+                color: #ffffff !important;
+                font-size: 9px !important;
+                opacity: 0.9 !important;
+            }
+
+            .footer-right-content {
+                display: table-cell !important;
+                text-align: right !important;
+                vertical-align: middle !important;
+                color: #ffffff !important;
+                font-size: 9.5px !important;
+                font-weight: bold !important;
+            }
+        @endif
     </style>
 </head>
 
 <body>
 
+    @if(!isset($isPdf))
     <div class="no-print-bar">
-        <a href="{{ route('coordinador.dashboard') }}" class="btn-action btn-back">
+        @php
+            $backRoute = (Auth::user() && Auth::user()->rol === 'administrador') ? route('admin.informes') : route('coordinador.dashboard');
+        @endphp
+        <a href="{{ $backRoute }}" class="btn-action btn-back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            <span>Volver al Panel</span>
+            <span>Volver</span>
         </a>
         <button type="button" class="btn-action btn-print" onclick="window.print()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -725,6 +1015,7 @@
             <span>Imprimir / Exportar PDF</span>
         </button>
     </div>
+    @endif
 
     <div class="document-page">
         <table class="report-table-layout">

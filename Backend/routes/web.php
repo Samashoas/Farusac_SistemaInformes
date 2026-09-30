@@ -69,5 +69,21 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/usuarios/{id}/toggle-status', [AdminController::class, 'toggleEstadoUsuario'])->name('admin.usuarios.toggle-status');
         Route::post('/admin/importar-usuarios', [AdminController::class, 'CargaUsuariosCsv'])->name('admin.importar');
         Route::post('/admin/importar-cursos', [AdminController::class, 'CargaCursosCsv'])->name('admin.importar-cursos');
+
+        // Módulo de Informes para Administrador
+        Route::get('/admin/informes', [AdminController::class, 'informesView'])->name('admin.informes');
+        Route::get('/admin/informes/docente/{id}/ver', [AdminController::class, 'verInformeDocente'])->name('admin.informes.docente.ver');
+        Route::get('/admin/informes/docente/{id}/detalle-json', [AdminController::class, 'obtenerDetalleInformeDocenteJson'])->name('admin.informes.docente.detalle-json');
+        Route::delete('/admin/informes/docente/{id}', [AdminController::class, 'eliminarInformeDocente'])->name('admin.informes.docente.eliminar');
+        Route::get('/admin/informes/coordinacion/{id}/ver', [AdminController::class, 'verInformeCoordinacion'])->name('admin.informes.coordinacion.ver');
+        Route::get('/admin/informes/coordinacion/{id}/detalle-json', [AdminController::class, 'obtenerDetalleInformeCoordinacionJson'])->name('admin.informes.coordinacion.detalle-json');
+        Route::delete('/admin/informes/coordinacion/{id}', [AdminController::class, 'eliminarInformeCoordinacion'])->name('admin.informes.coordinacion.eliminar');
+
+        // Descarga Masiva y Consolidado
+        Route::get('/admin/informes/descargar-zip', [AdminController::class, 'descargarInformesZip'])->name('admin.informes.descargar-zip');
+        Route::get('/admin/informes/descargar-csv', [AdminController::class, 'descargarInformesCsv'])->name('admin.informes.descargar-csv');
+        Route::get('/admin/informes/consolidado-pdf', [AdminController::class, 'verConsolidadoPdf'])->name('admin.informes.consolidado-pdf');
+        Route::post('/admin/informes/descargar-seleccionados-zip', [AdminController::class, 'descargarSeleccionadosZip'])->name('admin.informes.descargar-seleccionados-zip');
+        Route::post('/admin/informes/consolidado-seleccionados-pdf', [AdminController::class, 'verConsolidadoSeleccionadosPdf'])->name('admin.informes.consolidado-seleccionados-pdf');
     });
 });

@@ -690,7 +690,7 @@
                     <div class="card-icon">
                         <img src="{{ asset('images/Admin/GestionInformes.png') }}" alt="Gestión de Informes">
                     </div>
-                    <a href="#" class="card-btn">Ir a Gestión de Informes</a>
+                    <a href="{{ route('admin.informes') }}" class="card-btn">Ir a Gestión de Informes</a>
                 </div>
 
             </div>

@@ -750,18 +750,287 @@
             .report-footer-wrapper {
                 padding: 0;
             }
+        @endif
 
+        @if(isset($isPdf))
+            @page {
+                size: letter portrait;
+                margin: 8mm 10mm 8mm 10mm;
+            }
+
+            body {
+                font-family: Helvetica, Arial, sans-serif !important;
+                font-size: 11px !important;
+                color: #1e293b !important;
+                background-color: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                line-height: 1.4 !important;
+            }
+
+            .no-print-bar {
+                display: none !important;
+            }
+
+            .document-page {
+                max-width: 100% !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                background-color: #ffffff !important;
+            }
+
+            .report-table-layout {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .report-header-wrapper {
+                padding: 0 0 6px 0 !important;
+                width: 100% !important;
+            }
+
+            .report-body-wrapper {
+                padding: 0 !important;
+                width: 100% !important;
+            }
+
+            .report-footer-spacer {
+                display: none !important;
+            }
+
+            .doc-header {
+                border-bottom: 2.5px solid #002D72 !important;
+                padding-bottom: 6px !important;
+                margin-bottom: 8px !important;
+            }
+
+            .header-logos-container {
+                display: block !important;
+                text-align: center !important;
+                width: 100% !important;
+                margin-bottom: 6px !important;
+                padding-bottom: 6px !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+                white-space: nowrap !important;
+            }
+
+            .header-logos-container .logo-item {
+                display: inline-block !important;
+                vertical-align: middle !important;
+                margin: 0 4px !important;
+            }
+
+            .logo-usac-farusac {
+                height: 42px !important;
+                width: auto !important;
+                max-width: 200px !important;
+            }
+
+            .logo-acreditadora {
+                height: 32px !important;
+                width: auto !important;
+                max-width: 90px !important;
+            }
+
+            .doc-title-block {
+                text-align: center !important;
+            }
+
+            .doc-report-name {
+                font-family: Helvetica, Arial, sans-serif !important;
+                font-size: 13.5px !important;
+                font-weight: bold !important;
+                color: #b91c1c !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+            }
+
+            .section-box {
+                margin-bottom: 10px !important;
+            }
+
+            .section-title {
+                font-family: Helvetica, Arial, sans-serif !important;
+                font-size: 11px !important;
+                font-weight: bold !important;
+                color: #002D72 !important;
+                text-transform: uppercase !important;
+                background-color: #f1f5f9 !important;
+                padding: 4px 8px !important;
+                border-left: 4px solid #002D72 !important;
+                margin-top: 8px !important;
+                margin-bottom: 6px !important;
+            }
+
+            .grid-info {
+                display: block !important;
+                width: 100% !important;
+                margin-bottom: 6px !important;
+            }
+
+            .info-row {
+                display: inline-block !important;
+                width: 48.5% !important;
+                vertical-align: top !important;
+                margin-bottom: 4px !important;
+                font-size: 11px !important;
+            }
+
+            .info-label {
+                display: inline !important;
+                font-weight: bold !important;
+                color: #475569 !important;
+                font-size: 10.5px !important;
+            }
+
+            .info-value {
+                display: inline !important;
+                font-weight: normal !important;
+                color: #0f172a !important;
+                font-size: 11px !important;
+            }
+
+            .table-semanas {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 10.5px !important;
+                margin-top: 6px !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+
+            .table-semanas th {
+                background-color: #f8fafc !important;
+                color: #002D72 !important;
+                font-weight: bold !important;
+                padding: 5px 6px !important;
+                border: 1px solid #cbd5e1 !important;
+                font-size: 10px !important;
+                text-transform: uppercase !important;
+            }
+
+            .table-semanas td {
+                padding: 5px 6px !important;
+                border: 1px solid #cbd5e1 !important;
+                vertical-align: top !important;
+                font-size: 10.5px !important;
+                line-height: 1.35 !important;
+            }
+
+            .table-semanas tr {
+                page-break-inside: avoid !important;
+            }
+
+            .badge-semana {
+                font-weight: bold !important;
+                color: #002D72 !important;
+                white-space: nowrap !important;
+            }
+
+            .text-block-value {
+                background-color: #f8fafc !important;
+                border: 1px solid #cbd5e1 !important;
+                padding: 8px 10px !important;
+                font-size: 11px !important;
+                color: #334155 !important;
+            }
+
+            .report-footer-wrapper {
+                padding: 0 !important;
+                width: 100% !important;
+                margin-top: 15px !important;
+                page-break-inside: avoid !important;
+            }
+
+            .doc-footer-official {
+                margin: 0 !important;
+                width: 100% !important;
+            }
+
+            .footer-top-text {
+                text-align: center !important;
+                font-size: 10px !important;
+                font-weight: bold !important;
+                color: #0b2341 !important;
+                padding-bottom: 4px !important;
+                background-color: #ffffff !important;
+            }
+
+            .footer-gold-bar {
+                height: 3px !important;
+                background-color: #f3b228 !important;
+                width: 100% !important;
+            }
+
+            .footer-navy-bar {
+                background-color: #0b2341 !important;
+                color: #ffffff !important;
+                padding: 6px 15px !important;
+                width: 100% !important;
+                display: table !important;
+            }
+
+            .footer-left-content {
+                display: table-cell !important;
+                text-align: left !important;
+                vertical-align: middle !important;
+                color: #ffffff !important;
+                font-size: 9.5px !important;
+            }
+
+            .footer-social-icons {
+                display: none !important;
+            }
+
+            .footer-links-text {
+                display: inline !important;
+                color: #ffffff !important;
+            }
+
+            .footer-web {
+                display: inline !important;
+                color: #ffffff !important;
+                font-weight: bold !important;
+                font-size: 9.5px !important;
+                margin-right: 8px !important;
+            }
+
+            .footer-handle {
+                display: inline !important;
+                color: #ffffff !important;
+                font-size: 9px !important;
+                opacity: 0.9 !important;
+            }
+
+            .footer-right-content {
+                display: table-cell !important;
+                text-align: right !important;
+                vertical-align: middle !important;
+                color: #ffffff !important;
+                font-size: 9.5px !important;
+                font-weight: bold !important;
+            }
         @endif
     </style>
 </head>
 
 <body>
 
-    @if(!request()->has('embed'))
+    @if(!request()->has('embed') && !isset($isPdf))
         <!-- BARRA SUPERIOR DE ACCIONES -->
         <div class="no-print-bar">
             @php
-                $backRoute = (Auth::user() && Auth::user()->rol === 'coordinador') ? route('coordinador.informes') : route('docente.informes');
+                $userRole = Auth::user() ? Auth::user()->rol : '';
+                if ($userRole === 'administrador') {
+                    $backRoute = route('admin.informes');
+                } elseif ($userRole === 'coordinador') {
+                    $backRoute = route('coordinador.informes');
+                } else {
+                    $backRoute = route('docente.informes');
+                }
             @endphp
             <a href="{{ $backRoute }}" class="btn-action btn-back">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -825,11 +1094,11 @@
                                 <div class="grid-info">
                                     <div class="info-row">
                                         <span class="info-label">Docente:</span>
-                                        <span class="info-value">{{ $user->nombre }}</span>
+                                        <span class="info-value">{{ $informe->usuario->nombre ?? $user->nombre }}</span>
                                     </div>
                                     <div class="info-row">
                                         <span class="info-label">Correo Institucional:</span>
-                                        <span class="info-value">{{ $user->correo }}</span>
+                                        <span class="info-value">{{ $informe->usuario->correo ?? $user->correo }}</span>
                                     </div>
                                     <div class="info-row">
                                         <span class="info-label">Curso:</span>
