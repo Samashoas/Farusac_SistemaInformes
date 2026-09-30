@@ -1076,6 +1076,30 @@
             gap: 10px;
         }
 
+        .modal-close-icon-btn {
+            background-color: #f1f5f9;
+            border: 1.5px solid #e2e8f0;
+            color: #64748b;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .modal-close-icon-btn:hover {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border-color: #fca5a5;
+            transform: scale(1.08);
+        }
+
         .bulk-modal-body {
             padding: 28px;
             display: flex;
@@ -1364,23 +1388,24 @@
             background-color: #f1f5f9;
             border: 1.5px solid #e2e8f0;
             color: #64748b;
-            font-size: 17px;
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            line-height: 1;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+            padding: 0;
+            flex-shrink: 0;
         }
 
         .report-btn-close:hover {
             background-color: #fee2e2;
             color: #dc2626;
             border-color: #fca5a5;
-            transform: scale(1.06);
+            transform: scale(1.08) rotate(90deg);
         }
 
         .report-modal-body {
@@ -2184,7 +2209,14 @@
                     </svg>
                     Descarga Masiva de Informes
                 </div>
-                <button type="button" class="modal-close-icon-btn" onclick="closeBulkDownloadModal()">×</button>
+                <button type="button" class="modal-close-icon-btn" onclick="closeBulkDownloadModal()"
+                    title="Cerrar ventana (Esc)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
 
             <div class="bulk-modal-body">
@@ -2349,24 +2381,33 @@
                     </div>
                 </div>
                 <div class="report-modal-header-actions">
-                    <button type="button" class="report-btn-tool btn-tool-print" onclick="printReportIframe()" title="Imprimir o Exportar PDF">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <button type="button" class="report-btn-tool btn-tool-print" onclick="printReportIframe()"
+                        title="Imprimir o Exportar PDF">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2">
                             <polyline points="6 9 6 2 18 2 18 9"></polyline>
                             <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                             <rect x="6" y="14" width="12" height="8"></rect>
                         </svg>
                         <span>Imprimir / PDF</span>
                     </button>
-                    <a href="#" id="previewModalFullTabBtn" target="_blank" class="report-btn-tool btn-tool-tab" title="Abrir en pestaña completa del navegador">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <a href="#" id="previewModalFullTabBtn" target="_blank" class="report-btn-tool btn-tool-tab"
+                        title="Abrir en pestaña completa del navegador">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2">
                             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                             <polyline points="15 3 21 3 21 9"></polyline>
                             <line x1="10" y1="14" x2="21" y2="3"></line>
                         </svg>
                         <span>Pestaña</span>
                     </a>
-                    <button type="button" class="report-btn-close" onclick="closeReportPreviewModal()" title="Cerrar ventana (Esc)">
-                        ✕
+                    <button type="button" class="report-btn-close" onclick="closeReportPreviewModal()"
+                        title="Cerrar ventana (Esc)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -2377,7 +2418,8 @@
                     <div class="report-loader-spinner"></div>
                     <span class="report-loader-text">Cargando informe institucional oficial...</span>
                 </div>
-                <iframe id="reportPreviewIframe" class="report-preview-iframe" src="about:blank" onload="hidePreviewLoader()"></iframe>
+                <iframe id="reportPreviewIframe" class="report-preview-iframe" src="about:blank"
+                    onload="hidePreviewLoader()"></iframe>
             </div>
         </div>
     </div>
@@ -2784,7 +2826,7 @@
             const modal = document.getElementById('reportPreviewModal');
             modal.classList.remove('active');
             document.body.style.overflow = '';
-            
+
             // Limpiar el iframe luego de la animación de cierre para liberar memoria
             setTimeout(() => {
                 const iframe = document.getElementById('reportPreviewIframe');
