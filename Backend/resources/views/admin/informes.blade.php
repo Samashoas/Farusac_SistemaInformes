@@ -1209,243 +1209,232 @@
             color: var(--color-texto-claro);
         }
 
-        /* --- MODAL DETALLE RÁPIDO (PREVIEW) --- */
-        .detail-modal-card {
+        /* --- MODAL SUPERPUESTO DE VISUALIZACIÓN DE INFORME OFICIAL (LIGHTBOX IFRAME) --- */
+        .report-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .report-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .report-modal-window {
             background-color: #ffffff;
-            border-radius: var(--border-radius-card);
-            border: 2px solid transparent;
-            background-image: linear-gradient(white, white),
-                linear-gradient(135deg, var(--color-azul), var(--color-oro), var(--color-terracota));
-            background-origin: border-box;
-            background-clip: padding-box, border-box;
-            max-width: 860px;
+            border-radius: 18px;
             width: 100%;
-            max-height: 90vh;
+            max-width: 1100px;
+            height: 94vh;
+            max-height: 980px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 25px 60px rgba(0, 45, 114, 0.18);
-            transform: scale(0.92);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15);
+            transform: scale(0.95) translateY(12px);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
         }
 
-        .modal-overlay.active .detail-modal-card {
-            transform: scale(1);
+        .report-modal-overlay.active .report-modal-window {
+            transform: scale(1) translateY(0);
         }
 
-        .modal-header {
-            padding: 20px 25px;
-            border-bottom: 1.5px solid #edf2f7;
+        .report-modal-header {
+            padding: 14px 24px;
+            background: #ffffff;
+            border-bottom: 1.5px solid #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background-color: #fafbfc;
+            gap: 16px;
+            flex-shrink: 0;
         }
 
-        .modal-title-wrap {
+        .report-modal-header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
-        }
-
-        .modal-header-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--color-azul);
-            text-transform: uppercase;
-        }
-
-        .modal-close-icon-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--color-texto-claro);
-            cursor: pointer;
-            line-height: 1;
-            padding: 4px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .modal-close-icon-btn:hover {
-            color: var(--color-texto-principal);
-            background-color: #edf2f7;
-        }
-
-        .modal-body {
-            padding: 25px;
-            overflow-y: auto;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .modal-info-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
             gap: 14px;
-            background-color: #f8fafc;
-            padding: 16px 20px;
-            border-radius: 12px;
-            border: 1px solid #edf2f7;
+            min-width: 0;
         }
 
-        @media (max-width: 700px) {
-            .modal-info-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .modal-info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .modal-info-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--color-texto-claro);
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        .modal-info-val {
-            font-size: 13.5px;
-            font-weight: 600;
-            color: var(--color-texto-principal);
-        }
-
-        .modal-section-title {
+        .report-badge-type {
             font-family: 'Outfit', sans-serif;
-            font-size: 14.5px;
-            font-weight: 700;
-            color: var(--color-azul);
+            font-size: 11px;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            letter-spacing: 0.05em;
+            padding: 5px 12px;
+            border-radius: 8px;
+            flex-shrink: 0;
         }
 
-        .modal-links-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+        .report-badge-docente {
+            background-color: #eff6ff;
+            color: #1e40af;
+            border: 1.5px solid #bfdbfe;
         }
 
-        @media (max-width: 650px) {
-            .modal-links-grid {
-                grid-template-columns: 1fr;
-            }
+        .report-badge-coord {
+            background-color: #fff7ed;
+            color: #9a3412;
+            border: 1.5px solid #fed7aa;
         }
 
-        .link-pill {
+        .report-modal-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 500px;
+        }
+
+        .report-modal-subtitle {
+            font-size: 12px;
+            color: #64748b;
+            margin: 2px 0 0 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 500px;
+        }
+
+        .report-modal-header-actions {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 14px;
-            border-radius: 10px;
-            background-color: #f8fafc;
-            border: 1.5px solid #edf2f7;
-            text-decoration: none;
-            color: var(--color-azul);
-            font-size: 12.5px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        .link-pill:hover {
-            border-color: var(--color-azul);
-            background-color: rgba(0, 45, 114, 0.04);
-            transform: translateY(-2px);
-        }
-
-        .link-pill.disabled {
-            color: var(--color-texto-claro);
-            background-color: #f1f5f9;
-            pointer-events: none;
-            opacity: 0.7;
-        }
-
-        .modal-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12.5px;
-        }
-
-        .modal-table th {
-            background-color: #f1f5f9;
-            color: var(--color-azul);
-            font-family: 'Outfit', sans-serif;
-            font-weight: 700;
-            padding: 10px 12px;
-            border: 1px solid #e2e8f0;
-            text-align: left;
-            text-transform: uppercase;
-            font-size: 11.5px;
-        }
-
-        .modal-table td {
-            padding: 10px 12px;
-            border: 1px solid #edf2f7;
-            color: var(--color-texto-principal);
-            vertical-align: top;
-        }
-
-        .modal-footer {
-            padding: 16px 25px;
-            border-top: 1.5px solid #edf2f7;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 12px;
-            background-color: #fafbfc;
-        }
-
-        .btn-modal-action {
+        .report-btn-tool {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
-            border-radius: 20px;
+            gap: 7px;
+            padding: 8px 16px;
+            border-radius: 9px;
             font-family: 'Outfit', sans-serif;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
             cursor: pointer;
             text-decoration: none;
             transition: all 0.2s ease;
-            border: none;
+            border: 1.5px solid transparent;
         }
 
-        .btn-modal-pdf {
-            background-color: var(--color-terracota);
+        .btn-tool-print {
+            background-color: var(--color-azul);
             color: #ffffff;
-            box-shadow: 0 4px 12px rgba(185, 71, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 45, 114, 0.18);
         }
 
-        .btn-modal-pdf:hover {
-            background-color: #9f3c00;
+        .btn-tool-print:hover {
+            background-color: #003B95;
             transform: translateY(-1px);
         }
 
-        .btn-modal-close {
-            background-color: #ffffff;
-            border: 1.5px solid #cbd5e1;
+        .btn-tool-tab {
+            background-color: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        .btn-tool-tab:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .report-btn-close {
+            background-color: #f1f5f9;
+            border: 1.5px solid #e2e8f0;
+            color: #64748b;
+            font-size: 17px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .report-btn-close:hover {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border-color: #fca5a5;
+            transform: scale(1.06);
+        }
+
+        .report-modal-body {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .report-preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            background-color: #f8fafc;
+        }
+
+        .report-modal-loader {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(248, 250, 252, 0.92);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            z-index: 10;
+            transition: opacity 0.25s ease;
+        }
+
+        .report-loader-spinner {
+            width: 42px;
+            height: 42px;
+            border: 3.5px solid #e2e8f0;
+            border-top-color: var(--color-azul);
+            border-right-color: var(--color-terracota);
+            border-radius: 50%;
+            animation: spinReport 0.8s linear infinite;
+        }
+
+        .report-loader-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13.5px;
+            font-weight: 600;
             color: var(--color-texto-secundario);
         }
 
-        .btn-modal-close:hover {
-            background-color: #f1f5f9;
-            color: var(--color-texto-principal);
+        @keyframes spinReport {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* --- MODAL CONFIRMAR ELIMINACIÓN --- */
@@ -1968,10 +1957,10 @@
                                         <!-- Acciones -->
                                         <td>
                                             <div class="actions-cell">
-                                                <!-- Visualizar Informe (Oficial / Imprimible) -->
-                                                <a href="{{ route('admin.informes.docente.ver', $inf->id) }}"
-                                                    target="_blank" class="action-btn view-btn"
-                                                    title="Visualizar informe oficial">
+                                                <!-- Visualizar Informe (Ventana Superpuesta) -->
+                                                <button type="button" class="action-btn view-btn"
+                                                    title="Visualizar informe oficial"
+                                                    onclick="openReportPreviewModal('docente', {{ $inf->id }}, '{{ addslashes($cursoNombre) }} - Sec. {{ addslashes($cursoSeccion) }}', '{{ addslashes($docenteNombre) }} • {{ addslashes($inf->mes) }} {{ addslashes($anioVal) }}')">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                                         stroke="currentColor" stroke-width="2">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -1979,7 +1968,7 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
-                                                </a>
+                                                </button>
 
                                                 <!-- Eliminar Informe -->
                                                 <button type="button" class="action-btn delete-btn" title="Eliminar informe"
@@ -2117,10 +2106,10 @@
                                         <!-- Acciones -->
                                         <td>
                                             <div class="actions-cell">
-                                                <!-- Visualizar Informe (Oficial / Imprimible) -->
-                                                <a href="{{ route('admin.informes.coordinacion.ver', $infC->id) }}"
-                                                    target="_blank" class="action-btn view-btn"
-                                                    title="Visualizar informe oficial">
+                                                <!-- Visualizar Informe (Ventana Superpuesta) -->
+                                                <button type="button" class="action-btn view-btn"
+                                                    title="Visualizar informe oficial"
+                                                    onclick="openReportPreviewModal('coordinacion', {{ $infC->id }}, 'Área {{ addslashes($areaCoord) }} - {{ addslashes($infC->mes) }} {{ addslashes($anioVal) }}', '{{ addslashes($coordNombre) }} • {{ addslashes($infC->mes) }} {{ addslashes($anioVal) }}')">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                                         stroke="currentColor" stroke-width="2">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -2128,7 +2117,7 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
-                                                </a>
+                                                </button>
 
                                                 <!-- Eliminar Informe -->
                                                 <button type="button" class="action-btn delete-btn" title="Eliminar informe"
@@ -2343,6 +2332,52 @@
                 <button type="button" class="btn-confirm-delete" id="btnExecuteDelete"
                     onclick="executeDelete()">CONFIRMAR ELIMINACIÓN</button>
                 <button type="button" class="btn-cancel-delete" onclick="closeDeleteModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SUPERPUESTO DE VISUALIZACIÓN DE INFORME OFICIAL (LIGHTBOX IFRAME) -->
+    <div class="report-modal-overlay" id="reportPreviewModal" onclick="closeReportPreviewModal()">
+        <div class="report-modal-window" onclick="event.stopPropagation()">
+            <!-- Header con info y herramientas -->
+            <div class="report-modal-header">
+                <div class="report-modal-header-left">
+                    <span class="report-badge-type report-badge-docente" id="previewModalBadge">Docente</span>
+                    <div>
+                        <h3 class="report-modal-title" id="previewModalTitle">Cargando informe...</h3>
+                        <p class="report-modal-subtitle" id="previewModalSubtitle">FARUSAC • Control Académico</p>
+                    </div>
+                </div>
+                <div class="report-modal-header-actions">
+                    <button type="button" class="report-btn-tool btn-tool-print" onclick="printReportIframe()" title="Imprimir o Exportar PDF">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        <span>Imprimir / PDF</span>
+                    </button>
+                    <a href="#" id="previewModalFullTabBtn" target="_blank" class="report-btn-tool btn-tool-tab" title="Abrir en pestaña completa del navegador">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                        <span>Pestaña</span>
+                    </a>
+                    <button type="button" class="report-btn-close" onclick="closeReportPreviewModal()" title="Cerrar ventana (Esc)">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Iframe Container y Loader -->
+            <div class="report-modal-body">
+                <div class="report-modal-loader" id="previewIframeLoader">
+                    <div class="report-loader-spinner"></div>
+                    <span class="report-loader-text">Cargando informe institucional oficial...</span>
+                </div>
+                <iframe id="reportPreviewIframe" class="report-preview-iframe" src="about:blank" onload="hidePreviewLoader()"></iframe>
             </div>
         </div>
     </div>
@@ -2706,7 +2741,82 @@
             }
         }
 
-        // 9. Toast Helper
+        // 7. Modal Superpuesto de Vista Previa de Informe Oficial (Lightbox Iframe)
+        const adminDocenteVerBaseUrl = "{{ url('/admin/informes/docente') }}";
+        const adminCoordVerBaseUrl = "{{ url('/admin/informes/coordinacion') }}";
+
+        function openReportPreviewModal(type, id, title, subtitle) {
+            const modal = document.getElementById('reportPreviewModal');
+            const iframe = document.getElementById('reportPreviewIframe');
+            const loader = document.getElementById('previewIframeLoader');
+            const titleEl = document.getElementById('previewModalTitle');
+            const subtitleEl = document.getElementById('previewModalSubtitle');
+            const badgeEl = document.getElementById('previewModalBadge');
+            const fullTabBtn = document.getElementById('previewModalFullTabBtn');
+
+            // Configurar títulos y badge
+            titleEl.textContent = title || 'Informe Oficial';
+            subtitleEl.textContent = subtitle || 'FARUSAC • Control Académico';
+
+            if (type === 'docente') {
+                badgeEl.textContent = 'Docente';
+                badgeEl.className = 'report-badge-type report-badge-docente';
+                const verUrl = `${adminDocenteVerBaseUrl}/${id}/ver`;
+                iframe.src = `${verUrl}?embed=1`;
+                fullTabBtn.href = verUrl;
+            } else {
+                badgeEl.textContent = 'Coordinación';
+                badgeEl.className = 'report-badge-type report-badge-coord';
+                const verUrl = `${adminCoordVerBaseUrl}/${id}/ver`;
+                iframe.src = `${verUrl}?embed=1`;
+                fullTabBtn.href = verUrl;
+            }
+
+            // Mostrar loader
+            if (loader) loader.style.display = 'flex';
+
+            // Abrir modal y bloquear scroll de fondo
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeReportPreviewModal() {
+            const modal = document.getElementById('reportPreviewModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // Limpiar el iframe luego de la animación de cierre para liberar memoria
+            setTimeout(() => {
+                const iframe = document.getElementById('reportPreviewIframe');
+                if (iframe && !modal.classList.contains('active')) {
+                    iframe.src = 'about:blank';
+                }
+            }, 300);
+        }
+
+        function hidePreviewLoader() {
+            const loader = document.getElementById('previewIframeLoader');
+            const iframe = document.getElementById('reportPreviewIframe');
+            if (iframe && (iframe.src.includes('about:blank') || !iframe.src)) return;
+            if (loader) {
+                loader.style.display = 'none';
+            }
+        }
+
+        function printReportIframe() {
+            const iframe = document.getElementById('reportPreviewIframe');
+            if (iframe && iframe.contentWindow) {
+                try {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                } catch (e) {
+                    console.error('Error al invocar impresión de iframe:', e);
+                    window.open(iframe.src.replace('?embed=1', ''), '_blank');
+                }
+            }
+        }
+
+        // 8. Toast Helper
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toastNotification');
             const toastMsg = document.getElementById('toastMessage');
@@ -2718,7 +2828,7 @@
             }, 3800);
         }
 
-        // 10. Inicialización
+        // 9. Inicialización
         document.addEventListener('DOMContentLoaded', () => {
             const profileToggle = document.getElementById('profileToggle');
             const profileDropdown = document.getElementById('profileDropdown');
@@ -2752,7 +2862,7 @@
             // Cerrar modales con Escape
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
-                    closeDetailModal();
+                    closeReportPreviewModal();
                     closeDeleteModal();
                     closeBulkDownloadModal();
                 }

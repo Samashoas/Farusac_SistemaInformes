@@ -704,6 +704,32 @@
             }
         }
 
+        @if(request()->has('embed'))
+            body {
+                padding: 15px 12px;
+                background-color: #f8fafc;
+            }
+
+            .document-page {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+                border-radius: 12px;
+                margin: 0 auto;
+                padding: 0;
+            }
+
+            .report-header-wrapper {
+                padding: 20px 20px 0 20px;
+            }
+
+            .report-body-wrapper {
+                padding: 10px 20px 20px 20px;
+            }
+
+            .report-footer-wrapper {
+                padding: 0;
+            }
+        @endif
+
         @if(isset($isPdf))
             @page {
                 size: letter portrait;
@@ -994,7 +1020,7 @@
 
 <body>
 
-    @if(!isset($isPdf))
+    @if(!request()->has('embed') && !isset($isPdf))
     <div class="no-print-bar">
         @php
             $backRoute = (Auth::user() && Auth::user()->rol === 'administrador') ? route('admin.informes') : route('coordinador.dashboard');
