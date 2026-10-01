@@ -443,7 +443,7 @@
         @media print {
             @page {
                 size: letter portrait;
-                margin: 8mm 10mm 12mm 10mm;
+                margin: 0 !important;
             }
 
             html,
@@ -491,19 +491,21 @@
             }
 
             .report-header-wrapper {
-                padding: 0 0 6px 0 !important;
+                padding: 10mm 15mm 0 15mm !important;
                 width: 100% !important;
+                box-sizing: border-box !important;
             }
 
             .report-body-wrapper {
-                padding: 4px 0 6px 0 !important;
+                padding: 4mm 15mm 8mm 15mm !important;
                 width: 100% !important;
+                box-sizing: border-box !important;
             }
 
             /* El espaciador reserva la altura en cada página para no sobreescribir el pie fijo */
             .report-footer-spacer {
                 display: block !important;
-                height: 48px !important;
+                height: 52px !important;
                 width: 100% !important;
                 visibility: hidden !important;
             }
@@ -518,6 +520,8 @@
                 padding: 0 !important;
                 margin: 0 !important;
                 z-index: 9999 !important;
+                background-color: #ffffff !important;
+            }
                 background-color: #ffffff !important;
             }
 

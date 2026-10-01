@@ -661,9 +661,24 @@ class AdminController extends Controller
         // Embeber imágenes institucionales en Base64 para carga instantánea offline
         $html = $this->embeberImagenesBase64($html);
 
-        // Inyectar regla CSS para ocultar botones no imprimibles en el PDF
-        $hidePrintBarCss = '<style> .no-print-bar { display: none !important; } @page { size: letter portrait; margin: 12mm 15mm 12mm 15mm; } </style>';
-        $html = str_replace('</head>', $hidePrintBarCss . '</head>', $html);
+        // Inyectar regla CSS para pantalla completa de hoja (margin 0) y pie de página adherido al borde inferior
+        $printOptimizationsCss = '<style>
+            @page { size: letter portrait; margin: 0 !important; }
+            html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; background-color: #ffffff !important; overflow: visible !important; }
+            .no-print-bar { display: none !important; }
+            .document-page { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; }
+            .report-table-layout { width: 100% !important; max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+            .report-table-layout>thead { display: table-header-group !important; }
+            .report-table-layout>tfoot { display: table-footer-group !important; }
+            .report-table-layout>tbody { display: table-row-group !important; }
+            .report-header-wrapper { padding: 10mm 15mm 0 15mm !important; width: 100% !important; box-sizing: border-box !important; }
+            .report-body-wrapper { padding: 4mm 15mm 8mm 15mm !important; width: 100% !important; box-sizing: border-box !important; }
+            .report-footer-spacer { display: block !important; height: 50px !important; width: 100% !important; visibility: hidden !important; }
+            .report-footer-wrapper { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; padding: 0 !important; margin: 0 !important; z-index: 9999 !important; background-color: #ffffff !important; }
+            .footer-gold-bar { height: 2.5px !important; background-color: #f3b228 !important; width: 100% !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .footer-navy-bar { background-color: #0b2341 !important; color: #ffffff !important; padding: 5px 20px !important; width: 100% !important; box-sizing: border-box !important; display: flex !important; align-items: center !important; justify-content: space-between !important; flex-wrap: nowrap !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        </style>';
+        $html = str_replace('</head>', $printOptimizationsCss . '</head>', $html);
 
         $tempHtml = tempnam(sys_get_temp_dir(), 'farusac_html_') . '.html';
         $tempPdf = tempnam(sys_get_temp_dir(), 'farusac_pdf_') . '.pdf';
