@@ -10,8 +10,6 @@ use App\Models\Curso;
 use App\Models\Informe;
 use App\Models\InformeCoordinacion;
 use Illuminate\Support\Str;
-use Dompdf\Dompdf;
-use Dompdf\Options;
 
 class AdminController extends Controller
 {
