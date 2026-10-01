@@ -622,31 +622,89 @@ class AdminController extends Controller
     }
 
     /**
+     * Busca la ruta del ejecutable de Microsoft Edge o Google Chrome en el sistema operativo.
+     */
+    protected function getChromiumBinary()
+    {
+        $candidates = [
+            'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+            'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            getenv('LOCALAPPDATA') . '\\Microsoft\\Edge\\Application\\msedge.exe',
+            getenv('LOCALAPPDATA') . '\\Google\\Chrome\\Application\\chrome.exe',
+            getenv('ProgramFiles') . '\\Microsoft\\Edge\\Application\\msedge.exe',
+            getenv('ProgramFiles(x86)') . '\\Microsoft\\Edge\\Application\\msedge.exe',
+            getenv('ProgramFiles') . '\\Google\\Chrome\\Application\\chrome.exe',
+            getenv('ProgramFiles(x86)') . '\\Google\\Chrome\\Application\\chrome.exe',
+        ];
+
+        foreach ($candidates as $path) {
+            if (!empty($path) && file_exists($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Renderiza una vista Blade en PDF vectorizado de alta fidelidad usando el motor nativo de Edge/Chrome.
+     */
+    protected function renderHtmlToPdfChromium($html)
+    {
+        $chromiumPath = $this->getChromiumBinary();
+        if (!$chromiumPath) {
+            throw new \Exception('No se encontró el ejecutable de Microsoft Edge o Google Chrome para renderizar el PDF.');
+        }
+
+        // Embeber imágenes institucionales en Base64 para carga instantánea offline
+        $html = $this->embeberImagenesBase64($html);
+
+        // Inyectar regla CSS para ocultar botones no imprimibles en el PDF
+        $hidePrintBarCss = '<style> .no-print-bar { display: none !important; } @page { size: letter portrait; margin: 12mm 15mm 12mm 15mm; } </style>';
+        $html = str_replace('</head>', $hidePrintBarCss . '</head>', $html);
+
+        $tempHtml = tempnam(sys_get_temp_dir(), 'farusac_html_') . '.html';
+        $tempPdf = tempnam(sys_get_temp_dir(), 'farusac_pdf_') . '.pdf';
+
+        file_put_contents($tempHtml, $html);
+
+        $cmd = sprintf(
+            '"%s" --headless --disable-gpu --allow-file-access-from-files --no-pdf-header-footer --run-all-compositor-stages-before-draw --virtual-time-budget=2500 --print-to-pdf="%s" "%s"',
+            $chromiumPath,
+            $tempPdf,
+            $tempHtml
+        );
+
+        exec($cmd);
+
+        $pdfBinary = null;
+        if (file_exists($tempPdf) && filesize($tempPdf) > 0) {
+            $pdfBinary = file_get_contents($tempPdf);
+        }
+
+        @unlink($tempHtml);
+        @unlink($tempPdf);
+
+        if (!$pdfBinary) {
+            throw new \Exception('No se pudo generar el archivo PDF con el motor de Chromium.');
+        }
+
+        return $pdfBinary;
+    }
+
+    /**
      * Genera el contenido binario PDF de un informe de docente reutilizando la vista oficial institucional.
      */
     protected function generarPdfDocente($informe, $user)
     {
-        $options = new Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
-        $options->set('defaultFont', 'Helvetica');
-        $options->set('defaultMediaType', 'screen');
-
-        $dompdf = new Dompdf($options);
-
         $html = view('docente.ver_informe_pdf', [
             'user' => $user,
             'informe' => $informe,
-            'isPdf' => true,
         ])->render();
 
-        $html = $this->embeberImagenesBase64($html);
-
-        $dompdf->loadHtml($html, 'UTF-8');
-        $dompdf->setPaper('letter', 'portrait');
-        $dompdf->render();
-
-        return $dompdf->output();
+        return $this->renderHtmlToPdfChromium($html);
     }
 
     /**
@@ -654,27 +712,12 @@ class AdminController extends Controller
      */
     protected function generarPdfCoordinacion($informe, $user)
     {
-        $options = new Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
-        $options->set('defaultFont', 'Helvetica');
-        $options->set('defaultMediaType', 'screen');
-
-        $dompdf = new Dompdf($options);
-
         $html = view('coordinador.ver_informe_coordinacion', [
             'user' => $user,
             'informe' => $informe,
-            'isPdf' => true,
         ])->render();
 
-        $html = $this->embeberImagenesBase64($html);
-
-        $dompdf->loadHtml($html, 'UTF-8');
-        $dompdf->setPaper('letter', 'portrait');
-        $dompdf->render();
-
-        return $dompdf->output();
+        return $this->renderHtmlToPdfChromium($html);
     }
 
     /**

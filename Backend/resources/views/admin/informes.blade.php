@@ -2447,64 +2447,8 @@
         </div>
     </div>
 
-    <!-- MODAL DE PROGRESO DE GENERACIÓN ZIP EN NAVEGADOR -->
-    <div class="modal-overlay" id="zipProgressModal" style="z-index: 12000;">
-        <div class="bulk-download-card" style="max-width: 550px;" onclick="event.stopPropagation()">
-            <div class="bulk-modal-header" style="background: linear-gradient(135deg, rgba(185, 71, 0, 0.05), rgba(0, 45, 114, 0.05));">
-                <div class="bulk-modal-title" style="color: var(--color-azul);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span>Generando Archivo ZIP (PDFs Oficiales)</span>
-                </div>
-                <button type="button" class="modal-close-icon-btn" id="btnCancelZipProgress" onclick="cancelZipGeneration()" title="Cancelar proceso">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="bulk-modal-body" style="padding: 24px; text-align: center;">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px;">
-                    <div class="zip-spinner" id="zipSpinner"></div>
-                    <span id="zipProgressStatusText" style="font-family: 'Outfit', sans-serif; font-size: 15.5px; font-weight: 700; color: var(--color-texto-principal);">Iniciando motor de renderizado...</span>
-                </div>
-
-                <div id="zipCurrentDocBox" style="background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; margin: 12px 0; text-align: left;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                        <span id="zipDocBadge" class="badge badge-type-docente">Docente</span>
-                        <span id="zipDocCounter" style="font-size: 12px; font-weight: 700; color: var(--color-terracota);">0 / 0</span>
-                    </div>
-                    <div id="zipDocTitle" style="font-family: 'Outfit', sans-serif; font-size: 13.5px; font-weight: 700; color: var(--color-texto-principal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        Preparando informe...
-                    </div>
-                    <div id="zipDocPath" style="font-size: 11.5px; color: var(--color-texto-secundario); font-family: monospace; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ---
-                    </div>
-                </div>
-
-                <!-- Barra de Progreso -->
-                <div style="background-color: #e2e8f0; border-radius: 20px; height: 12px; overflow: hidden; width: 100%; position: relative; margin: 16px 0 8px 0;">
-                    <div id="zipProgressBarFill" style="background: linear-gradient(90deg, var(--color-terracota), var(--color-oro), var(--color-azul)); height: 100%; width: 0%; border-radius: 20px; transition: width 0.3s ease;"></div>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--color-texto-secundario);">
-                    <span>Progreso total</span>
-                    <span id="zipProgressPercentText" style="color: var(--color-azul); font-weight: 700;">0%</span>
-                </div>
-
-                <div class="bulk-info-banner" style="margin-top: 16px; font-size: 11.5px; text-align: left; border-left-color: var(--color-azul); line-height: 1.45;">
-                    Cada PDF se renderiza con <strong>fidelidad visual 100% idéntica</strong> al formato oficial de la FARUSAC en tu navegador. Por favor, mantén esta pestaña abierta mientras se completa la descarga.
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Hidden worker iframe for offscreen PDF generation -->
-    <iframe id="zipWorkerIframe" style="position: fixed; left: -99999px; top: -99999px; width: 1050px; height: 1400px; border: none; opacity: 0; pointer-events: none;" src="about:blank"></iframe>
-
     <!-- FORMULARIO OCULTO PARA PETICIONES POST DE SELECCIONADOS -->
-    <form id="formSeleccionadosPost" method="POST" target="_blank" style="display: none;">
+    <form id="formSeleccionadosPost" method="POST" style="display: none;">
         @csrf
         <input type="hidden" name="docente_ids" id="postDocenteIds">
         <input type="hidden" name="coordinacion_ids" id="postCoordIds">
@@ -2716,6 +2660,8 @@
 
             if (selectedDocentes.length === 0 && selectedCoord.length === 0) return;
 
+            showToast('Generando archivo ZIP de informes seleccionados con formato oficial...', 'success');
+
             const form = document.getElementById('formSeleccionadosPost');
             form.action = "{{ route('admin.informes.descargar-seleccionados-zip') }}";
             form.target = "_self";
@@ -2772,9 +2718,11 @@
 
         function triggerBulkZip(e) {
             e.preventDefault();
+            closeBulkDownloadModal();
             const params = getBulkParams();
+
+            showToast('Generando archivo ZIP de informes con formato oficial...', 'success');
             window.location.href = `{{ route('admin.informes.descargar-zip') }}?${params}`;
-            showToast('Generando archivo ZIP de informes...', 'success');
         }
 
         function triggerBulkPdf(e) {
