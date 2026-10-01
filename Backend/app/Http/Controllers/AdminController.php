@@ -630,7 +630,7 @@ class AdminController extends Controller
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isRemoteEnabled', true);
         $options->set('defaultFont', 'Helvetica');
-        $options->set('defaultMediaType', 'print');
+        $options->set('defaultMediaType', 'screen');
 
         $dompdf = new Dompdf($options);
 
@@ -658,7 +658,7 @@ class AdminController extends Controller
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isRemoteEnabled', true);
         $options->set('defaultFont', 'Helvetica');
-        $options->set('defaultMediaType', 'print');
+        $options->set('defaultMediaType', 'screen');
 
         $dompdf = new Dompdf($options);
 
@@ -953,5 +953,196 @@ class AdminController extends Controller
             'anio',
             'totalCount'
         ));
+    }
+
+    /**
+     * Retorna la lista de URLs y metadatos de archivos para generación de ZIP en cliente.
+     */
+    public function obtenerListaDescargaZipJson(Request $request)
+    {
+        $filtrados = $this->obtenerInformesFiltrados($request);
+
+        $informesDocentes = $filtrados['docentes'];
+        $informesCoordinacion = $filtrados['coordinacion'];
+        $mesFiltro = $filtrados['mes'] ? ucfirst(strtolower($filtrados['mes'])) : 'General';
+        $anioFiltro = $filtrados['anio'] ?? date('Y');
+
+        if ($informesDocentes->isEmpty() && $informesCoordinacion->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontraron informes para los filtros seleccionados.',
+                'items' => []
+            ]);
+        }
+
+        $items = [];
+        $usedDocentePaths = [];
+
+        foreach ($informesDocentes as $inf) {
+            $docenteNombre = $this->limpiarNombreArchivo($inf->usuario->nombre ?? 'Docente');
+            $cursoNombre = $this->limpiarNombreArchivo($inf->curso->nombre_curso ?? 'Curso');
+            $seccion = $this->limpiarNombreArchivo($inf->curso->seccion ?? 'A');
+            $mesLimpio = $this->limpiarNombreArchivo(ucfirst(strtolower($inf->mes ?? $mesFiltro)));
+            $anioLimpio = $this->limpiarNombreArchivo($inf->curso->anio ?? $anioFiltro);
+
+            $dirPath = "{$anioLimpio}/{$mesLimpio}/Docente";
+            $fileName = "Informes_Docente_{$docenteNombre}_{$mesLimpio}.pdf";
+            $fullPath = "{$dirPath}/{$fileName}";
+
+            if (isset($usedDocentePaths[$fullPath])) {
+                $fileName = "Informes_Docente_{$docenteNombre}_{$cursoNombre}_Sec{$seccion}_{$mesLimpio}.pdf";
+                $fullPath = "{$dirPath}/{$fileName}";
+            }
+            $usedDocentePaths[$fullPath] = true;
+
+            $items[] = [
+                'id' => $inf->id,
+                'tipo' => 'docente',
+                'autor' => $inf->usuario->nombre ?? 'Docente',
+                'curso_area' => $inf->curso->nombre_curso ?? 'Curso',
+                'seccion' => $inf->curso->seccion ?? '',
+                'mes' => $mesLimpio,
+                'anio' => $anioLimpio,
+                'url' => route('admin.informes.docente.ver', ['id' => $inf->id, 'embed' => 1]),
+                'fileName' => $fileName,
+                'fullPath' => $fullPath,
+            ];
+        }
+
+        $usedCoordPaths = [];
+        foreach ($informesCoordinacion as $infC) {
+            $coordNombre = $this->limpiarNombreArchivo($infC->usuario->nombre ?? 'Coordinador');
+            $area = $this->limpiarNombreArchivo($infC->area ?? 'Area');
+            $mesLimpio = $this->limpiarNombreArchivo(ucfirst(strtolower($infC->mes ?? $mesFiltro)));
+            $anioLimpio = $this->limpiarNombreArchivo($infC->anio ?? $anioFiltro);
+
+            $dirPath = "{$anioLimpio}/{$mesLimpio}/Coordinador";
+            $fileName = "Informes_Coordinador_{$coordNombre}_{$mesLimpio}.pdf";
+            $fullPath = "{$dirPath}/{$fileName}";
+
+            if (isset($usedCoordPaths[$fullPath])) {
+                $fileName = "Informes_Coordinador_{$coordNombre}_{$area}_{$mesLimpio}.pdf";
+                $fullPath = "{$dirPath}/{$fileName}";
+            }
+            $usedCoordPaths[$fullPath] = true;
+
+            $items[] = [
+                'id' => $infC->id,
+                'tipo' => 'coordinacion',
+                'autor' => $infC->usuario->nombre ?? 'Coordinador',
+                'curso_area' => $infC->area ?? 'Área',
+                'seccion' => '',
+                'mes' => $mesLimpio,
+                'anio' => $anioLimpio,
+                'url' => route('admin.informes.coordinacion.ver', ['id' => $infC->id, 'embed' => 1]),
+                'fileName' => $fileName,
+                'fullPath' => $fullPath,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'zipName' => "Informes_FARUSAC_{$mesFiltro}_{$anioFiltro}.zip",
+            'total' => count($items),
+            'items' => $items,
+        ]);
+    }
+
+    /**
+     * Retorna la lista de URLs y metadatos para informes seleccionados por checkbox para el cliente JSZip.
+     */
+    public function obtenerListaSeleccionadosZipJson(Request $request)
+    {
+        $docenteIds = $request->input('docente_ids', []);
+        $coordIds = $request->input('coordinacion_ids', []);
+
+        if (is_string($docenteIds)) {
+            $docenteIds = explode(',', $docenteIds);
+        }
+        if (is_string($coordIds)) {
+            $coordIds = explode(',', $coordIds);
+        }
+
+        $informesDocentes = !empty($docenteIds) ? Informe::with(['usuario', 'curso', 'semanas'])->whereIn('id', array_filter($docenteIds))->get() : collect();
+        $informesCoordinacion = !empty($coordIds) ? InformeCoordinacion::with(['usuario', 'programas', 'asignaturas', 'avances', 'estudiantes'])->whereIn('id', array_filter($coordIds))->get() : collect();
+
+        if ($informesDocentes->isEmpty() && $informesCoordinacion->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se seleccionó ningún informe.',
+                'items' => []
+            ], 422);
+        }
+
+        $items = [];
+        $usedDocentePaths = [];
+        foreach ($informesDocentes as $inf) {
+            $docenteNombre = $this->limpiarNombreArchivo($inf->usuario->nombre ?? 'Docente');
+            $cursoNombre = $this->limpiarNombreArchivo($inf->curso->nombre_curso ?? 'Curso');
+            $seccion = $this->limpiarNombreArchivo($inf->curso->seccion ?? 'A');
+            $mes = $this->limpiarNombreArchivo(ucfirst(strtolower($inf->mes ?? 'Mes')));
+            $anio = $this->limpiarNombreArchivo($inf->curso->anio ?? date('Y'));
+
+            $dirPath = "{$anio}/{$mes}/Docente";
+            $fileName = "Informes_Docente_{$docenteNombre}_{$mes}.pdf";
+            $fullPath = "{$dirPath}/{$fileName}";
+
+            if (isset($usedDocentePaths[$fullPath])) {
+                $fileName = "Informes_Docente_{$docenteNombre}_{$cursoNombre}_Sec{$seccion}_{$mes}.pdf";
+                $fullPath = "{$dirPath}/{$fileName}";
+            }
+            $usedDocentePaths[$fullPath] = true;
+
+            $items[] = [
+                'id' => $inf->id,
+                'tipo' => 'docente',
+                'autor' => $inf->usuario->nombre ?? 'Docente',
+                'curso_area' => $inf->curso->nombre_curso ?? 'Curso',
+                'seccion' => $inf->curso->seccion ?? '',
+                'mes' => $mes,
+                'anio' => $anio,
+                'url' => route('admin.informes.docente.ver', ['id' => $inf->id, 'embed' => 1]),
+                'fileName' => $fileName,
+                'fullPath' => $fullPath,
+            ];
+        }
+
+        $usedCoordPaths = [];
+        foreach ($informesCoordinacion as $infC) {
+            $coordNombre = $this->limpiarNombreArchivo($infC->usuario->nombre ?? 'Coordinador');
+            $area = $this->limpiarNombreArchivo($infC->area ?? 'Area');
+            $mes = $this->limpiarNombreArchivo(ucfirst(strtolower($infC->mes ?? 'Mes')));
+            $anio = $this->limpiarNombreArchivo($infC->anio ?? date('Y'));
+
+            $dirPath = "{$anio}/{$mes}/Coordinador";
+            $fileName = "Informes_Coordinador_{$coordNombre}_{$mes}.pdf";
+            $fullPath = "{$dirPath}/{$fileName}";
+
+            if (isset($usedCoordPaths[$fullPath])) {
+                $fileName = "Informes_Coordinador_{$coordNombre}_{$area}_{$mes}.pdf";
+                $fullPath = "{$dirPath}/{$fileName}";
+            }
+            $usedCoordPaths[$fullPath] = true;
+
+            $items[] = [
+                'id' => $infC->id,
+                'tipo' => 'coordinacion',
+                'autor' => $infC->usuario->nombre ?? 'Coordinador',
+                'curso_area' => $infC->area ?? 'Área',
+                'seccion' => '',
+                'mes' => $mes,
+                'anio' => $anio,
+                'url' => route('admin.informes.coordinacion.ver', ['id' => $infC->id, 'embed' => 1]),
+                'fileName' => $fileName,
+                'fullPath' => $fullPath,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'zipName' => "Informes_Seleccionados_FARUSAC.zip",
+            'total' => count($items),
+            'items' => $items,
+        ]);
     }
 }

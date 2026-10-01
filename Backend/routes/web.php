@@ -81,9 +81,11 @@ Route::middleware('auth')->group(function () {
 
         // Descarga Masiva y Consolidado
         Route::get('/admin/informes/descargar-zip', [AdminController::class, 'descargarInformesZip'])->name('admin.informes.descargar-zip');
+        Route::get('/admin/informes/lista-descarga-zip', [AdminController::class, 'obtenerListaDescargaZipJson'])->name('admin.informes.lista-descarga-zip');
         Route::get('/admin/informes/descargar-csv', [AdminController::class, 'descargarInformesCsv'])->name('admin.informes.descargar-csv');
         Route::get('/admin/informes/consolidado-pdf', [AdminController::class, 'verConsolidadoPdf'])->name('admin.informes.consolidado-pdf');
         Route::post('/admin/informes/descargar-seleccionados-zip', [AdminController::class, 'descargarSeleccionadosZip'])->name('admin.informes.descargar-seleccionados-zip');
+        Route::post('/admin/informes/lista-seleccionados-zip', [AdminController::class, 'obtenerListaSeleccionadosZipJson'])->name('admin.informes.lista-seleccionados-zip');
         Route::post('/admin/informes/consolidado-seleccionados-pdf', [AdminController::class, 'verConsolidadoSeleccionadosPdf'])->name('admin.informes.consolidado-seleccionados-pdf');
     });
 });

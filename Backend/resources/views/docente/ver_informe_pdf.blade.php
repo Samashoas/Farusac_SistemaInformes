@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informe - {{ $informe->curso->nombre_curso ?? 'Curso' }} - {{ $informe->mes }}
-        {{ $informe->curso->anio ?? '' }}</title>
+        {{ $informe->curso->anio ?? '' }}
+    </title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -750,22 +751,23 @@
             .report-footer-wrapper {
                 padding: 0;
             }
+
         @endif
 
         @if(isset($isPdf))
             @page {
                 size: letter portrait;
-                margin: 8mm 10mm 8mm 10mm;
+                margin: 10mm 12mm 10mm 12mm;
             }
 
             body {
                 font-family: Helvetica, Arial, sans-serif !important;
-                font-size: 11px !important;
+                font-size: 10.5px !important;
                 color: #1e293b !important;
                 background-color: #ffffff !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                line-height: 1.4 !important;
+                line-height: 1.35 !important;
             }
 
             .no-print-bar {
@@ -781,11 +783,22 @@
                 background-color: #ffffff !important;
             }
 
-            .report-table-layout {
+            /* Desactivar table-layout master en Dompdf para que no fuerce todo a una sola celda indivisible */
+            .report-table-layout,
+            .report-table-layout>thead,
+            .report-table-layout>tbody,
+            .report-table-layout>tfoot,
+            .report-table-layout>thead>tr,
+            .report-table-layout>tbody>tr,
+            .report-table-layout>tfoot>tr,
+            .report-table-layout>thead>tr>td,
+            .report-table-layout>tbody>tr>td,
+            .report-table-layout>tfoot>tr>td {
+                display: block !important;
                 width: 100% !important;
-                border-collapse: collapse !important;
-                margin: 0 !important;
+                border: none !important;
                 padding: 0 !important;
+                margin: 0 !important;
             }
 
             .report-header-wrapper {
@@ -803,7 +816,7 @@
             }
 
             .doc-header {
-                border-bottom: 2.5px solid #002D72 !important;
+                border-bottom: 2px solid #002D72 !important;
                 padding-bottom: 6px !important;
                 margin-bottom: 8px !important;
             }
@@ -825,15 +838,15 @@
             }
 
             .logo-usac-farusac {
-                height: 42px !important;
+                height: 38px !important;
                 width: auto !important;
-                max-width: 200px !important;
+                max-width: 180px !important;
             }
 
             .logo-acreditadora {
-                height: 32px !important;
+                height: 28px !important;
                 width: auto !important;
-                max-width: 90px !important;
+                max-width: 80px !important;
             }
 
             .doc-title-block {
@@ -842,7 +855,7 @@
 
             .doc-report-name {
                 font-family: Helvetica, Arial, sans-serif !important;
-                font-size: 13.5px !important;
+                font-size: 13px !important;
                 font-weight: bold !important;
                 color: #b91c1c !important;
                 text-transform: uppercase !important;
@@ -855,7 +868,7 @@
 
             .section-title {
                 font-family: Helvetica, Arial, sans-serif !important;
-                font-size: 11px !important;
+                font-size: 10.5px !important;
                 font-weight: bold !important;
                 color: #002D72 !important;
                 text-transform: uppercase !important;
@@ -877,27 +890,34 @@
                 width: 48.5% !important;
                 vertical-align: top !important;
                 margin-bottom: 4px !important;
-                font-size: 11px !important;
+                font-size: 10.5px !important;
             }
 
             .info-label {
                 display: inline !important;
                 font-weight: bold !important;
                 color: #475569 !important;
-                font-size: 10.5px !important;
+                font-size: 10px !important;
             }
 
             .info-value {
                 display: inline !important;
                 font-weight: normal !important;
                 color: #0f172a !important;
-                font-size: 11px !important;
+                font-size: 10.5px !important;
+            }
+
+            .info-value a {
+                color: #2563eb !important;
+                text-decoration: none !important;
+                word-break: break-all !important;
+                font-size: 9.5px !important;
             }
 
             .table-semanas {
                 width: 100% !important;
                 border-collapse: collapse !important;
-                font-size: 10.5px !important;
+                font-size: 9.5px !important;
                 margin-top: 6px !important;
                 border: 1px solid #cbd5e1 !important;
             }
@@ -908,7 +928,7 @@
                 font-weight: bold !important;
                 padding: 5px 6px !important;
                 border: 1px solid #cbd5e1 !important;
-                font-size: 10px !important;
+                font-size: 9.5px !important;
                 text-transform: uppercase !important;
             }
 
@@ -916,8 +936,8 @@
                 padding: 5px 6px !important;
                 border: 1px solid #cbd5e1 !important;
                 vertical-align: top !important;
-                font-size: 10.5px !important;
-                line-height: 1.35 !important;
+                font-size: 9.5px !important;
+                line-height: 1.3 !important;
             }
 
             .table-semanas tr {
@@ -934,11 +954,14 @@
                 background-color: #f8fafc !important;
                 border: 1px solid #cbd5e1 !important;
                 padding: 8px 10px !important;
-                font-size: 11px !important;
+                font-size: 10px !important;
+                line-height: 1.4 !important;
                 color: #334155 !important;
+                margin-bottom: 8px !important;
             }
 
             .report-footer-wrapper {
+                display: block !important;
                 padding: 0 !important;
                 width: 100% !important;
                 margin-top: 15px !important;
@@ -952,7 +975,7 @@
 
             .footer-top-text {
                 text-align: center !important;
-                font-size: 10px !important;
+                font-size: 9.5px !important;
                 font-weight: bold !important;
                 color: #0b2341 !important;
                 padding-bottom: 4px !important;
@@ -968,7 +991,7 @@
             .footer-navy-bar {
                 background-color: #0b2341 !important;
                 color: #ffffff !important;
-                padding: 6px 15px !important;
+                padding: 5px 12px !important;
                 width: 100% !important;
                 display: table !important;
             }
@@ -978,7 +1001,7 @@
                 text-align: left !important;
                 vertical-align: middle !important;
                 color: #ffffff !important;
-                font-size: 9.5px !important;
+                font-size: 9px !important;
             }
 
             .footer-social-icons {
@@ -994,14 +1017,14 @@
                 display: inline !important;
                 color: #ffffff !important;
                 font-weight: bold !important;
-                font-size: 9.5px !important;
+                font-size: 9px !important;
                 margin-right: 8px !important;
             }
 
             .footer-handle {
                 display: inline !important;
                 color: #ffffff !important;
-                font-size: 9px !important;
+                font-size: 8.5px !important;
                 opacity: 0.9 !important;
             }
 
@@ -1010,9 +1033,10 @@
                 text-align: right !important;
                 vertical-align: middle !important;
                 color: #ffffff !important;
-                font-size: 9.5px !important;
+                font-size: 9px !important;
                 font-weight: bold !important;
             }
+
         @endif
     </style>
 </head>
@@ -1220,7 +1244,8 @@
                                                 <td class="badge-semana">Semana {{ $sem->numero_semana }}</td>
                                                 <td>{{ $sem->actividad_realizada }}</td>
                                                 <td style="text-align: center; font-weight: 700;">
-                                                    {{ $sem->estudiantes_participaron }}</td>
+                                                    {{ $sem->estudiantes_participaron }}
+                                                </td>
                                                 <td>{{ $sem->metodologias ?? '—' }}</td>
                                                 <td>{{ $sem->medios_comunicacion ?? '—' }}</td>
                                             </tr>
