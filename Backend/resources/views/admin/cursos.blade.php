@@ -1192,7 +1192,10 @@
             curso: c.nombre_curso,
             codigo: String(c.codigo_curso),
             seccion: c.seccion,
-            jornada: (c.seccion === 'B' || c.seccion === 'b') ? 'Vespertina' : 'Matutina',
+            jornada: (function(sec) {
+                const s = String(sec || '').toUpperCase();
+                return (s.startsWith('V') || s.startsWith('F') || s.startsWith('G') || s.startsWith('PG') || s === 'B') ? 'Vespertina' : 'Matutina';
+            })(c.seccion),
             semestre: c.semestre,
             anio: String(c.anio)
         }));
@@ -1410,7 +1413,7 @@
             const carrera = document.getElementById('newCarrera').value;
             const area = document.getElementById('newArea').value.trim();
             const nombre_curso = document.getElementById('newCurso').value.trim();
-            const codigo_curso = parseInt(document.getElementById('newCodigo').value.trim(), 10);
+            const codigo_curso = document.getElementById('newCodigo').value.trim();
             const seccion = document.getElementById('newSeccion').value.trim();
             const jornada = document.getElementById('newJornada').value;
             const semestre = document.getElementById('newSemestre').value;
@@ -1423,7 +1426,7 @@
             }
             const anio = parseInt(anioRaw, 10);
 
-            if (!carrera || !area || !nombre_curso || isNaN(codigo_curso) || !seccion || !jornada || !semestre || isNaN(anio)) return;
+            if (!carrera || !area || !nombre_curso || !codigo_curso || !seccion || !jornada || !semestre || isNaN(anio)) return;
 
             fetch('/admin/cursos', {
                 method: 'POST',

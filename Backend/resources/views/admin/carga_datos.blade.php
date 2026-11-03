@@ -355,16 +355,23 @@
         }
 
         .cards-selection-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 100%;
+            max-width: 860px;
+        }
+
+        .secondary-cards-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
+            gap: 25px;
             width: 100%;
         }
 
         @media (max-width: 768px) {
-            .cards-selection-wrapper {
+            .secondary-cards-grid {
                 grid-template-columns: 1fr;
-                gap: 25px;
             }
         }
 
@@ -372,7 +379,7 @@
             background-color: #ffffff;
             border: 2px solid var(--color-borde);
             border-radius: 20px;
-            padding: 50px 30px;
+            padding: 40px 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -380,14 +387,15 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
             transition: var(--transition-smooth);
             cursor: pointer;
+            position: relative;
         }
 
         .selection-card-icon {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             color: var(--color-texto-principal);
             opacity: 0.85;
-            margin-bottom: 35px;
+            margin-bottom: 20px;
             transition: color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -396,7 +404,7 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            max-width: 220px;
+            max-width: 250px;
             padding: 12px 25px;
             background-color: transparent;
             color: var(--color-texto-principal);
@@ -409,6 +417,68 @@
             letter-spacing: 0.05em;
             transition: all 0.25s ease;
             cursor: pointer;
+        }
+
+        /* Tarjeta Carga Académica Integral (Terracota) */
+        .selection-card-academica {
+            background: linear-gradient(180deg, #ffffff 0%, #fffbf8 100%);
+            border: 2px solid rgba(185, 71, 0, 0.25);
+            box-shadow: 0 10px 25px rgba(185, 71, 0, 0.04);
+            padding: 45px 35px;
+        }
+
+        .selection-card-academica:hover {
+            transform: translateY(-5px);
+            border-color: var(--color-terracota);
+            box-shadow: 0 20px 40px rgba(185, 71, 0, 0.12);
+        }
+
+        .selection-card-academica .selection-card-icon {
+            color: var(--color-terracota);
+            opacity: 0.95;
+            width: 80px;
+            height: 80px;
+        }
+
+        .selection-card-academica:hover .selection-card-icon {
+            transform: scale(1.05);
+        }
+
+        .selection-card-academica .selection-btn {
+            background-color: var(--color-terracota);
+            color: #ffffff;
+            border-color: var(--color-terracota);
+            box-shadow: 0 4px 12px rgba(185, 71, 0, 0.25);
+            max-width: 280px;
+        }
+
+        .selection-card-academica:hover .selection-btn {
+            background-color: #9c3c00;
+            box-shadow: 0 6px 16px rgba(185, 71, 0, 0.35);
+        }
+
+        .card-badge-featured {
+            position: absolute;
+            top: 18px;
+            right: 25px;
+            background-color: rgba(185, 71, 0, 0.08);
+            color: var(--color-terracota);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 5px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(185, 71, 0, 0.25);
+        }
+
+        .card-academica-desc {
+            font-size: 13.5px;
+            color: var(--color-texto-secundario);
+            text-align: center;
+            max-width: 580px;
+            margin-bottom: 25px;
+            line-height: 1.55;
         }
 
         /* Tarjeta Usuarios (Azul) */
@@ -590,6 +660,11 @@
             background-color: rgba(172, 132, 0, 0.01);
         }
 
+        #dropAreaAcademica:hover {
+            border-color: var(--color-terracota);
+            background-color: rgba(185, 71, 0, 0.01);
+        }
+
         .upload-icon {
             width: 50px;
             height: 50px;
@@ -651,6 +726,11 @@
             border-left: 3.5px solid var(--color-oro);
         }
 
+        .csv-instructions.academica-inst {
+            background-color: rgba(185, 71, 0, 0.04);
+            border-left: 3.5px solid var(--color-terracota);
+        }
+
         .instructions-title {
             font-family: 'Outfit', sans-serif;
             font-size: 14px;
@@ -666,6 +746,10 @@
 
         .cursos-inst .instructions-title {
             color: #8c6c00;
+        }
+
+        .academica-inst .instructions-title {
+            color: var(--color-terracota);
         }
 
         .instructions-list {
@@ -694,6 +778,20 @@
 
         .cursos-inst li::before {
             color: var(--color-oro);
+        }
+
+        .academica-inst li::before {
+            color: var(--color-terracota);
+        }
+
+        .academica-inst-btn {
+            border-color: var(--color-terracota) !important;
+            color: var(--color-terracota) !important;
+        }
+
+        .academica-inst-btn:hover {
+            background-color: var(--color-terracota) !important;
+            color: #ffffff !important;
         }
 
         /* --- ESTILOS DE LOS REPORTES DE CARGA --- */
@@ -910,6 +1008,11 @@
             border-left: 3.5px solid var(--color-oro);
         }
 
+        .csv-instructions.academica-inst {
+            background-color: rgba(185, 71, 0, 0.04);
+            border-left: 3.5px solid var(--color-terracota);
+        }
+
         .instructions-title {
             font-family: 'Outfit', sans-serif;
             font-size: 14px;
@@ -925,6 +1028,10 @@
 
         .cursos-inst .instructions-title {
             color: #8c6c00;
+        }
+
+        .academica-inst .instructions-title {
+            color: var(--color-terracota);
         }
 
         .instructions-list {
@@ -953,6 +1060,20 @@
 
         .cursos-inst li::before {
             color: var(--color-oro);
+        }
+
+        .academica-inst li::before {
+            color: var(--color-terracota);
+        }
+
+        .academica-inst-btn {
+            border-color: var(--color-terracota) !important;
+            color: var(--color-terracota) !important;
+        }
+
+        .academica-inst-btn:hover {
+            background-color: var(--color-terracota) !important;
+            color: #ffffff !important;
         }
 
         /* Botón de Carga */
@@ -993,6 +1114,16 @@
         .cursos-btn:hover {
             background-color: #8c6c00;
             box-shadow: 0 6px 15px rgba(172, 132, 0, 0.35);
+        }
+
+        .academica-btn {
+            background-color: var(--color-terracota);
+            box-shadow: 0 4px 10px rgba(185, 71, 0, 0.25);
+        }
+
+        .academica-btn:hover {
+            background-color: #9c3c00;
+            box-shadow: 0 6px 15px rgba(185, 71, 0, 0.35);
         }
 
         .submit-btn:hover {
@@ -1187,25 +1318,144 @@
                 <h2 class="section-main-title">CARGA MASIVA DE DATOS</h2>
                 
                 <div class="cards-selection-wrapper">
-                    <!-- Tarjeta Cargar Usuarios -->
-                    <div class="selection-card selection-card-usuarios" onclick="showUploadView('usuarios')">
-                        <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <button class="selection-btn">CARGAR USUARIOS</button>
-                    </div>
-
-                    <!-- Tarjeta Cargar Cursos -->
-                    <div class="selection-card selection-card-cursos" onclick="showUploadView('cursos')">
-                        <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <!-- Tarjeta Principal: Carga Académica Integral (Docentes, Cursos y Asignaciones) -->
+                    <div class="selection-card selection-card-academica" onclick="showUploadView('academica')">
+                        <span class="card-badge-featured">⭐ Recomendado • Asignación Directa</span>
+                        <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
-                        <button class="selection-btn">CARGAR CURSOS</button>
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 700; color: var(--color-texto-principal); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em;">Carga Académica Completa</h3>
+                        <p class="card-academica-desc">
+                            Formato oficial de Carga Académica Detallada FARUSAC. Carga cursos y docentes, y realiza la <b>asignación directa</b> en una sola operación. Gestiona la coexistencia de semestres automáticamente.
+                        </p>
+                        <button class="selection-btn">CARGAR CARGA ACADÉMICA</button>
+                    </div>
+
+                    <!-- Tarjetas Secundarias -->
+                    <div class="secondary-cards-grid">
+                        <!-- Tarjeta Cargar Usuarios -->
+                        <div class="selection-card selection-card-usuarios" onclick="showUploadView('usuarios')">
+                            <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <button class="selection-btn">CARGAR SOLO USUARIOS</button>
+                        </div>
+
+                        <!-- Tarjeta Cargar Cursos -->
+                        <div class="selection-card selection-card-cursos" onclick="showUploadView('cursos')">
+                            <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <button class="selection-btn">CARGAR SOLO CURSOS</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. PANALES DE FORMULARIO (OCULTOS INICIALMENTE) -->
+            <!-- 2. PANELES DE FORMULARIO (OCULTOS INICIALMENTE) -->
+
+            <!-- Formulario de Carga: Carga Académica Completa -->
+            <div class="upload-view-container" id="uploadAcademicaView">
+                <div class="back-link-wrapper">
+                    <button type="button" class="back-link-btn" onclick="showSelectionView()">
+                        <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Volver a la selección
+                    </button>
+                </div>
+
+                <div class="form-card">
+                    <div class="card-title-group">
+                        <h2 class="card-main-title">Carga Masiva de datos</h2>
+                        <div class="card-main-subtitle" style="color: var(--color-terracota);">CARGA ACADÉMICA (DOCENTES Y CURSOS)</div>
+                    </div>
+
+                    <div class="card-actions-wrapper">
+                        <a href="{{ route('admin.cursos') }}" class="card-action-btn academica-inst-btn">Gestión de cursos</a>
+                        <a href="{{ route('admin.usuarios') }}" class="card-action-btn academica-inst-btn">Gestión de usuarios</a>
+                        <button type="button" class="card-action-btn academica-inst-btn" onclick="downloadExample('academica')">Descargar ejemplo CSV</button>
+                    </div>
+
+                    <!-- Filtros Opcionales de Confirmación de Periodo -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; text-align: left;">
+                        <div>
+                            <label style="display:block; font-size: 11px; font-weight: 700; color: var(--color-texto-secundario); text-transform: uppercase; margin-bottom: 5px;">Carrera</label>
+                            <select id="academica_carrera" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e0; border-radius: 8px; font-size: 13px; background-color: #fff; color: var(--color-texto-principal); outline: none;">
+                                <option value="detectar" selected>Auto-detectar del archivo (Arquitectura)</option>
+                                <option value="Arquitectura">Arquitectura</option>
+                                <option value="Diseño Gráfico">Diseño Gráfico</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; font-size: 11px; font-weight: 700; color: var(--color-texto-secundario); text-transform: uppercase; margin-bottom: 5px;">Semestre / Periodo</label>
+                            <select id="academica_semestre" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e0; border-radius: 8px; font-size: 13px; background-color: #fff; color: var(--color-texto-principal); outline: none;">
+                                <option value="detectar" selected>Auto-detectar del archivo</option>
+                                <option value="Primer Semestre">Primer Semestre (Enero - Mayo)</option>
+                                <option value="Vacaciones Junio">Vacaciones Junio (Vacaciones 1er Semestre)</option>
+                                <option value="Segundo Semestre">Segundo Semestre (Julio - Noviembre)</option>
+                                <option value="Vacaciones Diciembre">Vacaciones Diciembre (Vacaciones 2do Semestre)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; font-size: 11px; font-weight: 700; color: var(--color-texto-secundario); text-transform: uppercase; margin-bottom: 5px;">Año</label>
+                            <select id="academica_anio" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e0; border-radius: 8px; font-size: 13px; background-color: #fff; color: var(--color-texto-principal); outline: none;">
+                                <option value="detectar" selected>Auto-detectar del archivo</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2025">2025</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <form id="formAcademicaCSV" onsubmit="event.preventDefault();">
+                        <div class="file-upload-area" id="dropAreaAcademica" onclick="document.getElementById('archivo_csv_academica').click()">
+                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" style="color: var(--color-terracota);">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <input type="file" name="archivo_csv" id="archivo_csv_academica" class="file-input" accept=".csv" required style="display:none;" onchange="uploadCSVFile('academica')">
+                            <div class="upload-text" id="uploadTextAcademica">Arrastra el archivo CSV o haz click para buscar el archivo</div>
+                            <div class="upload-hint">Formato oficial de Carga Académica Detallada FARUSAC (Máx. 10 MB)</div>
+                            <div class="file-selected-name" id="fileNameAcademica" style="color: var(--color-terracota);"></div>
+                        </div>
+
+                        <!-- Instrucciones -->
+                        <div class="csv-instructions academica-inst">
+                            <h4 class="instructions-title">Instrucciones y Requisitos de Carga</h4>
+                            <ul class="instructions-list">
+                                <li><b>Asignación Directa:</b> El archivo vincula automáticamente a cada docente con sus cursos y secciones en una sola operación.</li>
+                                <li><b>Formato oficial:</b> Archivo delimitado por comas con las columnas: <i>Área, Ciclo, Código, Asignatura, Sección, Jornada, Docente, Registro Personal, Correo</i>, etc.</li>
+                                <li><b>Regla de Coexistencia de Periodos:</b>
+                                    <ul style="margin-top: 5px; padding-left: 15px; list-style-type: circle;">
+                                        <li><i>Primer Semestre</i> (Enero) y <i>Vacaciones de Junio</i> coexisten al ser del mismo ciclo.</li>
+                                        <li><i>Segundo Semestre</i> (Julio) y <i>Vacaciones de Diciembre</i> coexisten al ser del mismo ciclo.</li>
+                                        <li><b>Semestres diferentes no pueden coexistir:</b> Al cargar un nuevo semestre, las asignaciones de semestres de otros ciclos se desasignan y actualizan automáticamente.</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </form>
+
+                    <!-- Resultados / Reporte de Carga Académica -->
+                    <div class="report-section" id="reportAcademica">
+                        <div id="coexistenciaBannerAcademica" style="display: none; background-color: rgba(185, 71, 0, 0.06); border-left: 4px solid var(--color-terracota); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; text-align: left;">
+                            <div id="coexistenciaBannerTitulo" style="font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; color: var(--color-terracota); margin-bottom: 4px;"></div>
+                            <div id="coexistenciaBannerTexto" style="font-size: 12.5px; color: var(--color-texto-secundario); line-height: 1.4;"></div>
+                        </div>
+
+                        <div class="report-tabs">
+                            <button type="button" class="report-tab-btn tab-btn-success active" onclick="switchReportTab('academica', 'success')">
+                                Cursos asignados exitosamente: <span id="successCountAcademica">0</span>
+                            </button>
+                            <button type="button" class="report-tab-btn tab-btn-error" onclick="switchReportTab('academica', 'error')">
+                                Observaciones / con error: <span id="errorCountAcademica">0</span>
+                            </button>
+                        </div>
+                        
+                        <div id="reportContentAcademica"></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Formulario de Carga: Usuarios -->
             <div class="upload-view-container" id="uploadUsuariosView">
@@ -1337,20 +1587,19 @@
         // Funciones de navegación del switcher
         function showUploadView(type) {
             document.getElementById('loadSelectionView').style.display = 'none';
-            if (type === 'usuarios') {
-                document.getElementById('uploadUsuariosView').style.display = 'block';
-                document.getElementById('uploadCursosView').style.display = 'none';
-            } else if (type === 'cursos') {
-                document.getElementById('uploadUsuariosView').style.display = 'none';
-                document.getElementById('uploadCursosView').style.display = 'block';
-            }
+            document.getElementById('uploadAcademicaView').style.display = (type === 'academica') ? 'block' : 'none';
+            document.getElementById('uploadUsuariosView').style.display = (type === 'usuarios') ? 'block' : 'none';
+            document.getElementById('uploadCursosView').style.display = (type === 'cursos') ? 'block' : 'none';
+
             // Ocultar reportes previos al cambiar de vista
+            document.getElementById('reportAcademica').style.display = 'none';
             document.getElementById('reportUsuarios').style.display = 'none';
             document.getElementById('reportCursos').style.display = 'none';
         }
 
         function showSelectionView() {
             document.getElementById('loadSelectionView').style.display = 'flex';
+            document.getElementById('uploadAcademicaView').style.display = 'none';
             document.getElementById('uploadUsuariosView').style.display = 'none';
             document.getElementById('uploadCursosView').style.display = 'none';
         }
@@ -1359,7 +1608,19 @@
         function downloadExample(type) {
             let csvContent = "";
             let filename = "";
-            if (type === 'usuarios') {
+            if (type === 'academica') {
+                csvContent = "UNIVERSIDAD DE SAN CARLOS DE GUATEMALA,,,,,,,,,,,,,,,,\n" +
+                             "FACULTAD DE ARQUITECTURA - ,,,,,,,,,,,,,,,,\n" +
+                             "CARGA ACADÉMICA DEL SEGUNDO SEMESTRE 2026,,,,,,,,,,,,,,,,\n" +
+                             "Reporte generado el 22 de octubre de 2026,,,,,,,,,,,,,,,,\n" +
+                             "#,Área,Ciclo,Código,Asignatura,Sección,Jornada,Salón,Día,Inicio,Fin,Docente,Carga,Registro Personal,Grado Académico,CUI,Correo\n" +
+                             "1,Diseño Arquitectónico,1,1.01.1,Fundamentos del Diseño,M1,M,Virtual,MI,11:00,13:00,de la Maza Castellanos Osmin Isidro,22,20141721,Arq.,2337701510101,osmin.maza@farusac.edu.gt\n" +
+                             "2,Diseño Arquitectónico,1,1.01.1,Fundamentos del Diseño,M1,M,Virtual,JU,11:00,13:00,de la Maza Castellanos Osmin Isidro,22,20141721,Arq.,2337701510101,osmin.maza@farusac.edu.gt\n" +
+                             "3,Diseño Arquitectónico,1,1.01.1,Fundamentos del Diseño,M2,M,Virtual,JU,11:00,13:00,Monzon Lavagnino de Soto Thelma Leticia,21,8690,Arqta.,2433747980101,thelma.monzon@farusac.edu.gt\n" +
+                             "4,Medios de Expresión,1,1.01.2,Geometría,A1,M,Virtual,MI,07:00,08:20,Santisteban Bethancourt Ana Cecilia,30,20031021,Dr. Arq.,2429308080901,cecilia.santisteban@farusac.edu.gt\n" +
+                             "5,Sistemas Estructurales,1,3.01.6,Matemática 1,A1,M,Virtual,JU,08:20,09:40,Jacobs Rodriguez Billy Rigoberto,28,14484,MSc.,2283025440901,billy.jacobs@farusac.edu.gt";
+                filename = "ejemplo_carga_academica_farusac.csv";
+            } else if (type === 'usuarios') {
                 csvContent = "Nombre,Correo,Numero,Plaza\nJuan Perez,juan.perez@farusac.edu.gt,5587-1751,Titular\nMaria Gomez,maria.gomez@farusac.edu.gt,5894-2231,Titular+Ampliacion\nCarlos Lopez,carlos.lopez@farusac.edu.gt,4481-9952,Interino";
                 filename = "ejemplo_usuarios.csv";
             } else if (type === 'cursos') {
@@ -1378,30 +1639,60 @@
 
         // Estado local de los reportes cargados
         let lastReportData = {
+            academica: null,
             usuarios: null,
             cursos: null
         };
 
         // Función para subir archivos vía AJAX asíncronamente
         function uploadCSVFile(type) {
-            const fileInput = document.getElementById(type === 'usuarios' ? 'archivo_csv_usuarios' : 'archivo_csv_cursos');
-            if (fileInput.files.length === 0) return;
+            let fileInputId = 'archivo_csv_academica';
+            let uploadTextId = 'uploadTextAcademica';
+            let fileNameId = 'fileNameAcademica';
+            let dropAreaId = 'dropAreaAcademica';
+            let url = '{{ route("admin.importar-carga-academica") }}';
+
+            if (type === 'usuarios') {
+                fileInputId = 'archivo_csv_usuarios';
+                uploadTextId = 'uploadTextUsuarios';
+                fileNameId = 'fileNameUsuarios';
+                dropAreaId = 'dropAreaUsuarios';
+                url = '{{ route("admin.importar") }}';
+            } else if (type === 'cursos') {
+                fileInputId = 'archivo_csv_cursos';
+                uploadTextId = 'uploadTextCursos';
+                fileNameId = 'fileNameCursos';
+                dropAreaId = 'dropAreaCursos';
+                url = '{{ route("admin.importar-cursos") }}';
+            }
+
+            const fileInput = document.getElementById(fileInputId);
+            if (!fileInput || fileInput.files.length === 0) return;
 
             const file = fileInput.files[0];
             const formData = new FormData();
             formData.append('archivo_csv', file);
 
+            // Agregar parámetros de confirmación si es carga académica
+            if (type === 'academica') {
+                const carreraEl = document.getElementById('academica_carrera');
+                const semestreEl = document.getElementById('academica_semestre');
+                const anioEl = document.getElementById('academica_anio');
+
+                if (carreraEl && carreraEl.value !== 'detectar') formData.append('carrera', carreraEl.value);
+                if (semestreEl && semestreEl.value !== 'detectar') formData.append('semestre', semestreEl.value);
+                if (anioEl && anioEl.value !== 'detectar') formData.append('anio', anioEl.value);
+            }
+
             // Cambiar estados a "Procesando..."
-            const uploadText = document.getElementById(type === 'usuarios' ? 'uploadTextUsuarios' : 'uploadTextCursos');
-            const fileName = document.getElementById(type === 'usuarios' ? 'fileNameUsuarios' : 'fileNameCursos');
-            const dropArea = document.getElementById(type === 'usuarios' ? 'dropAreaUsuarios' : 'dropAreaCursos');
+            const uploadText = document.getElementById(uploadTextId);
+            const fileName = document.getElementById(fileNameId);
+            const dropArea = document.getElementById(dropAreaId);
 
             const originalText = uploadText.textContent;
-            uploadText.textContent = "Procesando archivo CSV...";
+            uploadText.textContent = "Procesando y validando archivo CSV...";
             fileName.textContent = `Analizando: ${file.name}`;
             dropArea.style.opacity = '0.7';
-
-            const url = type === 'usuarios' ? '{{ route("admin.importar") }}' : '{{ route("admin.importar-cursos") }}';
 
             fetch(url, {
                 method: 'POST',
@@ -1412,13 +1703,19 @@
             })
             .then(res => {
                 if (!res.ok) {
-                    throw new Error('Error de comunicación con el servidor.');
+                    return res.json().then(errData => {
+                        throw new Error(errData.message || 'Error de comunicación con el servidor.');
+                    }).catch(e => {
+                        throw new Error(e.message || 'Error en la respuesta del servidor.');
+                    });
                 }
                 return res.json();
             })
             .then(data => {
                 // Restablecer estilos de carga
-                uploadText.textContent = "Arrastra el archivo CSV o hacer click para buscar el archivo";
+                uploadText.textContent = (type === 'academica') 
+                    ? "Arrastra el archivo CSV o haz click para buscar el archivo" 
+                    : "Arrastra el archivo CSV o hacer click para buscar el archivo";
                 fileName.textContent = "";
                 dropArea.style.opacity = '1';
                 fileInput.value = ""; // Limpiar input para futuras cargas
@@ -1429,7 +1726,9 @@
             .catch(err => {
                 console.error(err);
                 alert(err.message || 'Ocurrió un error al subir e importar el archivo CSV.');
-                uploadText.textContent = "Arrastra el archivo CSV o hacer click para buscar el archivo";
+                uploadText.textContent = (type === 'academica') 
+                    ? "Arrastra el archivo CSV o haz click para buscar el archivo" 
+                    : "Arrastra el archivo CSV o hacer click para buscar el archivo";
                 fileName.textContent = "";
                 dropArea.style.opacity = '1';
                 fileInput.value = "";
@@ -1440,13 +1739,39 @@
         function displayReport(type, data) {
             lastReportData[type] = data;
 
+            let reportSectionId = 'reportAcademica';
+            let successCountId = 'successCountAcademica';
+            let errorCountId = 'errorCountAcademica';
+
+            if (type === 'usuarios') {
+                reportSectionId = 'reportUsuarios';
+                successCountId = 'successCountUsuarios';
+                errorCountId = 'errorCountUsuarios';
+            } else if (type === 'cursos') {
+                reportSectionId = 'reportCursos';
+                successCountId = 'successCountCursos';
+                errorCountId = 'errorCountCursos';
+            }
+
             // Mostrar el contenedor del reporte
-            const reportSection = document.getElementById(type === 'usuarios' ? 'reportUsuarios' : 'reportCursos');
+            const reportSection = document.getElementById(reportSectionId);
             reportSection.style.display = 'block';
 
             // Actualizar contadores numéricos
-            document.getElementById(type === 'usuarios' ? 'successCountUsuarios' : 'successCountCursos').textContent = data.success_count;
-            document.getElementById(type === 'usuarios' ? 'errorCountUsuarios' : 'errorCountCursos').textContent = data.error_count;
+            document.getElementById(successCountId).textContent = data.success_count;
+            document.getElementById(errorCountId).textContent = data.error_count;
+
+            // Si es carga académica, mostrar banner informativo de coexistencia
+            if (type === 'academica') {
+                const bannerEl = document.getElementById('coexistenciaBannerAcademica');
+                const tituloEl = document.getElementById('coexistenciaBannerTitulo');
+                const textoEl = document.getElementById('coexistenciaBannerTexto');
+                if (bannerEl && data.coexistencia_info) {
+                    bannerEl.style.display = 'block';
+                    tituloEl.textContent = `Periodo Activo: ${data.periodo || 'Carga Exitosa'}`;
+                    textoEl.innerHTML = `<b>Regla de Coexistencia:</b> ${data.coexistencia_info} <br><b>Resumen:</b> ${data.total_docentes || 0} docentes procesados, ${data.total_cursos || 0} cursos registrados y ${data.success_count} asignaciones activadas.`;
+                }
+            }
 
             // Activar por defecto la pestaña de éxitos
             switchReportTab(type, 'success');
@@ -1457,10 +1782,21 @@
             const data = lastReportData[type];
             if (!data) return;
 
-            const reportContent = document.getElementById(type === 'usuarios' ? 'reportContentUsuarios' : 'reportContentCursos');
+            let reportContentId = 'reportContentAcademica';
+            let reportSectionId = 'reportAcademica';
+
+            if (type === 'usuarios') {
+                reportContentId = 'reportContentUsuarios';
+                reportSectionId = 'reportUsuarios';
+            } else if (type === 'cursos') {
+                reportContentId = 'reportContentCursos';
+                reportSectionId = 'reportCursos';
+            }
+
+            const reportContent = document.getElementById(reportContentId);
             if (!reportContent) return;
 
-            const tabsContainer = document.getElementById(type === 'usuarios' ? 'reportUsuarios' : 'reportCursos');
+            const tabsContainer = document.getElementById(reportSectionId);
             const successBtn = tabsContainer.querySelector('.tab-btn-success');
             const errorBtn = tabsContainer.querySelector('.tab-btn-error');
 
@@ -1480,7 +1816,24 @@
                 let html = '<div class="report-title">Datos Cargados exitosamente</div>';
                 html += '<div class="report-table-wrapper"><table class="report-table"><thead><tr>';
                 
-                if (type === 'usuarios') {
+                if (type === 'academica') {
+                    html += '<th>#</th><th>Docente</th><th>Correo</th><th>Registro Personal</th><th>Asignatura</th><th>Código</th><th>Sección</th><th>Jornada</th><th>Área</th><th>Periodo</th>';
+                    html += '</tr></thead><tbody>';
+                    data.success_records.forEach((r, idx) => {
+                        html += `<tr>
+                            <td>${idx + 1}.</td>
+                            <td style="font-weight: 600; color: var(--color-texto-principal);">${r.docente}</td>
+                            <td>${r.correo}</td>
+                            <td>${r.numero}</td>
+                            <td style="font-weight: 600; color: var(--color-texto-principal);">${r.curso}</td>
+                            <td style="font-family: monospace; font-weight: 600;">${r.codigo}</td>
+                            <td><span style="font-weight: 700; color: var(--color-terracota);">${r.seccion}</span></td>
+                            <td>${r.jornada}</td>
+                            <td>${r.area}</td>
+                            <td><span style="background-color: rgba(0, 45, 114, 0.08); padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--color-azul);">${r.semestre} ${r.anio}</span></td>
+                        </tr>`;
+                    });
+                } else if (type === 'usuarios') {
                     html += '<th>ID</th><th>Nombre</th><th>Correo</th><th>Número</th><th>Rol</th><th>Plaza</th><th>Estado</th>';
                     html += '</tr></thead><tbody>';
                     data.success_records.forEach((r, idx) => {
@@ -1518,14 +1871,14 @@
 
                 if (data.error_lines.length === 0) {
                     reportContent.innerHTML = `
-                        <div class="report-title">Datos con error</div>
+                        <div class="report-title">Observaciones / Errores</div>
                         <p style="font-size: 13px; color: var(--color-texto-secundario); text-align: left; padding: 10px 0;">
-                            No se detectaron errores en este archivo.
+                            No se detectaron errores en este archivo. Todos los registros fueron procesados exitosamente.
                         </p>`;
                     return;
                 }
 
-                let html = '<div class="report-title">Datos con error</div>';
+                let html = '<div class="report-title">Observaciones y Filas con Error</div>';
                 html += '<ul class="error-log-list">';
                 data.error_lines.forEach(line => {
                     html += `<li class="error-log-item">- ${line}</li>`;
@@ -1571,55 +1924,86 @@
                 e.stopPropagation();
             });
 
+            // --- EVENTOS DRAG & DROP: CARGA ACADÉMICA ---
+            const fileInputAcademica = document.getElementById('archivo_csv_academica');
+            const dropAreaAcademica = document.getElementById('dropAreaAcademica');
+
+            if (dropAreaAcademica) {
+                dropAreaAcademica.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropAreaAcademica.style.borderColor = 'var(--color-terracota)';
+                    dropAreaAcademica.style.backgroundColor = 'rgba(185, 71, 0, 0.03)';
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropAreaAcademica.addEventListener(eventName, () => {
+                        dropAreaAcademica.style.borderColor = '#cbd5e0';
+                        dropAreaAcademica.style.backgroundColor = '#fcfcfc';
+                    });
+                });
+
+                dropAreaAcademica.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files.length > 0) {
+                        fileInputAcademica.files = e.dataTransfer.files;
+                        uploadCSVFile('academica');
+                    }
+                });
+            }
+
             // --- EVENTOS DRAG & DROP: USUARIOS ---
             const fileInputUsuarios = document.getElementById('archivo_csv_usuarios');
             const dropAreaUsuarios = document.getElementById('dropAreaUsuarios');
 
-            dropAreaUsuarios.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropAreaUsuarios.style.borderColor = 'var(--color-azul)';
-                dropAreaUsuarios.style.backgroundColor = 'rgba(0, 45, 114, 0.02)';
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropAreaUsuarios.addEventListener(eventName, () => {
-                    dropAreaUsuarios.style.borderColor = '#cbd5e0';
-                    dropAreaUsuarios.style.backgroundColor = '#fcfcfc';
+            if (dropAreaUsuarios) {
+                dropAreaUsuarios.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropAreaUsuarios.style.borderColor = 'var(--color-azul)';
+                    dropAreaUsuarios.style.backgroundColor = 'rgba(0, 45, 114, 0.02)';
                 });
-            });
 
-            dropAreaUsuarios.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (e.dataTransfer.files.length > 0) {
-                    fileInputUsuarios.files = e.dataTransfer.files;
-                    uploadCSVFile('usuarios');
-                }
-            });
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropAreaUsuarios.addEventListener(eventName, () => {
+                        dropAreaUsuarios.style.borderColor = '#cbd5e0';
+                        dropAreaUsuarios.style.backgroundColor = '#fcfcfc';
+                    });
+                });
+
+                dropAreaUsuarios.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files.length > 0) {
+                        fileInputUsuarios.files = e.dataTransfer.files;
+                        uploadCSVFile('usuarios');
+                    }
+                });
+            }
 
             // --- EVENTOS DRAG & DROP: CURSOS ---
             const fileInputCursos = document.getElementById('archivo_csv_cursos');
             const dropAreaCursos = document.getElementById('dropAreaCursos');
 
-            dropAreaCursos.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropAreaCursos.style.borderColor = 'var(--color-oro)';
-                dropAreaCursos.style.backgroundColor = 'rgba(172, 132, 0, 0.02)';
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropAreaCursos.addEventListener(eventName, () => {
-                    dropAreaCursos.style.borderColor = '#cbd5e0';
-                    dropAreaCursos.style.backgroundColor = '#fcfcfc';
+            if (dropAreaCursos) {
+                dropAreaCursos.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropAreaCursos.style.borderColor = 'var(--color-oro)';
+                    dropAreaCursos.style.backgroundColor = 'rgba(172, 132, 0, 0.02)';
                 });
-            });
 
-            dropAreaCursos.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (e.dataTransfer.files.length > 0) {
-                    fileInputCursos.files = e.dataTransfer.files;
-                    uploadCSVFile('cursos');
-                }
-            });
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropAreaCursos.addEventListener(eventName, () => {
+                        dropAreaCursos.style.borderColor = '#cbd5e0';
+                        dropAreaCursos.style.backgroundColor = '#fcfcfc';
+                    });
+                });
+
+                dropAreaCursos.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files.length > 0) {
+                        fileInputCursos.files = e.dataTransfer.files;
+                        uploadCSVFile('cursos');
+                    }
+                });
+            }
         });
     </script>
 </body>

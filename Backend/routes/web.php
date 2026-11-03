@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/usuarios/{id}/toggle-status', [AdminController::class, 'toggleEstadoUsuario'])->name('admin.usuarios.toggle-status');
         Route::post('/admin/importar-usuarios', [AdminController::class, 'CargaUsuariosCsv'])->name('admin.importar');
         Route::post('/admin/importar-cursos', [AdminController::class, 'CargaCursosCsv'])->name('admin.importar-cursos');
+        Route::post('/admin/importar-carga-academica', [AdminController::class, 'CargaAcademicaCsv'])->name('admin.importar-carga-academica');
 
         // Módulo de Informes para Administrador
         Route::get('/admin/informes', [AdminController::class, 'informesView'])->name('admin.informes');

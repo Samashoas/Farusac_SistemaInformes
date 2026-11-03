@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS cursos (
     carrera VARCHAR(100) NOT NULL,            -- 'D', 'A'
     area VARCHAR(150) NOT NULL,               -- 'Área Tecnología y Expresión', 'Área Teoría', etc.
     nombre_curso VARCHAR(150) NOT NULL,
-    codigo_curso INT NOT NULL,
+    codigo_curso VARCHAR(50) NOT NULL,
     seccion VARCHAR(10) NOT NULL,             -- 'A', 'B', 'F', 'G', etc.
     anio INT NOT NULL,                        -- Ej. 2026
     semestre VARCHAR(30) NOT NULL,            -- '1', '2', 'Primer Semestre', 'Segundo Semestre', etc.
