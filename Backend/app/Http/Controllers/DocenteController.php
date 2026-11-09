@@ -454,7 +454,7 @@ class DocenteController extends Controller
     }
 
     /**
-     * Actualiza la información editable del perfil del docente (Teléfono).
+     * Actualiza la información editable del perfil del docente (Registro Personal).
      */
     public function actualizarPerfil(Request $request)
     {
@@ -464,7 +464,7 @@ class DocenteController extends Controller
         $request->validate([
             'numero' => 'nullable|string|max:20',
         ], [
-            'numero.max' => 'El número de teléfono no puede exceder los 20 caracteres.',
+            'numero.max' => 'El registro personal no puede exceder los 20 caracteres.',
         ]);
 
         try {

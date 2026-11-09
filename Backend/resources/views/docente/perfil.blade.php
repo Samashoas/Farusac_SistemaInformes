@@ -9,14 +9,19 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <style>
         /* --- DISEÑO SISTEMA Y PALETA INSTITUCIONAL --- */
         :root {
-            --color-azul: #002D72;       /* Pantone 288C */
-            --color-oro: #AC8400;        /* Pantone 118C */
-            --color-terracota: #B94700;  /* Pantone 1525C */
+            --color-azul: #002D72;
+            /* Pantone 288C */
+            --color-oro: #AC8400;
+            /* Pantone 118C */
+            --color-terracota: #B94700;
+            /* Pantone 1525C */
             --color-fondo: #f4f7fa;
             --color-tarjeta: #ffffff;
             --color-texto-principal: #1a202c;
@@ -200,8 +205,15 @@
         }
 
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* --- APP CONTAINER (SIDEBAR + MAIN CONTENT) --- */
@@ -266,6 +278,7 @@
             background-color: rgba(0, 45, 114, 0.05);
             color: var(--color-azul);
         }
+
         .sidebar-link-inicio:hover .sidebar-icon {
             color: var(--color-azul);
         }
@@ -276,6 +289,7 @@
             color: var(--color-azul);
             font-weight: 600;
         }
+
         .sidebar-link-perfil .sidebar-icon {
             color: var(--color-azul);
         }
@@ -284,6 +298,7 @@
             background-color: rgba(0, 45, 114, 0.05);
             color: var(--color-azul);
         }
+
         .sidebar-link-informes:hover .sidebar-icon {
             color: var(--color-azul);
         }
@@ -382,7 +397,8 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #10b981; /* Verde activo */
+            background-color: #10b981;
+            /* Verde activo */
         }
 
         /* Columna Derecha: Formulario de Campos */
@@ -579,9 +595,11 @@
                 grid-template-columns: 1fr;
                 gap: 35px;
             }
+
             .content-card {
                 padding: 30px 25px;
             }
+
             .form-row-2col {
                 grid-template-columns: 1fr;
             }
@@ -591,9 +609,11 @@
             .admin-header {
                 padding: 0 20px;
             }
+
             .header-title {
                 font-size: 18px;
             }
+
             .main-content-area {
                 padding: 20px 15px;
             }
@@ -706,22 +726,22 @@
                         <!-- Campo Nombre -->
                         <div class="form-group">
                             <label class="field-label">Nombre:</label>
-                            <input type="text" class="input-text input-readonly" value="{{ $user->nombre }}" readonly disabled>
+                            <input type="text" class="input-text input-readonly" value="{{ $user->nombre }}" readonly
+                                disabled>
                         </div>
 
                         <!-- Campo Correo -->
                         <div class="form-group">
                             <label class="field-label">Correo:</label>
-                            <input type="email" class="input-text input-readonly" value="{{ $user->correo }}" readonly disabled>
+                            <input type="email" class="input-text input-readonly" value="{{ $user->correo }}" readonly
+                                disabled>
                         </div>
 
-                        <!-- Campo Teléfono -->
+                        <!-- Campo Registro Personal -->
                         <div class="form-group">
-                            <label for="inputTelefono" class="field-label">Teléfono:</label>
+                            <label for="inputTelefono" class="field-label">Registro Personal:</label>
                             <input type="text" id="inputTelefono" class="input-text input-editable"
-                                value="{{ $user->numero ?? '' }}"
-                                placeholder="Ej. 12345678"
-                                autocomplete="off">
+                                value="{{ $user->numero ?? '' }}" placeholder="Ej. 20141721" autocomplete="off">
                         </div>
 
                         <!-- Fila 2 Columnas: Cargo y Plaza -->
@@ -729,13 +749,15 @@
                             <!-- Campo Cargo (Rol) -->
                             <div class="form-group">
                                 <label class="field-label">Cargo:</label>
-                                <input type="text" class="input-text input-readonly" value="{{ ucfirst($user->rol) }}" readonly disabled>
+                                <input type="text" class="input-text input-readonly" value="{{ ucfirst($user->rol) }}"
+                                    readonly disabled>
                             </div>
 
                             <!-- Campo Plaza -->
                             <div class="form-group">
                                 <label class="field-label">Plaza:</label>
-                                <input type="text" class="input-text input-readonly" value="{{ $user->plaza ?? 'Sin asignar' }}" readonly disabled>
+                                <input type="text" class="input-text input-readonly"
+                                    value="{{ $user->plaza ?? 'Sin asignar' }}" readonly disabled>
                             </div>
                         </div>
                     </div>
@@ -743,8 +765,10 @@
 
                 <!-- Botones de Acción (Confirmar y Cancelar) - Visibles únicamente al detectar cambios -->
                 <div class="profile-actions-container" id="profileActionsContainer">
-                    <button type="button" class="modal-btn btn-submit" id="btnConfirmar" onclick="guardarPerfil()">Confirmar</button>
-                    <button type="button" class="modal-btn btn-cancel" id="btnCancelar" onclick="cancelarEdicion()">Cancelar</button>
+                    <button type="button" class="modal-btn btn-submit" id="btnConfirmar"
+                        onclick="guardarPerfil()">Confirmar</button>
+                    <button type="button" class="modal-btn btn-cancel" id="btnCancelar"
+                        onclick="cancelarEdicion()">Cancelar</button>
                 </div>
             </div>
 
@@ -758,7 +782,7 @@
 
     <!-- JAVASCRIPT: DETECCIÓN DE CAMBIOS, AJAX Y MENÚS -->
     <script>
-        // Valor inicial del teléfono cargado desde la BD
+        // Valor inicial del teléfono cargado desde la BD 
         let initialTelefono = @json($user->numero ?? '');
         const inputTelefono = document.getElementById('inputTelefono');
         const actionsContainer = document.getElementById('profileActionsContainer');
@@ -876,3 +900,9 @@
 </body>
 
 </html>
+
+
+<!-- 
+NOTA: El telefono se hace refencia al registro de personal, no se quizo hacer la modificación
+directamente a la base de datos para evitar problemas
+ -->
