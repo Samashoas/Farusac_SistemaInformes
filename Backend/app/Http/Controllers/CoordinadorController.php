@@ -43,11 +43,60 @@ class CoordinadorController extends DocenteController
                 ->orderBy('seccion', 'asc')
                 ->get();
 
-            $carreras = Curso::select('carrera')
+            $carrerasDb = Curso::select('carrera')
                 ->distinct()
                 ->whereNotNull('carrera')
                 ->where('carrera', '!=', '')
                 ->pluck('carrera');
+
+            // Asegurar disponibilidad de las carreras institucionales
+            $carreras = $carrerasDb->isNotEmpty()
+                ? $carrerasDb
+                : collect(['Arquitectura', 'Diseño Gráfico']);
+
+            // Mapeo dinámico de áreas por carrera
+            $areasPorCarrera = [];
+            $cursosCarreraArea = Curso::select('carrera', 'area')
+                ->distinct()
+                ->whereNotNull('carrera')
+                ->where('carrera', '!=', '')
+                ->whereNotNull('area')
+                ->where('area', '!=', '')
+                ->orderBy('area', 'asc')
+                ->get();
+
+            foreach ($cursosCarreraArea as $item) {
+                $areasPorCarrera[$item->carrera][] = $item->area;
+            }
+
+            // Normalizar arrays únicos de áreas
+            foreach ($areasPorCarrera as $car => $ars) {
+                $areasPorCarrera[$car] = array_values(array_unique($ars));
+            }
+
+            // Áreas institucionales por defecto si la base de datos aún no tiene cursos cargados
+            if (empty($areasPorCarrera['Arquitectura'])) {
+                $areasPorCarrera['Arquitectura'] = [
+                    'Diseño Arquitectónico',
+                    'Medios de Expresión',
+                    'Historia y Teoría',
+                    'Sistemas Estructurales',
+                    'Ambiente y Urbanismo',
+                    'Digital',
+                    'Sistemas Constructivos',
+                    'Investigación y Graduación'
+                ];
+            }
+            if (empty($areasPorCarrera['Diseño Gráfico'])) {
+                $areasPorCarrera['Diseño Gráfico'] = [
+                    'Área de Diseño',
+                    'Área de Comunicación',
+                    'Área de Tecnología y Expresión',
+                    'Área de Teoría e Historia',
+                    'Área de Gestión y Práctica Profesional',
+                    'Área de Graduación'
+                ];
+            }
 
             $areasDisponibles = Curso::select('area')
                 ->distinct()
@@ -55,10 +104,36 @@ class CoordinadorController extends DocenteController
                 ->where('area', '!=', '')
                 ->orderBy('area', 'asc')
                 ->pluck('area');
+
+            if ($areasDisponibles->isEmpty()) {
+                $allFallback = array_merge($areasPorCarrera['Arquitectura'], $areasPorCarrera['Diseño Gráfico']);
+                $areasDisponibles = collect(array_values(array_unique($allFallback)));
+            }
         } catch (\Exception $e) {
             $catalogoCursos = collect();
-            $carreras = collect();
-            $areasDisponibles = collect();
+            $carreras = collect(['Arquitectura', 'Diseño Gráfico']);
+            $areasPorCarrera = [
+                'Arquitectura' => [
+                    'Diseño Arquitectónico',
+                    'Medios de Expresión',
+                    'Historia y Teoría',
+                    'Sistemas Estructurales',
+                    'Ambiente y Urbanismo',
+                    'Digital',
+                    'Sistemas Constructivos',
+                    'Investigación y Graduación'
+                ],
+                'Diseño Gráfico' => [
+                    'Área de Diseño',
+                    'Área de Comunicación',
+                    'Área de Tecnología y Expresión',
+                    'Área de Teoría e Historia',
+                    'Área de Gestión y Práctica Profesional',
+                    'Área de Graduación'
+                ]
+            ];
+            $allFallback = array_merge($areasPorCarrera['Arquitectura'], $areasPorCarrera['Diseño Gráfico']);
+            $areasDisponibles = collect(array_values(array_unique($allFallback)));
         }
 
         // Informes mensuales de coordinación generados por este usuario
@@ -71,7 +146,7 @@ class CoordinadorController extends DocenteController
             $informesCoordinacion = collect();
         }
 
-        return view('coordinador.dashboard', compact('user', 'cursosAsignados', 'catalogoCursos', 'carreras', 'areasDisponibles', 'informesCoordinacion'));
+        return view('coordinador.dashboard', compact('user', 'cursosAsignados', 'catalogoCursos', 'carreras', 'areasDisponibles', 'areasPorCarrera', 'informesCoordinacion'));
     }
 
     /**
@@ -79,26 +154,46 @@ class CoordinadorController extends DocenteController
      */
     public function seleccionarArea(Request $request)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // No se permite cambiar el área si ya fue asignada previamente
+        if (!empty($user->area)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El área de coordinación ya ha sido asignada previamente y no puede ser modificada.'
+            ], 403);
+        }
+
         $request->validate([
             'area' => 'required|string|max:150',
+            'carrera' => 'nullable|string|max:100',
         ], [
             'area.required' => 'Debe seleccionar un área de la lista para continuar.',
         ]);
 
-        /** @var User $user */
-        $user = Auth::user();
         $area = $request->input('area');
+        $carrera = $request->input('carrera');
 
         try {
+            $updateData = ['area' => $area];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('usuarios', 'carrera') && !empty($carrera)) {
+                $updateData['carrera'] = $carrera;
+            }
+
             // Guardar permanentemente en la base de datos
-            DB::table('usuarios')->where('id', $user->id)->update(['area' => $area]);
+            DB::table('usuarios')->where('id', $user->id)->update($updateData);
             $user->area = $area;
             $request->session()->put('coordinador_area', $area);
+            if (!empty($carrera)) {
+                $request->session()->put('coordinador_carrera', $carrera);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Área asignada y guardada permanentemente en la base de datos.',
-                'area' => $area
+                'message' => 'Área y carrera asignadas y guardadas exitosamente.',
+                'area' => $area,
+                'carrera' => $carrera
             ]);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error al guardar área en usuarios: ' . $e->getMessage());
@@ -154,10 +249,14 @@ class CoordinadorController extends DocenteController
     /**
      * Obtiene todos los cursos asociados a un área de coordinación de manera flexible.
      */
-    private function getCursosPorArea($area)
+    private function getCursosPorArea($area, $carrera = null)
     {
         if (empty($area)) {
             return collect();
+        }
+
+        if (!$carrera) {
+            $carrera = session('coordinador_carrera');
         }
 
         $cleanArea = trim(str_ireplace(['Área de ', 'Area de ', 'Área ', 'Area '], '', $area));
@@ -178,6 +277,19 @@ class CoordinadorController extends DocenteController
                 $q->orWhere('area', 'LIKE', '%' . $palabra . '%');
             }
         });
+
+        // Filtrar por carrera si está disponible
+        if (!empty($carrera)) {
+            $cleanCarrera = trim($carrera);
+            $query->where(function ($q) use ($cleanCarrera) {
+                $q->where('carrera', $cleanCarrera)
+                  ->orWhere('carrera', 'LIKE', '%' . $cleanCarrera . '%');
+                // Soporte para variaciones como "Diseño" vs "Diseño Gráfico"
+                if (stripos($cleanCarrera, 'Diseño') !== false) {
+                    $q->orWhere('carrera', 'LIKE', '%Diseño%');
+                }
+            });
+        }
 
         $cursos = $query->orderBy('nombre_curso', 'asc')
             ->orderBy('seccion', 'asc')

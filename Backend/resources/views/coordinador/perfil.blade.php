@@ -738,7 +738,7 @@
                         <div class="form-group">
                             <label class="field-label">Area a cargo:</label>
                             <input type="text" class="input-text input-readonly"
-                                value="{{ $user->area ?? session('coordinador_area') ?? 'Sin área asignada' }}" readonly
+                                value="{{ ($user->area ?? session('coordinador_area')) ? (($user->area ?? session('coordinador_area')) . (session('coordinador_carrera') ? ' (' . session('coordinador_carrera') . ')' : '')) : 'Sin área asignada' }}" readonly
                                 disabled>
                         </div>
                     </div>
