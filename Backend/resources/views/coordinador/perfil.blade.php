@@ -9,14 +9,19 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <style>
         /* --- DISEÑO SISTEMA Y PALETA INSTITUCIONAL --- */
         :root {
-            --color-azul: #002D72;       /* Pantone 288C */
-            --color-oro: #AC8400;        /* Pantone 118C */
-            --color-terracota: #B94700;  /* Pantone 1525C */
+            --color-azul: #002D72;
+            /* Pantone 288C */
+            --color-oro: #AC8400;
+            /* Pantone 118C */
+            --color-terracota: #B94700;
+            /* Pantone 1525C */
             --color-fondo: #f4f7fa;
             --color-tarjeta: #ffffff;
             --color-texto-principal: #1a202c;
@@ -264,6 +269,7 @@
             color: var(--color-azul);
             font-weight: 600;
         }
+
         .sidebar-link-perfil .sidebar-icon {
             color: var(--color-azul);
         }
@@ -273,6 +279,7 @@
             background-color: rgba(0, 45, 114, 0.05);
             color: var(--color-azul);
         }
+
         .sidebar-link-inicio:hover .sidebar-icon,
         .sidebar-link-informes:hover .sidebar-icon {
             color: var(--color-azul);
@@ -434,12 +441,14 @@
         }
 
         /* Campo Editable */
+        /*
         .input-editable {
             background-color: #ffffff;
             border-color: #94a3b8;
             color: var(--color-texto-principal);
             font-weight: 500;
         }
+        */
 
         .input-editable:hover {
             border-color: var(--color-azul);
@@ -561,8 +570,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @media (max-width: 850px) {
@@ -570,6 +586,7 @@
                 grid-template-columns: 1fr;
                 gap: 30px;
             }
+
             .content-card {
                 padding: 30px 20px;
             }
@@ -682,22 +699,22 @@
                         <!-- Campo Nombre -->
                         <div class="form-group">
                             <label class="field-label">Nombre:</label>
-                            <input type="text" class="input-text input-readonly" value="{{ $user->nombre }}" readonly disabled>
+                            <input type="text" class="input-text input-readonly" value="{{ $user->nombre }}" readonly
+                                disabled>
                         </div>
 
                         <!-- Campo Correo -->
                         <div class="form-group">
                             <label class="field-label">Correo:</label>
-                            <input type="email" class="input-text input-readonly" value="{{ $user->correo }}" readonly disabled>
+                            <input type="email" class="input-text input-readonly" value="{{ $user->correo }}" readonly
+                                disabled>
                         </div>
 
-                        <!-- Campo Teléfono (Editable) -->
+                        <!-- Campo Registro Personal (Editable) -->
                         <div class="form-group">
-                            <label for="inputTelefono" class="field-label">Teléfono:</label>
-                            <input type="text" id="inputTelefono" class="input-text input-editable"
-                                value="{{ $user->numero ?? '' }}"
-                                placeholder="Ej. 12345678"
-                                autocomplete="off">
+                            <label for="inputTelefono" class="field-label">Registro Personal:</label>
+                            <input type="text" id="inputTelefono" class="input-text input-readonly"
+                                value="{{ $user->numero ?? '' }}" readonly disabled>
                         </div>
 
                         <!-- Fila 2 Columnas: Cargo y Plaza -->
@@ -705,13 +722,15 @@
                             <!-- Campo Cargo -->
                             <div class="form-group">
                                 <label class="field-label">Cargo:</label>
-                                <input type="text" class="input-text input-readonly" value="Coordinador" readonly disabled>
+                                <input type="text" class="input-text input-readonly" value="Coordinador" readonly
+                                    disabled>
                             </div>
 
                             <!-- Campo Plaza -->
                             <div class="form-group">
                                 <label class="field-label">Plaza:</label>
-                                <input type="text" class="input-text input-readonly" value="{{ $user->plaza ?? 'Sin asignar' }}" readonly disabled>
+                                <input type="text" class="input-text input-readonly"
+                                    value="{{ $user->plaza ?? 'Sin asignar' }}" readonly disabled>
                             </div>
                         </div>
 
@@ -719,16 +738,18 @@
                         <div class="form-group">
                             <label class="field-label">Area a cargo:</label>
                             <input type="text" class="input-text input-readonly"
-                                value="{{ $user->area ?? session('coordinador_area') ?? 'Sin área asignada' }}"
-                                readonly disabled>
+                                value="{{ ($user->area ?? session('coordinador_area')) ? (($user->area ?? session('coordinador_area')) . (session('coordinador_carrera') ? ' (' . session('coordinador_carrera') . ')' : '')) : 'Sin área asignada' }}" readonly
+                                disabled>
                         </div>
                     </div>
                 </div>
 
                 <!-- Botones de Acción (Confirmar y Cancelar) - Visibles únicamente al detectar cambios -->
                 <div class="profile-actions-container" id="profileActionsContainer">
-                    <button type="button" class="modal-btn btn-submit" id="btnConfirmar" onclick="guardarPerfil()">Confirmar</button>
-                    <button type="button" class="modal-btn btn-cancel" id="btnCancelar" onclick="cancelarEdicion()">Cancelar</button>
+                    <button type="button" class="modal-btn btn-submit" id="btnConfirmar"
+                        onclick="guardarPerfil()">Confirmar</button>
+                    <button type="button" class="modal-btn btn-cancel" id="btnCancelar"
+                        onclick="cancelarEdicion()">Cancelar</button>
                 </div>
             </div>
 

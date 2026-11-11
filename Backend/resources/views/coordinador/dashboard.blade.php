@@ -1222,6 +1222,15 @@
 
                 @php
                     $areaActual = $user->area ?? session('coordinador_area');
+                    $carreraActual = session('coordinador_carrera');
+                    if (!$carreraActual && $areaActual && isset($areasPorCarrera)) {
+                        foreach ($areasPorCarrera as $carKey => $areasList) {
+                            if (in_array($areaActual, $areasList)) {
+                                $carreraActual = $carKey;
+                                break;
+                            }
+                        }
+                    }
                 @endphp
 
                 @if ($areaActual)
@@ -1230,6 +1239,9 @@
                         <div class="area-badge-info">
                             <span class="area-label-title">Área a Cargo:</span>
                             <span class="area-name-pill" id="currentAreaDisplay">{{ $areaActual }}</span>
+                            @if ($carreraActual)
+                                <span class="carrera-name-pill" style="margin-left: 8px; background: rgba(0, 45, 114, 0.1); color: var(--color-azul); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">{{ $carreraActual }}</span>
+                            @endif
                         </div>
                     </div>
                 @endif
@@ -1436,34 +1448,42 @@
         </div>
     </div>
 
-    <!-- MODAL OBLIGATORIO: SELECCIÓN DE ÁREA A CARGO -->
-    <div class="modal-overlay {{ !$areaActual ? 'active' : '' }}" id="areaSelectionModalOverlay">
+    @if (!$areaActual)
+    <!-- MODAL OBLIGATORIO: SELECCIÓN DE ÁREA A CARGO (SÓLO CUANDO NO TIENE ÁREA ASIGNADA) -->
+    <div class="modal-overlay active" id="areaSelectionModalOverlay">
         <div class="modal-card">
             <div class="modal-header">
                 <h3 class="modal-title">Selección de Área</h3>
-                @if ($areaActual)
-                    <button type="button" class="modal-close-btn" onclick="closeAreaSelectionModal()" title="Cerrar">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                @endif
             </div>
 
             <p style="font-size: 14px; color: var(--color-texto-secundario); margin-bottom: 20px; line-height: 1.5;">
-                Para acceder y gestionar las funciones correspondientes a su coordinación, seleccione el área de la cual es coordinador:
+                Para acceder y gestionar las funciones correspondientes a su coordinación, seleccione la carrera y el área de la cual es coordinador:
             </p>
 
+            <!-- Filtro de Carrera (Diseño o Arquitectura) -->
+            <div class="form-group-row">
+                <label for="selectCarreraModal" class="form-label-side">Carrera:</label>
+                <div class="select-wrapper">
+                    <select id="selectCarreraModal" class="custom-select" onchange="onCarreraModalChange()">
+                        <option value="">Selecciona una carrera...</option>
+                        @foreach ($carreras as $c)
+                            <option value="{{ $c }}">{{ $c }}</option>
+                        @endforeach
+                    </select>
+                    <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Selector: Área filtrada por Carrera -->
             <div class="form-group-row">
                 <label for="selectAreaModal" class="form-label-side">Área:</label>
                 <div class="select-wrapper">
-                    <select id="selectAreaModal" class="custom-select">
+                    <select id="selectAreaModal" class="custom-select" onchange="onAreaModalChange()">
                         <option value="">Selecciona un área...</option>
                         @foreach ($areasDisponibles as $a)
-                            <option value="{{ $a }}" {{ $areaActual == $a ? 'selected' : '' }}>
-                                {{ $a }}
-                            </option>
+                            <option value="{{ $a }}">{{ $a }}</option>
                         @endforeach
                     </select>
                     <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -1479,6 +1499,7 @@
             </button>
         </div>
     </div>
+    @endif
 
     <!-- Modal Emergente: Confirmación de Alerta para Remover Curso -->
     <div class="modal-overlay" id="confirmDeleteModalOverlay" onclick="closeConfirmDeleteModal()">
@@ -1520,6 +1541,10 @@
         let pendingUnassignCursoId = null;
 
         // --- MANEJO DEL MODAL DE SELECCIÓN DE ÁREA ---
+        const areasPorCarreraMap = @json($areasPorCarrera ?? []);
+        const todasLasAreasList = @json($areasDisponibles ?? []);
+        let currentSelectedArea = @json($areaActual ?? '');
+
         function openAreaSelectionModal() {
             if (areaSelectionModalOverlay) {
                 areaSelectionModalOverlay.classList.add('active');
@@ -1532,13 +1557,74 @@
             }
         }
 
+        function onCarreraModalChange() {
+            const carreraSelect = document.getElementById('selectCarreraModal');
+            const areaSelect = document.getElementById('selectAreaModal');
+            const areaError = document.getElementById('areaModalError');
+            if (areaError) areaError.style.display = 'none';
+
+            const selectedCarrera = carreraSelect ? carreraSelect.value : '';
+            areaSelect.innerHTML = '<option value="">Selecciona un área...</option>';
+
+            if (!selectedCarrera) {
+                todasLasAreasList.forEach(area => {
+                    const opt = document.createElement('option');
+                    opt.value = area;
+                    opt.textContent = area;
+                    areaSelect.appendChild(opt);
+                });
+                return;
+            }
+
+            let areas = areasPorCarreraMap[selectedCarrera] || [];
+            if (areas.length === 0) {
+                const lower = selectedCarrera.toLowerCase();
+                for (const key in areasPorCarreraMap) {
+                    if (key.toLowerCase().includes(lower) || lower.includes(key.toLowerCase())) {
+                        areas = areasPorCarreraMap[key];
+                        break;
+                    }
+                }
+            }
+
+            if (areas.length === 0) {
+                areas = todasLasAreasList;
+            }
+
+            areas.forEach(area => {
+                const opt = document.createElement('option');
+                opt.value = area;
+                opt.textContent = area;
+                if (currentSelectedArea && currentSelectedArea === area) {
+                    opt.selected = true;
+                }
+                areaSelect.appendChild(opt);
+            });
+        }
+
+        function onAreaModalChange() {
+            const areaError = document.getElementById('areaModalError');
+            if (areaError) areaError.style.display = 'none';
+        }
+
         async function confirmarSeleccionArea() {
+            const selectCarreraModal = document.getElementById('selectCarreraModal');
             const selectAreaModal = document.getElementById('selectAreaModal');
             const areaError = document.getElementById('areaModalError');
             const btn = document.getElementById('btnConfirmArea');
-            const val = selectAreaModal ? selectAreaModal.value : '';
 
-            if (!val) {
+            const carreraVal = selectCarreraModal ? selectCarreraModal.value : '';
+            const areaVal = selectAreaModal ? selectAreaModal.value : '';
+
+            if (!carreraVal) {
+                if (areaError) {
+                    areaError.textContent = 'Por favor, seleccione si pertenece a Diseño o Arquitectura.';
+                    areaError.style.display = 'block';
+                }
+                return;
+            }
+
+            if (!areaVal) {
                 if (areaError) {
                     areaError.textContent = 'Por favor, seleccione un área válida.';
                     areaError.style.display = 'block';
@@ -1558,7 +1644,10 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ area: val })
+                    body: JSON.stringify({ 
+                        carrera: carreraVal,
+                        area: areaVal 
+                    })
                 });
 
                 const data = await response.json();

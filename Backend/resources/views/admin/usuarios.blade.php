@@ -1074,13 +1074,13 @@
                                 <div class="tooltip-container">
                                     <button type="button" class="tooltip-btn">?</button>
                                     <div class="tooltip-content">
-                                        Se puede buscar por número de teléfono, correo electrónico o nombre de usuario
+                                        Se puede buscar por registro personal, correo electrónico o nombre de usuario
                                         por medio de texto.
                                     </div>
                                 </div>
                             </div>
                             <input type="text" id="searchInput" class="input-text"
-                                placeholder="Ej. Juan, juan@farusac.edu.gt, 5587...">
+                                placeholder="Ej. Juan, juan@farusac.edu.gt, 20141721...">
                         </div>
 
                         <!-- Filtro de Rol -->
@@ -1133,7 +1133,7 @@
                                 <th>ID</th>
                                 <th>Nombre</th>
                                 <th>Correo</th>
-                                <th>Número</th>
+                                <th>Registro Personal</th>
                                 <th>Rol</th>
                                 <th>Plaza</th>
                                 <th>Estado</th>
@@ -1145,6 +1145,12 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if ($usuarios instanceof \Illuminate\Pagination\LengthAwarePaginator && $usuarios->hasPages())
+                    <div class="pagination-container" style="display: flex; justify-content: center; align-items: center; margin-top: 25px;">
+                        {{ $usuarios->links() }}
+                    </div>
+                @endif
 
             </div>
 
@@ -1172,8 +1178,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="newUserPhone" class="modal-form-label">Número</label>
-                    <input type="text" id="newUserPhone" class="input-text" placeholder="Ej. 5587-1751" required>
+                    <label for="newUserPhone" class="modal-form-label">Registro Personal</label>
+                    <input type="text" id="newUserPhone" class="input-text" placeholder="Ej. 20141721" required>
                 </div>
 
                 <div class="form-group">
@@ -1223,8 +1229,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="editUserPhone" class="modal-form-label">Número</label>
-                    <input type="text" id="editUserPhone" class="input-text" placeholder="Ej. 5587-1751" required>
+                    <label for="editUserPhone" class="modal-form-label">Registro Personal</label>
+                    <input type="text" id="editUserPhone" class="input-text" placeholder="Ej. 20141721" required>
                 </div>
 
                 <div class="form-group">
@@ -1273,8 +1279,9 @@
 
     <!-- JavaScript para Interactividad y Filtros Locales (Dashboard Vivo) -->
     <script>
-        // Base de Datos de Usuarios cargada dinámicamente desde el backend
-        let dbUsuarios = @json($usuarios);
+        // Base de Datos de Usuarios cargada dinámicamente desde el backend (soporta colección o paginador)
+        const rawUsuarios = @json($usuarios);
+        let dbUsuarios = Array.isArray(rawUsuarios) ? rawUsuarios : (rawUsuarios.data || []);
 
         // Variables globales para rastrear el ID del usuario en edición o cambio de estado
         let statusTargetUserId = null;
@@ -1288,7 +1295,7 @@
 
             // Filtrar los usuarios
             const filtered = dbUsuarios.filter(user => {
-                // Filtro de búsqueda textual (nombre, correo o número)
+                // Filtro de búsqueda textual (nombre, correo o registro personal)
                 const matchesSearch =
                     (user.nombre && user.nombre.toLowerCase().includes(searchVal)) ||
                     (user.correo && user.correo.toLowerCase().includes(searchVal)) ||
