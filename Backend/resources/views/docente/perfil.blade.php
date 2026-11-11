@@ -717,7 +717,7 @@
                         </div>
                         <div class="profile-role-badge">
                             <span class="badge-dot"></span>
-                            <span>{{ ucfirst($user->rol) }}</span>
+                            <span>{{ $user->rol_nombre }}</span>
                         </div>
                     </div>
 
@@ -749,7 +749,7 @@
                             <!-- Campo Cargo (Rol) -->
                             <div class="form-group">
                                 <label class="field-label">Cargo:</label>
-                                <input type="text" class="input-text input-readonly" value="{{ ucfirst($user->rol) }}"
+                                <input type="text" class="input-text input-readonly" value="{{ $user->rol_nombre }}"
                                     readonly disabled>
                             </div>
 

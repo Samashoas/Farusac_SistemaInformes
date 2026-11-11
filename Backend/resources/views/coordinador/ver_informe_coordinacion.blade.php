@@ -1043,7 +1043,7 @@
     @if(!request()->has('embed') && !isset($isPdf))
         <div class="no-print-bar">
             @php
-                $backRoute = (Auth::user() && Auth::user()->rol === 'administrador') ? route('admin.informes') : route('coordinador.dashboard');
+                $backRoute = (Auth::user() && (Auth::user()->isAdministrador() || Auth::user()->rol === 'administrador')) ? route('admin.informes') : route('coordinador.dashboard');
             @endphp
             <a href="{{ $backRoute }}" class="btn-action btn-back">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">

@@ -20,7 +20,10 @@ class CheckRole
             return redirect("/");
         }
 
-        $userRole = strtolower(trim(Auth::user()->rol));
+        $user = Auth::user();
+        $userRole = $user->rol instanceof \App\Enums\Rol
+            ? $user->rol->value
+            : strtolower(trim((string) $user->rol));
 
         // Construir lista de roles permitidos
         $allowed = [];

@@ -1051,10 +1051,10 @@
         <!-- BARRA SUPERIOR DE ACCIONES -->
         <div class="no-print-bar">
             @php
-                $userRole = Auth::user() ? Auth::user()->rol : '';
-                if ($userRole === 'administrador') {
+                $user = Auth::user();
+                if ($user && ($user->isAdministrador() || $user->rol === 'administrador')) {
                     $backRoute = route('admin.informes');
-                } elseif ($userRole === 'coordinador') {
+                } elseif ($user && ($user->isCoordinador() || $user->rol === 'coordinador')) {
                     $backRoute = route('coordinador.informes');
                 } else {
                     $backRoute = route('docente.informes');

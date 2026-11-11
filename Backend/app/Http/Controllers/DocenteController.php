@@ -2,17 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Rol;
+use App\Models\Curso;
+use App\Models\Informe;
+use App\Models\User;
+use App\Services\InformeDocenteService;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\Curso;
-use App\Models\User;
-use App\Models\Informe;
-use App\Models\InformeSemana;
-use Carbon\Carbon;
 
 class DocenteController extends Controller
 {
+    public function __construct(
+        protected ?InformeDocenteService $docenteService = null
+    ) {
+        $this->docenteService = $docenteService ?? app(InformeDocenteService::class);
+    }
+
     /**
      * Muestra el Dashboard principal del docente con sus cursos asignados
      * y el catálogo de cursos para la ventana modal.
@@ -28,7 +36,7 @@ class DocenteController extends Controller
                 ->orderBy('nombre_curso', 'asc')
                 ->orderBy('seccion', 'asc')
                 ->get();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $cursosAsignados = collect();
         }
 
@@ -41,10 +49,16 @@ class DocenteController extends Controller
 
             $carreras = Curso::select('carrera')
                 ->distinct()
+                ->whereNotNull('carrera')
+                ->where('carrera', '!=', '')
                 ->pluck('carrera');
-        } catch (\Exception $e) {
+
+            if ($carreras->isEmpty()) {
+                $carreras = collect(['Arquitectura', 'Diseño Gráfico']);
+            }
+        } catch (Exception $e) {
             $catalogoCursos = collect();
-            $carreras = collect();
+            $carreras = collect(['Arquitectura', 'Diseño Gráfico']);
         }
 
         return view('docente.dashboard', compact('user', 'cursosAsignados', 'catalogoCursos', 'carreras'));
@@ -56,21 +70,21 @@ class DocenteController extends Controller
     public function asignarCurso(Request $request)
     {
         $request->validate([
-            'curso_id' => 'required|exists:cursos,id'
+            'curso_id' => 'required|exists:cursos,id',
         ], [
             'curso_id.required' => 'Debes seleccionar una sección válida.',
-            'curso_id.exists' => 'El curso seleccionado no existe en el sistema.'
+            'curso_id.exists'   => 'El curso seleccionado no existe en el sistema.',
         ]);
 
         /** @var User $user */
-        $user = Auth::user();
+        $user    = Auth::user();
         $cursoId = $request->input('curso_id');
 
         // Verificar si ya está asignado
         if ($user->cursos()->where('cursos.id', $cursoId)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Este curso y sección ya se encuentran asignados a tu cuenta.'
+                'message' => 'Este curso y sección ya se encuentran asignados a tu cuenta.',
             ], 422);
         }
 
@@ -81,21 +95,21 @@ class DocenteController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Curso asignado exitosamente.',
-                'curso' => [
-                    'id' => $curso->id,
+                'curso'   => [
+                    'id'           => $curso->id,
                     'nombre_curso' => $curso->nombre_curso,
-                    'seccion' => $curso->seccion,
-                    'carrera' => $curso->carrera,
-                    'area' => $curso->area,
+                    'seccion'      => $curso->seccion,
+                    'carrera'      => $curso->carrera,
+                    'area'         => $curso->area,
                     'codigo_curso' => $curso->codigo_curso,
-                    'anio' => $curso->anio,
-                    'semestre' => $curso->semestre
-                ]
+                    'anio'         => $curso->anio,
+                    'semestre'     => $curso->semestre,
+                ],
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al asignar el curso: ' . $e->getMessage()
+                'message' => 'Error al asignar el curso: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -113,18 +127,18 @@ class DocenteController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'El curso ha sido removido de tu panel exitosamente.'
+                'message' => 'El curso ha sido removido de tu panel exitosamente.',
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al remover la asignación: ' . $e->getMessage()
+                'message' => 'Error al remover la asignación: ' . $e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Muestra el Historial de Informes creados por el docente con filtros en tiempo real.
+     * Muestra el historial completo de informes entregados por el docente.
      */
     public function historialInformes(Request $request)
     {
@@ -140,27 +154,41 @@ class DocenteController extends Controller
             // Extraer opciones únicas para filtros
             $carreras = $informes->pluck('curso.carrera')->filter()->unique()->values();
             $cursosDocente = $informes->pluck('curso.nombre_curso')->filter()->unique()->values();
-            $periodos = $informes->pluck('periodo')->filter()->map(function($p) {
+            $periodos = $informes->pluck('periodo')->filter()->map(function ($p) {
                 return trim(preg_replace('/\d{4}/', '', $p));
             })->filter()->unique()->values();
             $anios = $informes->pluck('curso.anio')->filter()->unique()->values();
             $meses = $informes->pluck('mes')->filter()->unique()->values();
 
-        } catch (\Exception $e) {
-            $informes = collect();
-            $carreras = collect();
+            // Fallback para selectores si el docente aún no tiene informes registrados
+            if ($carreras->isEmpty()) {
+                $carreras = Curso::select('carrera')->distinct()->whereNotNull('carrera')->where('carrera', '!=', '')->pluck('carrera');
+                if ($carreras->isEmpty()) {
+                    $carreras = collect(['Arquitectura', 'Diseño Gráfico']);
+                }
+            }
+            if ($cursosDocente->isEmpty()) {
+                $cursosDocente = $user->cursos()->pluck('nombre_curso')->unique()->values();
+            }
+            if ($anios->isEmpty()) {
+                $anios = collect([date('Y')]);
+            }
+        } catch (Exception $e) {
+            $informes      = collect();
+            $carreras      = collect(['Arquitectura', 'Diseño Gráfico']);
             $cursosDocente = collect();
-            $periodos = collect();
-            $anios = collect();
-            $meses = collect();
+            $periodos      = collect();
+            $anios         = collect([date('Y')]);
+            $meses         = collect();
         }
 
-        $vista = ($user->rol === 'coordinador') ? 'coordinador.historial_informes' : 'docente.historial_informes';
+        $vista = $user->isCoordinador() ? 'coordinador.historial_informes' : 'docente.historial_informes';
+
         return view($vista, compact('user', 'informes', 'carreras', 'cursosDocente', 'periodos', 'anios', 'meses'));
     }
 
     /**
-     * Muestra la vista de creación de informe (Wizard de 2 fases).
+     * Muestra el formulario para crear un nuevo informe mensual.
      */
     public function crearInformeView(Request $request)
     {
@@ -172,98 +200,70 @@ class DocenteController extends Controller
                 ->orderBy('nombre_curso', 'asc')
                 ->orderBy('seccion', 'asc')
                 ->get();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $cursosAsignados = collect();
         }
 
         $selectedCursoId = $request->query('curso_id');
-        $selectedCurso = null;
+        $selectedCurso   = null;
         if ($selectedCursoId) {
             $selectedCurso = $cursosAsignados->firstWhere('id', $selectedCursoId) ?? Curso::find($selectedCursoId);
         }
 
-        $vista = ($user->rol === 'coordinador') ? 'coordinador.crear_informe' : 'docente.crear_informe';
+        $vista                  = $user->isCoordinador() ? 'coordinador.crear_informe' : 'docente.crear_informe';
         $cursoPreseleccionadoId = $selectedCursoId;
         return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'cursoPreseleccionadoId'));
     }
 
     /**
-     * Guarda el nuevo informe con sus semanas registradas.
+     * Guarda el nuevo informe con sus semanas registradas delegando al servicio.
      */
     public function guardarInforme(Request $request)
     {
         $request->validate([
-            'curso_id' => 'required|exists:cursos,id',
-            'periodo' => 'required|string',
-            'mes' => 'required|string',
-            'estudiantes_asignados' => 'required|integer|min:1',
-            'listado_asistencia_url' => 'nullable|string|max:255',
-            'enlace_evidencia_url' => 'nullable|string|max:255',
-            'enlace_meet_zoom_url' => 'nullable|string|max:255',
-            'enlace_classroom_drive_url' => 'nullable|string|max:255',
-            'estrategias_evaluacion' => 'nullable|string',
-            'semanas' => 'required|array|min:1',
-            'semanas.*.numero_semana' => 'required|integer',
-            'semanas.*.actividad_realizada' => 'required|string',
+            'curso_id'                           => 'required|exists:cursos,id',
+            'periodo'                            => 'required|string',
+            'mes'                                => 'required|string',
+            'estudiantes_asignados'              => 'required|integer|min:1',
+            'listado_asistencia_url'             => 'nullable|string|max:255',
+            'enlace_evidencia_url'               => 'nullable|string|max:255',
+            'enlace_meet_zoom_url'               => 'nullable|string|max:255',
+            'enlace_classroom_drive_url'         => 'nullable|string|max:255',
+            'estrategias_evaluacion'             => 'nullable|string',
+            'semanas'                            => 'required|array|min:1',
+            'semanas.*.numero_semana'            => 'required|integer',
+            'semanas.*.actividad_realizada'      => 'required|string',
             'semanas.*.estudiantes_participaron' => 'nullable|integer|min:0',
-            'semanas.*.metodologias' => 'nullable|string',
-            'semanas.*.medios_comunicacion' => 'nullable|string',
+            'semanas.*.metodologias'             => 'nullable|string',
+            'semanas.*.medios_comunicacion'      => 'nullable|string',
         ], [
-            'curso_id.required' => 'Debe seleccionar un curso válido.',
-            'periodo.required' => 'El periodo es obligatorio.',
-            'mes.required' => 'El mes es obligatorio.',
-            'estudiantes_asignados.required' => 'La cantidad de estudiantes asignados es obligatoria.',
-            'estudiantes_asignados.min' => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
-            'semanas.required' => 'Debe registrar al menos una semana de actividades.',
+            'curso_id.required'                     => 'Debe seleccionar un curso válido.',
+            'periodo.required'                      => 'El periodo es obligatorio.',
+            'mes.required'                          => 'El mes es obligatorio.',
+            'estudiantes_asignados.required'        => 'La cantidad de estudiantes asignados es obligatoria.',
+            'estudiantes_asignados.min'             => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
+            'semanas.required'                      => 'Debe registrar al menos una semana de actividades.',
             'semanas.*.actividad_realizada.required' => 'El contenido o actividad realizada es obligatorio en cada semana.',
         ]);
 
         /** @var User $user */
         $user = Auth::user();
 
-        DB::beginTransaction();
         try {
-            $informe = Informe::create([
-                'usuario_id' => $user->id,
-                'curso_id' => $request->input('curso_id'),
-                'periodo' => $request->input('periodo'),
-                'mes' => $request->input('mes'),
-                'estudiantes_asignados' => $request->input('estudiantes_asignados', 0),
-                'listado_asistencia_url' => $request->input('listado_asistencia_url'),
-                'enlace_evidencia_url' => $request->input('enlace_evidencia_url'),
-                'enlace_meet_zoom_url' => $request->input('enlace_meet_zoom_url'),
-                'enlace_classroom_drive_url' => $request->input('enlace_classroom_drive_url'),
-                'estrategias_evaluacion' => $request->input('estrategias_evaluacion'),
-                'estado' => 'enviado',
-                'bloqueado_en' => Carbon::now()->addDays(3),
-            ]);
+            $informe = $this->docenteService->guardarInforme($user, $request->all());
 
-            foreach ($request->input('semanas') as $sem) {
-                InformeSemana::create([
-                    'informe_id' => $informe->id,
-                    'numero_semana' => $sem['numero_semana'] ?? 1,
-                    'actividad_realizada' => $sem['actividad_realizada'] ?? '',
-                    'estudiantes_participaron' => $sem['estudiantes_participaron'] ?? 0,
-                    'metodologias' => $sem['metodologias'] ?? null,
-                    'medios_comunicacion' => $sem['medios_comunicacion'] ?? null,
-                ]);
-            }
-
-            DB::commit();
-
-            $redirectUrl = ($user->rol === 'coordinador') ? route('coordinador.dashboard') : route('docente.dashboard');
+            $redirectUrl = $user->isCoordinador() ? route('coordinador.dashboard') : route('docente.dashboard');
 
             return response()->json([
-                'success' => true,
-                'message' => 'El informe ha sido creado y enviado exitosamente. Recuerda que tienes un máximo de 3 días para editar o modificar tu informe antes de que se bloquee para revisión.',
-                'informe_id' => $informe->id,
-                'redirect_url' => $redirectUrl
+                'success'      => true,
+                'message'      => 'El informe ha sido creado y enviado exitosamente. Recuerda que tienes un máximo de 3 días para editar o modificar tu informe antes de que se bloquee para revisión.',
+                'informe_id'   => $informe->id,
+                'redirect_url' => $redirectUrl,
             ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar el informe: ' . $e->getMessage()
+                'message' => 'Error al guardar el informe: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -290,20 +290,20 @@ class DocenteController extends Controller
                 ->orderBy('nombre_curso', 'asc')
                 ->orderBy('seccion', 'asc')
                 ->get();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $cursosAsignados = collect();
         }
 
         $selectedCurso = $informe->curso;
-        $modoEdicion = true;
+        $modoEdicion   = true;
 
-        $vista = ($user->rol === 'coordinador') ? 'coordinador.crear_informe' : 'docente.crear_informe';
+        $vista = $user->isCoordinador() ? 'coordinador.crear_informe' : 'docente.crear_informe';
 
         return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'informe', 'modoEdicion', 'estaBloqueado'));
     }
 
     /**
-     * Actualiza un informe existente y sus semanas.
+     * Actualiza un informe existente y sus semanas delegando al servicio.
      */
     public function actualizarInforme(Request $request, $id)
     {
@@ -315,77 +315,50 @@ class DocenteController extends Controller
         if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.'
+                'message' => 'Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.',
             ], 422);
         }
 
         $request->validate([
-            'curso_id' => 'required|exists:cursos,id',
-            'periodo' => 'required|string',
-            'mes' => 'required|string',
-            'estudiantes_asignados' => 'required|integer|min:1',
-            'listado_asistencia_url' => 'nullable|string|max:255',
-            'enlace_evidencia_url' => 'nullable|string|max:255',
-            'enlace_meet_zoom_url' => 'nullable|string|max:255',
-            'enlace_classroom_drive_url' => 'nullable|string|max:255',
-            'estrategias_evaluacion' => 'nullable|string',
-            'semanas' => 'required|array|min:1',
-            'semanas.*.numero_semana' => 'required|integer',
-            'semanas.*.actividad_realizada' => 'required|string',
+            'curso_id'                           => 'required|exists:cursos,id',
+            'periodo'                            => 'required|string',
+            'mes'                                => 'required|string',
+            'estudiantes_asignados'              => 'required|integer|min:1',
+            'listado_asistencia_url'             => 'nullable|string|max:255',
+            'enlace_evidencia_url'               => 'nullable|string|max:255',
+            'enlace_meet_zoom_url'               => 'nullable|string|max:255',
+            'enlace_classroom_drive_url'         => 'nullable|string|max:255',
+            'estrategias_evaluacion'             => 'nullable|string',
+            'semanas'                            => 'required|array|min:1',
+            'semanas.*.numero_semana'            => 'required|integer',
+            'semanas.*.actividad_realizada'      => 'required|string',
             'semanas.*.estudiantes_participaron' => 'nullable|integer|min:0',
-            'semanas.*.metodologias' => 'nullable|string',
-            'semanas.*.medios_comunicacion' => 'nullable|string',
+            'semanas.*.metodologias'             => 'nullable|string',
+            'semanas.*.medios_comunicacion'      => 'nullable|string',
         ], [
-            'curso_id.required' => 'Debe seleccionar un curso válido.',
-            'periodo.required' => 'El periodo es obligatorio.',
-            'mes.required' => 'El mes es obligatorio.',
-            'estudiantes_asignados.required' => 'La cantidad de estudiantes asignados es obligatoria.',
-            'estudiantes_asignados.min' => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
-            'semanas.required' => 'Debe registrar al menos una semana de actividades.',
+            'curso_id.required'                     => 'Debe seleccionar un curso válido.',
+            'periodo.required'                      => 'El periodo es obligatorio.',
+            'mes.required'                          => 'El mes es obligatorio.',
+            'estudiantes_asignados.required'        => 'La cantidad de estudiantes asignados es obligatoria.',
+            'estudiantes_asignados.min'             => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
+            'semanas.required'                      => 'Debe registrar al menos una semana de actividades.',
             'semanas.*.actividad_realizada.required' => 'El contenido o actividad realizada es obligatorio en cada semana.',
         ]);
 
-        DB::beginTransaction();
         try {
-            $informe->update([
-                'curso_id' => $request->input('curso_id'),
-                'periodo' => $request->input('periodo'),
-                'mes' => $request->input('mes'),
-                'estudiantes_asignados' => $request->input('estudiantes_asignados'),
-                'listado_asistencia_url' => $request->input('listado_asistencia_url'),
-                'enlace_evidencia_url' => $request->input('enlace_evidencia_url'),
-                'enlace_meet_zoom_url' => $request->input('enlace_meet_zoom_url'),
-                'enlace_classroom_drive_url' => $request->input('enlace_classroom_drive_url'),
-                'estrategias_evaluacion' => $request->input('estrategias_evaluacion'),
-            ]);
+            $this->docenteService->actualizarInforme($informe, $request->all());
 
-            // Recrear semanas
-            $informe->semanas()->delete();
-            foreach ($request->input('semanas') as $sem) {
-                InformeSemana::create([
-                    'informe_id' => $informe->id,
-                    'numero_semana' => $sem['numero_semana'] ?? 1,
-                    'actividad_realizada' => $sem['actividad_realizada'] ?? '',
-                    'estudiantes_participaron' => $sem['estudiantes_participaron'] ?? 0,
-                    'metodologias' => $sem['metodologias'] ?? null,
-                    'medios_comunicacion' => $sem['medios_comunicacion'] ?? null,
-                ]);
-            }
-
-            DB::commit();
-
-            $redirectUrl = ($user->rol === 'coordinador') ? route('coordinador.informes') : route('docente.informes');
+            $redirectUrl = $user->isCoordinador() ? route('coordinador.informes') : route('docente.informes');
 
             return response()->json([
-                'success' => true,
-                'message' => 'Informe actualizado exitosamente.',
-                'redirect_url' => $redirectUrl
+                'success'      => true,
+                'message'      => 'Informe actualizado exitosamente.',
+                'redirect_url' => $redirectUrl,
             ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el informe: ' . $e->getMessage()
+                'message' => 'Error al actualizar el informe: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -398,22 +371,18 @@ class DocenteController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        DB::beginTransaction();
         try {
             $informe = Informe::where('usuario_id', $user->id)->findOrFail($id);
-            $informe->semanas()->delete();
-            $informe->delete();
-            DB::commit();
+            $this->eliminarInformeDocenteModel($informe);
 
             return response()->json([
                 'success' => true,
-                'message' => 'El informe ha sido eliminado permanentemente.'
+                'message' => 'El informe ha sido eliminado permanentemente.',
             ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe: ' . $e->getMessage()
+                'message' => 'Error al eliminar el informe: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -427,7 +396,7 @@ class DocenteController extends Controller
         $user = Auth::user();
 
         $query = Informe::with(['curso', 'semanas', 'usuario']);
-        if ($user->rol !== 'coordinador' && $user->rol !== 'administrador') {
+        if (!$user->isCoordinador() && !$user->isAdministrador()) {
             $query->where('usuario_id', $user->id);
         }
         $informe = $query->findOrFail($id);
@@ -443,7 +412,7 @@ class DocenteController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if ($user->rol === 'coordinador') {
+        if ($user->isCoordinador()) {
             if (!$user->area && session()->has('coordinador_area')) {
                 $user->area = session()->get('coordinador_area');
             }
@@ -474,12 +443,12 @@ class DocenteController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Perfil actualizado exitosamente.',
-                'numero' => $user->numero
+                'numero'  => $user->numero,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el perfil: ' . $e->getMessage()
+                'message' => 'Error al actualizar el perfil: ' . $e->getMessage(),
             ], 500);
         }
     }

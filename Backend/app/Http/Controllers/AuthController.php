@@ -7,11 +7,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
+use App\Enums\Rol;
 use Exception;
 
 class AuthController extends Controller{
 
-    public function ShowLogin(){
+    public function showLogin(){
         return view('auth.login');
     }
 
@@ -20,8 +21,8 @@ class AuthController extends Controller{
         $driver = Socialite::driver('google');
         return $driver
             ->with([
-                'hd' => env('GOOGLE_ALLOWED_DOMAIN', 'FarusacTest.com'),
-                'prompt' => 'select_account'
+                'hd'     => config('services.google.allowed_domain'),
+                'prompt' => 'select_account',
             ])
             ->redirect();
     }
@@ -31,7 +32,7 @@ class AuthController extends Controller{
             /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
             $driver = Socialite::driver('google');
             $driver->setHttpClient(new \GuzzleHttp\Client([
-                'verify' => 'C:\\php\\cacert.pem'
+                'verify' => config('services.google.ssl_cert_path'),
             ]));
             $googleUser = $driver->user();
         }catch (Exception $ex){
@@ -40,7 +41,7 @@ class AuthController extends Controller{
         }
 
         //Validar Acceso al dominio
-        $allowedDomain = strtolower(env('GOOGLE_ALLOWED_DOMAIN', 'FarusacTest.com'));
+        $allowedDomain = strtolower(config('services.google.allowed_domain'));
         $domain = explode('@', $googleUser->getEmail())[1] ?? '';
 
         if(strtolower($domain) !== $allowedDomain){
@@ -55,7 +56,7 @@ class AuthController extends Controller{
             $user = User::create([
                 'nombre' => $googleUser->getName(),
                 'correo' => $googleUser->getEmail(),
-                'rol' => 'docente',
+                'rol' => Rol::Docente->value,
                 'google_id' => $googleUser->getId(),
             ]);
         } else {
@@ -73,22 +74,21 @@ class AuthController extends Controller{
     }
     
     private function redirectBasedOnRole($rol){
-        $rolClean = strtolower(trim($rol));
-        switch($rolClean){
-            case 'administrador':
-                return redirect()->route('admin.dashboard');
-            case 'coordinador':
-                return redirect()->route('coordinador.dashboard');
-            case 'docente':
-                return redirect()->route('docente.dashboard');
-            default:
+        $rolEnum = $rol instanceof Rol ? $rol : Rol::tryFrom(strtolower(trim((string) $rol)));
+        return match($rolEnum){
+            Rol::Administrador => redirect()->route('admin.dashboard'),
+            Rol::Coordinador   => redirect()->route('coordinador.dashboard'),
+            Rol::Docente       => redirect()->route('docente.dashboard'),
+            default            => (function() use ($rol) {
                 Auth::logout();
-                return redirect('/')->withErrors(['correo' => 'Rol invalido (' . $rol . ')']);
-        }
+                $val = $rol instanceof Rol ? $rol->value : (string) $rol;
+                return redirect('/')->withErrors(['correo' => 'Rol invalido (' . $val . ')']);
+            })(),
+        };
     }
     
     public function logout(Request $request){
-        Auth::Logout();
+        Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

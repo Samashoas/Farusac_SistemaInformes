@@ -1146,6 +1146,12 @@
                     </table>
                 </div>
 
+                @if ($usuarios instanceof \Illuminate\Pagination\LengthAwarePaginator && $usuarios->hasPages())
+                    <div class="pagination-container" style="display: flex; justify-content: center; align-items: center; margin-top: 25px;">
+                        {{ $usuarios->links() }}
+                    </div>
+                @endif
+
             </div>
 
         </main>
@@ -1273,8 +1279,9 @@
 
     <!-- JavaScript para Interactividad y Filtros Locales (Dashboard Vivo) -->
     <script>
-        // Base de Datos de Usuarios cargada dinámicamente desde el backend
-        let dbUsuarios = @json($usuarios);
+        // Base de Datos de Usuarios cargada dinámicamente desde el backend (soporta colección o paginador)
+        const rawUsuarios = @json($usuarios);
+        let dbUsuarios = Array.isArray(rawUsuarios) ? rawUsuarios : (rawUsuarios.data || []);
 
         // Variables globales para rastrear el ID del usuario en edición o cambio de estado
         let statusTargetUserId = null;

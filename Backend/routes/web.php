@@ -9,7 +9,7 @@ use App\Http\Controllers\CoordinadorController;
 Route::get('/', function () {
     return redirect()->route('login');
 });
-Route::get('/login', [AuthController::class, 'ShowLogin'])->name('login');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/google', [AuthController::class, 'redirect'])->name('google.login'); // Va a Google
 Route::get('/auth/google/callback', [AuthController::class, 'callback']); // Google nos devuelve aquí
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -67,9 +67,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/usuarios', [AdminController::class, 'crearUsuario'])->name('admin.usuarios.crear');
         Route::put('/admin/usuarios/{id}', [AdminController::class, 'editarUsuario'])->name('admin.usuarios.editar');
         Route::post('/admin/usuarios/{id}/toggle-status', [AdminController::class, 'toggleEstadoUsuario'])->name('admin.usuarios.toggle-status');
-        Route::post('/admin/importar-usuarios', [AdminController::class, 'CargaUsuariosCsv'])->name('admin.importar');
-        Route::post('/admin/importar-cursos', [AdminController::class, 'CargaCursosCsv'])->name('admin.importar-cursos');
-        Route::post('/admin/importar-carga-academica', [AdminController::class, 'CargaAcademicaCsv'])->name('admin.importar-carga-academica');
+        Route::post('/admin/importar-usuarios', [AdminController::class, 'cargaUsuariosCsv'])->name('admin.importar');
+        Route::post('/admin/importar-cursos', [AdminController::class, 'cargaCursosCsv'])->name('admin.importar-cursos');
+        Route::post('/admin/importar-carga-academica', [AdminController::class, 'cargaAcademicaCsv'])->name('admin.importar-carga-academica');
 
         // Módulo de Informes para Administrador
         Route::get('/admin/informes', [AdminController::class, 'informesView'])->name('admin.informes');
