@@ -305,5 +305,30 @@ class InformeCoordinacionService
             }
         }
     }
+
+    /**
+     * Elimina atómicamente un informe de coordinación y todas sus tablas hijas.
+     */
+    public function eliminarInformeCoordinacion(int|string $id, ?User $user = null): void
+    {
+        $query = InformeCoordinacion::query();
+        if ($user && !$user->isAdministrador()) {
+            $query->where('usuario_id', $user->id);
+        }
+        $informe = $query->findOrFail($id);
+
+        DB::beginTransaction();
+        try {
+            $informe->programas()->delete();
+            $informe->asignaturas()->delete();
+            $informe->avances()->delete();
+            $informe->estudiantes()->delete();
+            $informe->delete();
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
 }
 

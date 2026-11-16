@@ -89,5 +89,27 @@ class InformeDocenteService
             ]);
         }
     }
+
+    /**
+     * Elimina atómicamente un informe docente y sus semanas asociadas.
+     */
+    public function eliminarInformeDocente(int|string $id, ?User $user = null): void
+    {
+        $query = Informe::query();
+        if ($user && !$user->isAdministrador()) {
+            $query->where('usuario_id', $user->id);
+        }
+        $informe = $query->findOrFail($id);
+
+        DB::beginTransaction();
+        try {
+            $informe->semanas()->delete();
+            $informe->delete();
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
 }
 

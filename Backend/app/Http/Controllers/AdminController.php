@@ -2,197 +2,187 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Rol;
+use App\Http\Requests\CrearCursoRequest;
+use App\Http\Requests\CrearUsuarioRequest;
+use App\Http\Requests\EditarUsuarioRequest;
+use App\Http\Requests\ImportCargaAcademicaRequest;
+use App\Http\Requests\ImportCsvRequest;
+use App\Http\Resources\CursoResource;
+use App\Http\Resources\InformeCoordinacionResource;
+use App\Http\Resources\InformeDocenteResource;
+use App\Http\Resources\UserResource;
 use App\Models\Curso;
 use App\Models\Informe;
 use App\Models\InformeCoordinacion;
 use App\Models\User;
+use App\Services\CatalogoService;
 use App\Services\CsvImportService;
+use App\Services\CursoService;
+use App\Services\InformeCoordinacionService;
+use App\Services\InformeDocenteService;
 use App\Services\InformeExportService;
+use App\Services\UserService;
 use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminController extends Controller
 {
     public function __construct(
         protected CsvImportService $csvService,
-        protected InformeExportService $exportService
+        protected InformeExportService $exportService,
+        protected CursoService $cursoService,
+        protected UserService $userService,
+        protected CatalogoService $catalogoService,
+        protected InformeDocenteService $docenteService,
+        protected InformeCoordinacionService $coordinacionService
     ) {}
 
-    public function dashboard()
+    public function dashboard(): View
     {
         return view('admin.dashboard');
     }
 
-    public function cargaDatosView()
+    public function cargaDatosView(): View
     {
         return view('admin.carga_datos');
     }
 
-    public function usuariosView(Request $request)
+    public function usuariosView(Request $request): View
     {
         $perPage  = $request->query('per_page', 25);
         $usuarios = User::orderBy('id', 'desc')->paginate($perPage)->withQueryString();
+
         return view('admin.usuarios', compact('usuarios'));
     }
 
-    public function cursosView()
+    public function cursosView(): View
     {
         $cursos = Curso::all();
+
         return view('admin.cursos', compact('cursos'));
     }
 
-    public function crearCurso(Request $request)
+    public function crearCurso(CrearCursoRequest $request): JsonResponse
     {
-        $request->validate([
-            'carrera'      => 'required|string|max:100',
-            'area'         => 'required|string|max:150',
-            'nombre_curso' => 'required|string|max:150',
-            'codigo_curso' => 'required|string|max:50',
-            'seccion'      => 'required|string|max:10',
-            'anio'         => 'required|integer',
-            'semestre'     => 'required|string|max:30',
-        ]);
+        try {
+            $curso = $this->cursoService->crearCurso($request->validated());
 
-        $existe = Curso::where('carrera', $request->carrera)
-            ->where('codigo_curso', $request->codigo_curso)
-            ->where('seccion', $request->seccion)
-            ->where('anio', $request->anio)
-            ->where('semestre', $request->semestre)
-            ->first();
-
-        if ($existe) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Curso creado exitosamente',
+                'curso'   => new CursoResource($curso),
+            ]);
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ya existe un registro con la misma Carrera, Código, Sección, Año y Semestre.',
+                'message' => $e->validator->errors()->first(),
             ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el curso: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $curso = Curso::create([
-            'carrera'      => $request->carrera,
-            'area'         => $request->area,
-            'nombre_curso' => $request->nombre_curso,
-            'codigo_curso' => $request->codigo_curso,
-            'seccion'      => $request->seccion,
-            'anio'         => $request->anio,
-            'semestre'     => $request->semestre,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Curso creado exitosamente',
-            'curso'   => $curso,
-        ]);
     }
 
-    public function eliminarCurso($id)
+    public function eliminarCurso(int|string $id): JsonResponse
     {
-        $curso = Curso::findOrFail($id);
-        $curso->delete();
+        try {
+            $this->cursoService->eliminarCurso($id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Curso eliminado exitosamente',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Curso eliminado exitosamente',
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el curso: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
-    public function crearUsuario(Request $request)
+    public function crearUsuario(CrearUsuarioRequest $request): JsonResponse
     {
-        $request->validate([
-            'nombre' => 'required|string|max:150',
-            'correo' => 'required|email|max:100|unique:usuarios,correo',
-            'numero' => 'required|string|max:30',
-            'rol'    => ['required', new Enum(Rol::class)],
-            'plaza'  => 'required|in:titular + ampliacion,titular,interino',
-        ]);
+        try {
+            $usuario = $this->userService->crearUsuario($request->validated());
 
-        $usuario = User::create([
-            'nombre' => $request->nombre,
-            'correo' => $request->correo,
-            'numero' => $request->numero,
-            'rol'    => Rol::from($request->rol),
-            'plaza'  => $request->plaza,
-            'estado' => 'activo',
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Usuario creado exitosamente',
-            'usuario' => $usuario,
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario creado exitosamente',
+                'usuario' => new UserResource($usuario),
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el usuario: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
-    public function editarUsuario(Request $request, $id)
+    public function editarUsuario(EditarUsuarioRequest $request, int|string $id): JsonResponse
     {
-        $usuario = User::findOrFail($id);
+        try {
+            $usuario = $this->userService->editarUsuario($id, $request->validated());
 
-        $request->validate([
-            'numero' => 'required|string|max:30',
-            'rol'    => ['required', new Enum(Rol::class)],
-            'plaza'  => 'required|in:titular + ampliacion,titular,interino',
-        ]);
-
-        $usuario->update([
-            'numero' => $request->numero,
-            'rol'    => Rol::from($request->rol),
-            'plaza'  => $request->plaza,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Usuario actualizado exitosamente',
-            'usuario' => $usuario,
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario actualizado exitosamente',
+                'usuario' => new UserResource($usuario),
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el usuario: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
-    public function toggleEstadoUsuario($id)
+    public function toggleEstadoUsuario(int|string $id): JsonResponse
     {
-        $usuario = User::findOrFail($id);
+        try {
+            $usuario = $this->userService->toggleEstadoUsuario($id);
 
-        $nuevoEstado = ($usuario->estado === 'activo') ? 'inactivo' : 'activo';
-        $usuario->update([
-            'estado' => $nuevoEstado,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Estado del usuario modificado exitosamente',
-            'usuario' => $usuario,
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Estado del usuario modificado exitosamente',
+                'usuario' => new UserResource($usuario),
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cambiar estado del usuario: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     // =========================================================================
     // IMPORTACIÓN MASIVA DE DATOS CSV (Delegada a CsvImportService)
     // =========================================================================
 
-    public function cargaUsuariosCsv(Request $request)
+    public function cargaUsuariosCsv(ImportCsvRequest $request): JsonResponse
     {
-        $request->validate([
-            'archivo_csv' => 'required|mimes:csv,txt|max:5120',
-        ]);
-
         $result = $this->csvService->importarUsuarios($request->file('archivo_csv'));
+
         return response()->json($result);
     }
 
-    public function cargaCursosCsv(Request $request)
+    public function cargaCursosCsv(ImportCsvRequest $request): JsonResponse
     {
-        $request->validate([
-            'archivo_csv' => 'required|mimes:csv,txt|max:5120',
-        ]);
-
         $result = $this->csvService->importarCursos($request->file('archivo_csv'));
+
         return response()->json($result);
     }
 
-    public function cargaAcademicaCsv(Request $request)
+    public function cargaAcademicaCsv(ImportCargaAcademicaRequest $request): JsonResponse
     {
-        $request->validate([
-            'archivo_csv' => 'required|file|max:10240',
-        ]);
-
         $result = $this->csvService->importarCargaAcademica(
             $request->file('archivo_csv'),
             $request->input('carrera'),
@@ -207,7 +197,7 @@ class AdminController extends Controller
     // GESTIÓN Y VISUALIZACIÓN DE INFORMES
     // =========================================================================
 
-    public function informesView()
+    public function informesView(): View
     {
         $user = Auth::user();
 
@@ -219,88 +209,57 @@ class AdminController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        $carreras = Curso::select('carrera')
-            ->distinct()
-            ->whereNotNull('carrera')
-            ->where('carrera', '!=', '')
-            ->pluck('carrera');
+        $filtros = $this->catalogoService->getFiltrosAdmin($informesDocentes, $informesCoordinacion);
 
-        $areas = Curso::select('area')
-            ->distinct()
-            ->whereNotNull('area')
-            ->where('area', '!=', '')
-            ->orderBy('area', 'asc')
-            ->pluck('area');
-
-        $periodosDocentes = Informe::select('periodo')->distinct()->whereNotNull('periodo')->pluck('periodo');
-        $periodosCoord    = InformeCoordinacion::select('periodo')->distinct()->whereNotNull('periodo')->pluck('periodo');
-        $periodos         = $periodosDocentes->merge($periodosCoord)->unique()->filter()->values();
-
-        $aniosDocentes = Curso::select('anio')->distinct()->whereNotNull('anio')->pluck('anio');
-        $aniosCoord    = InformeCoordinacion::select('anio')->distinct()->whereNotNull('anio')->pluck('anio');
-        $anios         = $aniosDocentes->merge($aniosCoord)->unique()->filter()->sortDesc()->values();
-
-        $stats = [
-            'total'                => $informesDocentes->count() + $informesCoordinacion->count(),
-            'docentes'             => $informesDocentes->count(),
-            'coordinacion'         => $informesCoordinacion->count(),
-            'docentes_unicos'      => $informesDocentes->pluck('usuario_id')->unique()->count(),
-            'coordinadores_unicos' => $informesCoordinacion->pluck('usuario_id')->unique()->count(),
-        ];
-
-        return view('admin.informes', compact(
-            'user',
-            'informesDocentes',
-            'informesCoordinacion',
-            'carreras',
-            'areas',
-            'periodos',
-            'anios',
-            'stats'
-        ));
+        return view('admin.informes', array_merge([
+            'user'                 => $user,
+            'informesDocentes'     => $informesDocentes,
+            'informesCoordinacion' => $informesCoordinacion,
+        ], $filtros));
     }
 
-    public function verInformeDocente($id)
+    public function verInformeDocente(int|string $id): View
     {
         $user    = Auth::user();
         $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
+
         return view('docente.ver_informe_pdf', compact('user', 'informe'));
     }
 
-    public function verInformeCoordinacion($id)
+    public function verInformeCoordinacion(int|string $id): View
     {
         $user    = Auth::user();
         $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->findOrFail($id);
+
         return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
     }
 
-    public function obtenerDetalleInformeDocenteJson($id)
+    public function obtenerDetalleInformeDocenteJson(int|string $id): JsonResponse
     {
         $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
             'tipo'    => 'docente',
-            'informe' => $this->buildInformeDocenteData($informe),
+            'informe' => new InformeDocenteResource($informe),
         ]);
     }
 
-    public function obtenerDetalleInformeCoordinacionJson($id)
+    public function obtenerDetalleInformeCoordinacionJson(int|string $id): JsonResponse
     {
         $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
             'tipo'    => 'coordinacion',
-            'informe' => $this->buildInformeCoordinacionData($informe),
+            'informe' => new InformeCoordinacionResource($informe),
         ]);
     }
 
-    public function eliminarInformeDocente($id)
+    public function eliminarInformeDocente(int|string $id): JsonResponse
     {
         try {
-            $informe = Informe::findOrFail($id);
-            $this->eliminarInformeDocenteModel($informe);
+            $this->docenteService->eliminarInformeDocente($id);
 
             return response()->json([
                 'success' => true,
@@ -314,11 +273,10 @@ class AdminController extends Controller
         }
     }
 
-    public function eliminarInformeCoordinacion($id)
+    public function eliminarInformeCoordinacion(int|string $id): JsonResponse
     {
         try {
-            $informe = InformeCoordinacion::findOrFail($id);
-            $this->eliminarInformeCoordinacionModel($informe);
+            $this->coordinacionService->eliminarInformeCoordinacion($id);
 
             return response()->json([
                 'success' => true,
@@ -336,7 +294,7 @@ class AdminController extends Controller
     // EXPORTACIÓN Y REPORTES (Delegada a InformeExportService)
     // =========================================================================
 
-    public function descargarInformesZip(Request $request)
+    public function descargarInformesZip(Request $request): BinaryFileResponse|RedirectResponse
     {
         $user = Auth::user();
         try {
@@ -346,33 +304,27 @@ class AdminController extends Controller
         }
     }
 
-    public function descargarInformesCsv(Request $request)
+    public function descargarInformesCsv(Request $request): StreamedResponse
     {
         return $this->exportService->descargarInformesCsv($request);
     }
 
-    public function verConsolidadoPdf(Request $request)
+    public function verConsolidadoPdf(Request $request): View
     {
         $user      = Auth::user();
         $filtrados = $this->exportService->obtenerInformesFiltrados($request);
 
-        $informesDocentes     = $filtrados['docentes'];
-        $informesCoordinacion = $filtrados['coordinacion'];
-        $mes                  = $filtrados['mes'];
-        $anio                 = $filtrados['anio'];
-        $totalCount           = $filtrados['total'];
-
-        return view('admin.consolidado_informes_pdf', compact(
-            'user',
-            'informesDocentes',
-            'informesCoordinacion',
-            'mes',
-            'anio',
-            'totalCount'
-        ));
+        return view('admin.consolidado_informes_pdf', [
+            'user'                 => $user,
+            'informesDocentes'     => $filtrados['docentes'],
+            'informesCoordinacion' => $filtrados['coordinacion'],
+            'mes'                  => $filtrados['mes'],
+            'anio'                 => $filtrados['anio'],
+            'totalCount'           => $filtrados['total'],
+        ]);
     }
 
-    public function descargarSeleccionadosZip(Request $request)
+    public function descargarSeleccionadosZip(Request $request): BinaryFileResponse|JsonResponse
     {
         $user       = Auth::user();
         $docenteIds = $request->input('docente_ids', []);
@@ -392,7 +344,7 @@ class AdminController extends Controller
         }
     }
 
-    public function verConsolidadoSeleccionadosPdf(Request $request)
+    public function verConsolidadoSeleccionadosPdf(Request $request): View
     {
         $user       = Auth::user();
         $docenteIds = $request->input('docente_ids', []);
@@ -422,13 +374,14 @@ class AdminController extends Controller
         ));
     }
 
-    public function obtenerListaDescargaZipJson(Request $request)
+    public function obtenerListaDescargaZipJson(Request $request): JsonResponse
     {
         $result = $this->exportService->obtenerListaDescargaZipJson($request);
+
         return response()->json($result);
     }
 
-    public function obtenerListaSeleccionadosZipJson(Request $request)
+    public function obtenerListaSeleccionadosZipJson(Request $request): JsonResponse
     {
         $docenteIds = $request->input('docente_ids', []);
         $coordIds   = $request->input('coordinacion_ids', []);
@@ -442,6 +395,7 @@ class AdminController extends Controller
 
         $result = $this->exportService->obtenerListaSeleccionadosZipJson($docenteIds, $coordIds);
         $status = empty($result['success']) ? 422 : 200;
+
         return response()->json($result, $status);
     }
 }

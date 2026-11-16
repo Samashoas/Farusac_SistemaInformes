@@ -2,35 +2,43 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Rol;
+use App\Http\Requests\ActualizarInformeDocenteRequest;
+use App\Http\Requests\ActualizarPerfilRequest;
+use App\Http\Requests\AsignarCursoRequest;
+use App\Http\Requests\GuardarInformeDocenteRequest;
+use App\Http\Resources\CursoResource;
 use App\Models\Curso;
 use App\Models\Informe;
 use App\Models\User;
+use App\Services\CatalogoService;
+use App\Services\CursoService;
 use App\Services\InformeDocenteService;
+use App\Services\UserService;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class DocenteController extends Controller
 {
     public function __construct(
-        protected ?InformeDocenteService $docenteService = null
-    ) {
-        $this->docenteService = $docenteService ?? app(InformeDocenteService::class);
-    }
+        protected InformeDocenteService $docenteService,
+        protected CatalogoService $catalogoService,
+        protected CursoService $cursoService,
+        protected UserService $userService
+    ) {}
 
     /**
-     * Muestra el Dashboard principal del docente con sus cursos asignados
-     * y el catálogo de cursos para la ventana modal.
+     * Muestra el Dashboard principal del docente con sus cursos asignados y catálogo.
      */
-    public function dashboard(?Request $request = null)
+    public function dashboard(): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        // Obtener los cursos asignados al docente
         try {
             $cursosAsignados = $user->cursos()
                 ->orderBy('nombre_curso', 'asc')
@@ -40,26 +48,8 @@ class DocenteController extends Controller
             $cursosAsignados = collect();
         }
 
-        // Obtener el catálogo completo de cursos para alimentar los selectores en cascada
-        try {
-            $catalogoCursos = Curso::orderBy('carrera', 'asc')
-                ->orderBy('nombre_curso', 'asc')
-                ->orderBy('seccion', 'asc')
-                ->get();
-
-            $carreras = Curso::select('carrera')
-                ->distinct()
-                ->whereNotNull('carrera')
-                ->where('carrera', '!=', '')
-                ->pluck('carrera');
-
-            if ($carreras->isEmpty()) {
-                $carreras = collect(['Arquitectura', 'Diseño Gráfico']);
-            }
-        } catch (Exception $e) {
-            $catalogoCursos = collect();
-            $carreras = collect(['Arquitectura', 'Diseño Gráfico']);
-        }
+        $catalogoCursos = $this->catalogoService->getCatalogoCursos();
+        $carreras       = $this->catalogoService->getCarreras();
 
         return view('docente.dashboard', compact('user', 'cursosAsignados', 'catalogoCursos', 'carreras'));
     }
@@ -67,45 +57,24 @@ class DocenteController extends Controller
     /**
      * Asigna un curso seleccionado al docente autenticado.
      */
-    public function asignarCurso(Request $request)
+    public function asignarCurso(AsignarCursoRequest $request): JsonResponse
     {
-        $request->validate([
-            'curso_id' => 'required|exists:cursos,id',
-        ], [
-            'curso_id.required' => 'Debes seleccionar una sección válida.',
-            'curso_id.exists'   => 'El curso seleccionado no existe en el sistema.',
-        ]);
-
         /** @var User $user */
-        $user    = Auth::user();
-        $cursoId = $request->input('curso_id');
-
-        // Verificar si ya está asignado
-        if ($user->cursos()->where('cursos.id', $cursoId)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Este curso y sección ya se encuentran asignados a tu cuenta.',
-            ], 422);
-        }
+        $user = Auth::user();
 
         try {
-            $user->cursos()->attach($cursoId);
-            $curso = Curso::find($cursoId);
+            $curso = $this->cursoService->asignarDocente($user, (int) $request->validated('curso_id'));
 
             return response()->json([
                 'success' => true,
                 'message' => 'Curso asignado exitosamente.',
-                'curso'   => [
-                    'id'           => $curso->id,
-                    'nombre_curso' => $curso->nombre_curso,
-                    'seccion'      => $curso->seccion,
-                    'carrera'      => $curso->carrera,
-                    'area'         => $curso->area,
-                    'codigo_curso' => $curso->codigo_curso,
-                    'anio'         => $curso->anio,
-                    'semestre'     => $curso->semestre,
-                ],
+                'curso'   => new CursoResource($curso),
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first(),
+            ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -117,13 +86,13 @@ class DocenteController extends Controller
     /**
      * Elimina la asignación de un curso del docente.
      */
-    public function desasignarCurso($id)
+    public function desasignarCurso(int|string $id): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
         try {
-            $user->cursos()->detach($id);
+            $this->cursoService->desasignarDocente($user, (int) $id);
 
             return response()->json([
                 'success' => true,
@@ -140,7 +109,7 @@ class DocenteController extends Controller
     /**
      * Muestra el historial completo de informes entregados por el docente.
      */
-    public function historialInformes(Request $request)
+    public function historialInformes(): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -150,47 +119,20 @@ class DocenteController extends Controller
                 ->where('usuario_id', $user->id)
                 ->orderBy('created_at', 'desc')
                 ->get();
-
-            // Extraer opciones únicas para filtros
-            $carreras = $informes->pluck('curso.carrera')->filter()->unique()->values();
-            $cursosDocente = $informes->pluck('curso.nombre_curso')->filter()->unique()->values();
-            $periodos = $informes->pluck('periodo')->filter()->map(function ($p) {
-                return trim(preg_replace('/\d{4}/', '', $p));
-            })->filter()->unique()->values();
-            $anios = $informes->pluck('curso.anio')->filter()->unique()->values();
-            $meses = $informes->pluck('mes')->filter()->unique()->values();
-
-            // Fallback para selectores si el docente aún no tiene informes registrados
-            if ($carreras->isEmpty()) {
-                $carreras = Curso::select('carrera')->distinct()->whereNotNull('carrera')->where('carrera', '!=', '')->pluck('carrera');
-                if ($carreras->isEmpty()) {
-                    $carreras = collect(['Arquitectura', 'Diseño Gráfico']);
-                }
-            }
-            if ($cursosDocente->isEmpty()) {
-                $cursosDocente = $user->cursos()->pluck('nombre_curso')->unique()->values();
-            }
-            if ($anios->isEmpty()) {
-                $anios = collect([date('Y')]);
-            }
         } catch (Exception $e) {
-            $informes      = collect();
-            $carreras      = collect(['Arquitectura', 'Diseño Gráfico']);
-            $cursosDocente = collect();
-            $periodos      = collect();
-            $anios         = collect([date('Y')]);
-            $meses         = collect();
+            $informes = collect();
         }
 
-        $vista = $user->isCoordinador() ? 'coordinador.historial_informes' : 'docente.historial_informes';
+        $filtros = $this->catalogoService->getFiltrosDocente($informes, $user);
+        $vista   = $user->isCoordinador() ? 'coordinador.historial_informes' : 'docente.historial_informes';
 
-        return view($vista, compact('user', 'informes', 'carreras', 'cursosDocente', 'periodos', 'anios', 'meses'));
+        return view($vista, array_merge(['user' => $user, 'informes' => $informes], $filtros));
     }
 
     /**
-     * Muestra el formulario para crear un nuevo informe mensual.
+     * Muestra el formulario para crear un nuevo informe mensual de docente.
      */
-    public function crearInformeView(Request $request)
+    public function crearInformeView(Request $request): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -212,47 +154,24 @@ class DocenteController extends Controller
 
         $vista                  = $user->isCoordinador() ? 'coordinador.crear_informe' : 'docente.crear_informe';
         $cursoPreseleccionadoId = $selectedCursoId;
+
         return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'cursoPreseleccionadoId'));
     }
 
     /**
-     * Guarda el nuevo informe con sus semanas registradas delegando al servicio.
+     * Guarda el nuevo informe docente con sus semanas registradas delegando al servicio.
      */
-    public function guardarInforme(Request $request)
+    public function guardarInforme(GuardarInformeDocenteRequest $request): JsonResponse
     {
-        $request->validate([
-            'curso_id'                           => 'required|exists:cursos,id',
-            'periodo'                            => 'required|string',
-            'mes'                                => 'required|string',
-            'estudiantes_asignados'              => 'required|integer|min:1',
-            'listado_asistencia_url'             => 'nullable|string|max:255',
-            'enlace_evidencia_url'               => 'nullable|string|max:255',
-            'enlace_meet_zoom_url'               => 'nullable|string|max:255',
-            'enlace_classroom_drive_url'         => 'nullable|string|max:255',
-            'estrategias_evaluacion'             => 'nullable|string',
-            'semanas'                            => 'required|array|min:1',
-            'semanas.*.numero_semana'            => 'required|integer',
-            'semanas.*.actividad_realizada'      => 'required|string',
-            'semanas.*.estudiantes_participaron' => 'nullable|integer|min:0',
-            'semanas.*.metodologias'             => 'nullable|string',
-            'semanas.*.medios_comunicacion'      => 'nullable|string',
-        ], [
-            'curso_id.required'                     => 'Debe seleccionar un curso válido.',
-            'periodo.required'                      => 'El periodo es obligatorio.',
-            'mes.required'                          => 'El mes es obligatorio.',
-            'estudiantes_asignados.required'        => 'La cantidad de estudiantes asignados es obligatoria.',
-            'estudiantes_asignados.min'             => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
-            'semanas.required'                      => 'Debe registrar al menos una semana de actividades.',
-            'semanas.*.actividad_realizada.required' => 'El contenido o actividad realizada es obligatorio en cada semana.',
-        ]);
-
         /** @var User $user */
         $user = Auth::user();
 
         try {
-            $informe = $this->docenteService->guardarInforme($user, $request->all());
+            $informe = $this->docenteService->guardarInforme($user, $request->validated());
 
-            $redirectUrl = $user->isCoordinador() ? route('coordinador.dashboard') : route('docente.dashboard');
+            $redirectUrl = $user->isCoordinador()
+                ? route('coordinador.dashboard')
+                : route('docente.dashboard');
 
             return response()->json([
                 'success'      => true,
@@ -271,7 +190,7 @@ class DocenteController extends Controller
     /**
      * Muestra la vista de edición de informe cargando los datos previos.
      */
-    public function editarInformeView($id)
+    public function editarInformeView(int|string $id): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -280,10 +199,7 @@ class DocenteController extends Controller
             ->where('usuario_id', $user->id)
             ->findOrFail($id);
 
-        $estaBloqueado = false;
-        if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
-            $estaBloqueado = true;
-        }
+        $estaBloqueado = ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en));
 
         try {
             $cursosAsignados = $user->cursos()
@@ -296,8 +212,7 @@ class DocenteController extends Controller
 
         $selectedCurso = $informe->curso;
         $modoEdicion   = true;
-
-        $vista = $user->isCoordinador() ? 'coordinador.crear_informe' : 'docente.crear_informe';
+        $vista         = $user->isCoordinador() ? 'coordinador.crear_informe' : 'docente.crear_informe';
 
         return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'informe', 'modoEdicion', 'estaBloqueado'));
     }
@@ -305,7 +220,7 @@ class DocenteController extends Controller
     /**
      * Actualiza un informe existente y sus semanas delegando al servicio.
      */
-    public function actualizarInforme(Request $request, $id)
+    public function actualizarInforme(ActualizarInformeDocenteRequest $request, int|string $id): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
@@ -319,34 +234,8 @@ class DocenteController extends Controller
             ], 422);
         }
 
-        $request->validate([
-            'curso_id'                           => 'required|exists:cursos,id',
-            'periodo'                            => 'required|string',
-            'mes'                                => 'required|string',
-            'estudiantes_asignados'              => 'required|integer|min:1',
-            'listado_asistencia_url'             => 'nullable|string|max:255',
-            'enlace_evidencia_url'               => 'nullable|string|max:255',
-            'enlace_meet_zoom_url'               => 'nullable|string|max:255',
-            'enlace_classroom_drive_url'         => 'nullable|string|max:255',
-            'estrategias_evaluacion'             => 'nullable|string',
-            'semanas'                            => 'required|array|min:1',
-            'semanas.*.numero_semana'            => 'required|integer',
-            'semanas.*.actividad_realizada'      => 'required|string',
-            'semanas.*.estudiantes_participaron' => 'nullable|integer|min:0',
-            'semanas.*.metodologias'             => 'nullable|string',
-            'semanas.*.medios_comunicacion'      => 'nullable|string',
-        ], [
-            'curso_id.required'                     => 'Debe seleccionar un curso válido.',
-            'periodo.required'                      => 'El periodo es obligatorio.',
-            'mes.required'                          => 'El mes es obligatorio.',
-            'estudiantes_asignados.required'        => 'La cantidad de estudiantes asignados es obligatoria.',
-            'estudiantes_asignados.min'             => 'La cantidad de estudiantes asignados debe ser mayor a 0.',
-            'semanas.required'                      => 'Debe registrar al menos una semana de actividades.',
-            'semanas.*.actividad_realizada.required' => 'El contenido o actividad realizada es obligatorio en cada semana.',
-        ]);
-
         try {
-            $this->docenteService->actualizarInforme($informe, $request->all());
+            $this->docenteService->actualizarInforme($informe, $request->validated());
 
             $redirectUrl = $user->isCoordinador() ? route('coordinador.informes') : route('docente.informes');
 
@@ -364,16 +253,15 @@ class DocenteController extends Controller
     }
 
     /**
-     * Elimina permanentemente un informe del docente.
+     * Elimina permanentemente un informe del docente delegando al servicio.
      */
-    public function eliminarInforme($id)
+    public function eliminarInforme(int|string $id): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
         try {
-            $informe = Informe::where('usuario_id', $user->id)->findOrFail($id);
-            $this->eliminarInformeDocenteModel($informe);
+            $this->docenteService->eliminarInformeDocente($id, $user);
 
             return response()->json([
                 'success' => true,
@@ -390,7 +278,7 @@ class DocenteController extends Controller
     /**
      * Genera la vista institucional del informe en formato lista para imprimir/PDF.
      */
-    public function verInforme($id)
+    public function verInforme(int|string $id): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -407,7 +295,7 @@ class DocenteController extends Controller
     /**
      * Muestra la vista de perfil del docente.
      */
-    public function perfilView()
+    public function perfilView(): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -425,20 +313,13 @@ class DocenteController extends Controller
     /**
      * Actualiza la información editable del perfil del docente (Registro Personal).
      */
-    public function actualizarPerfil(Request $request)
+    public function actualizarPerfil(ActualizarPerfilRequest $request): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $request->validate([
-            'numero' => 'nullable|string|max:20',
-        ], [
-            'numero.max' => 'El registro personal no puede exceder los 20 caracteres.',
-        ]);
-
         try {
-            $user->numero = $request->input('numero');
-            $user->save();
+            $this->userService->actualizarPerfil($user, $request->validated('numero'));
 
             return response()->json([
                 'success' => true,
