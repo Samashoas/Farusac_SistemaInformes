@@ -25,32 +25,32 @@ class UserService
     /**
      * Actualiza la información administrativa de un usuario.
      */
-    public function editarUsuario(int|string $id, array $data): User
+    public function editarUsuario(User|int|string $usuario, array $data): User
     {
-        $usuario = User::findOrFail($id);
+        $target = $usuario instanceof User ? $usuario : User::findOrFail($usuario);
 
-        $usuario->update([
+        $target->update([
             'numero' => $data['numero'],
             'rol'    => $data['rol'] instanceof Rol ? $data['rol'] : Rol::from($data['rol']),
             'plaza'  => $data['plaza'],
         ]);
 
-        return $usuario;
+        return $target;
     }
 
     /**
      * Alterna el estado activo / inactivo de un usuario.
      */
-    public function toggleEstadoUsuario(int|string $id): User
+    public function toggleEstadoUsuario(User|int|string $usuario): User
     {
-        $usuario = User::findOrFail($id);
-        $nuevoEstado = ($usuario->estado === 'activo') ? 'inactivo' : 'activo';
+        $target = $usuario instanceof User ? $usuario : User::findOrFail($usuario);
+        $nuevoEstado = ($target->estado === 'activo') ? 'inactivo' : 'activo';
 
-        $usuario->update([
+        $target->update([
             'estado' => $nuevoEstado,
         ]);
 
-        return $usuario;
+        return $target;
     }
 
     /**

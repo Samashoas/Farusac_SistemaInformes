@@ -92,10 +92,10 @@ class AdminController extends Controller
         }
     }
 
-    public function eliminarCurso(int|string $id): JsonResponse
+    public function eliminarCurso(Curso $curso): JsonResponse
     {
         try {
-            $this->cursoService->eliminarCurso($id);
+            $this->cursoService->eliminarCurso($curso);
 
             return response()->json([
                 'success' => true,
@@ -127,15 +127,15 @@ class AdminController extends Controller
         }
     }
 
-    public function editarUsuario(EditarUsuarioRequest $request, int|string $id): JsonResponse
+    public function editarUsuario(EditarUsuarioRequest $request, User $usuario): JsonResponse
     {
         try {
-            $usuario = $this->userService->editarUsuario($id, $request->validated());
+            $updatedUsuario = $this->userService->editarUsuario($usuario, $request->validated());
 
             return response()->json([
                 'success' => true,
                 'message' => 'Usuario actualizado exitosamente',
-                'usuario' => new UserResource($usuario),
+                'usuario' => new UserResource($updatedUsuario),
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -145,15 +145,15 @@ class AdminController extends Controller
         }
     }
 
-    public function toggleEstadoUsuario(int|string $id): JsonResponse
+    public function toggleEstadoUsuario(User $usuario): JsonResponse
     {
         try {
-            $usuario = $this->userService->toggleEstadoUsuario($id);
+            $updatedUsuario = $this->userService->toggleEstadoUsuario($usuario);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Estado del usuario modificado exitosamente',
-                'usuario' => new UserResource($usuario),
+                'usuario' => new UserResource($updatedUsuario),
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -218,25 +218,26 @@ class AdminController extends Controller
         ], $filtros));
     }
 
-    public function verInformeDocente(int|string $id): View
+    public function verInformeDocente(Informe $informe): View
     {
-        $user    = Auth::user();
-        $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
+        $user = Auth::user();
+        $informe->loadMissing(['curso', 'semanas', 'usuario']);
 
         return view('docente.ver_informe_pdf', compact('user', 'informe'));
     }
 
-    public function verInformeCoordinacion(int|string $id): View
+    public function verInformeCoordinacion(InformeCoordinacion $informeCoordinacion): View
     {
-        $user    = Auth::user();
-        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->findOrFail($id);
+        $user = Auth::user();
+        $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario']);
+        $informe = $informeCoordinacion;
 
         return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
     }
 
-    public function obtenerDetalleInformeDocenteJson(int|string $id): JsonResponse
+    public function obtenerDetalleInformeDocenteJson(Informe $informe): JsonResponse
     {
-        $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
+        $informe->loadMissing(['curso', 'semanas', 'usuario']);
 
         return response()->json([
             'success' => true,
@@ -245,21 +246,21 @@ class AdminController extends Controller
         ]);
     }
 
-    public function obtenerDetalleInformeCoordinacionJson(int|string $id): JsonResponse
+    public function obtenerDetalleInformeCoordinacionJson(InformeCoordinacion $informeCoordinacion): JsonResponse
     {
-        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->findOrFail($id);
+        $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario']);
 
         return response()->json([
             'success' => true,
             'tipo'    => 'coordinacion',
-            'informe' => new InformeCoordinacionResource($informe),
+            'informe' => new InformeCoordinacionResource($informeCoordinacion),
         ]);
     }
 
-    public function eliminarInformeDocente(int|string $id): JsonResponse
+    public function eliminarInformeDocente(Informe $informe): JsonResponse
     {
         try {
-            $this->docenteService->eliminarInformeDocente($id);
+            $this->docenteService->eliminarInformeDocente($informe);
 
             return response()->json([
                 'success' => true,
@@ -273,10 +274,10 @@ class AdminController extends Controller
         }
     }
 
-    public function eliminarInformeCoordinacion(int|string $id): JsonResponse
+    public function eliminarInformeCoordinacion(InformeCoordinacion $informeCoordinacion): JsonResponse
     {
         try {
-            $this->coordinacionService->eliminarInformeCoordinacion($id);
+            $this->coordinacionService->eliminarInformeCoordinacion($informeCoordinacion);
 
             return response()->json([
                 'success' => true,

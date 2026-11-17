@@ -117,9 +117,9 @@ class CoordinadorController extends Controller
     /**
      * Retorna los datos completos de un informe de docente en formato JSON para el modal interactivo.
      */
-    public function obtenerDetalleInformeDocenteJson(int|string $id): JsonResponse
+    public function obtenerDetalleInformeDocenteJson(Informe $informe): JsonResponse
     {
-        $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
+        $informe->loadMissing(['curso', 'semanas', 'usuario']);
 
         return response()->json([
             'success' => true,
@@ -242,14 +242,17 @@ class CoordinadorController extends Controller
     /**
      * Muestra el formulario para editar un informe de coordinación existente.
      */
-    public function editarInformeCoordinacionView(int|string $id): View
+    public function editarInformeCoordinacionView(InformeCoordinacion $informeCoordinacion): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes'])
-            ->where('usuario_id', $user->id)
-            ->findOrFail($id);
+        if (!$user->isAdministrador() && $informeCoordinacion->usuario_id !== $user->id) {
+            abort(403, 'No tienes autorización para editar este informe de coordinación.');
+        }
+
+        $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes']);
+        $informe = $informeCoordinacion;
 
         $area              = $informe->area;
         $cursosArea        = $this->coordinacionService->getCursosPorArea($area, session('coordinador_carrera'), $user);
@@ -301,14 +304,19 @@ class CoordinadorController extends Controller
     /**
      * Actualiza un informe de coordinación existente delegando al servicio.
      */
-    public function actualizarInformeCoordinacion(ActualizarInformeCoordinacionRequest $request, int|string $id): JsonResponse
+    public function actualizarInformeCoordinacion(ActualizarInformeCoordinacionRequest $request, InformeCoordinacion $informeCoordinacion): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = InformeCoordinacion::where('usuario_id', $user->id)->findOrFail($id);
+        if (!$user->isAdministrador() && $informeCoordinacion->usuario_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para actualizar este informe de coordinación.',
+            ], 403);
+        }
 
-        if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
+        if ($informeCoordinacion->bloqueado_en && Carbon::now()->greaterThan($informeCoordinacion->bloqueado_en)) {
             return response()->json([
                 'success' => false,
                 'message' => 'El informe está bloqueado para edición (plazo máximo de 3 días vencido).',
@@ -316,7 +324,7 @@ class CoordinadorController extends Controller
         }
 
         try {
-            $this->coordinacionService->actualizarInforme($informe, $request->validated());
+            $this->coordinacionService->actualizarInforme($informeCoordinacion, $request->validated());
 
             return response()->json([
                 'success'  => true,
@@ -334,13 +342,20 @@ class CoordinadorController extends Controller
     /**
      * Elimina un informe de coordinación permanentemente delegando al servicio.
      */
-    public function eliminarInformeCoordinacion(int|string $id): JsonResponse
+    public function eliminarInformeCoordinacion(InformeCoordinacion $informeCoordinacion): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
+        if (!$user->isAdministrador() && $informeCoordinacion->usuario_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para eliminar este informe de coordinación.',
+            ], 403);
+        }
+
         try {
-            $this->coordinacionService->eliminarInformeCoordinacion($id, $user);
+            $this->coordinacionService->eliminarInformeCoordinacion($informeCoordinacion, $user);
 
             return response()->json([
                 'success' => true,
@@ -357,14 +372,13 @@ class CoordinadorController extends Controller
     /**
      * Genera la vista institucional del informe de coordinación para consultar / imprimir.
      */
-    public function verInformeCoordinacion(int|string $id): View
+    public function verInformeCoordinacion(InformeCoordinacion $informeCoordinacion): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes'])
-            ->where('usuario_id', $user->id)
-            ->findOrFail($id);
+        $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes']);
+        $informe = $informeCoordinacion;
 
         return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
     }

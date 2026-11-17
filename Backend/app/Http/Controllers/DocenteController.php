@@ -86,13 +86,13 @@ class DocenteController extends Controller
     /**
      * Elimina la asignación de un curso del docente.
      */
-    public function desasignarCurso(int|string $id): JsonResponse
+    public function desasignarCurso(Curso $curso): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
         try {
-            $this->cursoService->desasignarDocente($user, (int) $id);
+            $this->cursoService->desasignarDocente($user, $curso);
 
             return response()->json([
                 'success' => true,
@@ -190,15 +190,16 @@ class DocenteController extends Controller
     /**
      * Muestra la vista de edición de informe cargando los datos previos.
      */
-    public function editarInformeView(int|string $id): View
+    public function editarInformeView(Informe $informe): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = Informe::with(['curso', 'semanas'])
-            ->where('usuario_id', $user->id)
-            ->findOrFail($id);
+        if (!$user->isAdministrador() && $informe->usuario_id !== $user->id) {
+            abort(403, 'No tienes autorización para editar este informe.');
+        }
 
+        $informe->loadMissing(['curso', 'semanas']);
         $estaBloqueado = ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en));
 
         try {
@@ -220,12 +221,17 @@ class DocenteController extends Controller
     /**
      * Actualiza un informe existente y sus semanas delegando al servicio.
      */
-    public function actualizarInforme(ActualizarInformeDocenteRequest $request, int|string $id): JsonResponse
+    public function actualizarInforme(ActualizarInformeDocenteRequest $request, Informe $informe): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = Informe::where('usuario_id', $user->id)->findOrFail($id);
+        if (!$user->isAdministrador() && $informe->usuario_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para actualizar este informe.',
+            ], 403);
+        }
 
         if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
             return response()->json([
@@ -255,13 +261,20 @@ class DocenteController extends Controller
     /**
      * Elimina permanentemente un informe del docente delegando al servicio.
      */
-    public function eliminarInforme(int|string $id): JsonResponse
+    public function eliminarInforme(Informe $informe): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
+        if (!$user->isAdministrador() && $informe->usuario_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para eliminar este informe.',
+            ], 403);
+        }
+
         try {
-            $this->docenteService->eliminarInformeDocente($id, $user);
+            $this->docenteService->eliminarInformeDocente($informe, $user);
 
             return response()->json([
                 'success' => true,
@@ -278,16 +291,16 @@ class DocenteController extends Controller
     /**
      * Genera la vista institucional del informe en formato lista para imprimir/PDF.
      */
-    public function verInforme(int|string $id): View
+    public function verInforme(Informe $informe): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $query = Informe::with(['curso', 'semanas', 'usuario']);
-        if (!$user->isCoordinador() && !$user->isAdministrador()) {
-            $query->where('usuario_id', $user->id);
+        if (!$user->isCoordinador() && !$user->isAdministrador() && $informe->usuario_id !== $user->id) {
+            abort(403, 'No tienes autorización para ver este informe.');
         }
-        $informe = $query->findOrFail($id);
+
+        $informe->loadMissing(['curso', 'semanas', 'usuario']);
 
         return view('docente.ver_informe_pdf', compact('user', 'informe'));
     }

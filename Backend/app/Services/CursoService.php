@@ -41,12 +41,12 @@ class CursoService
     }
 
     /**
-     * Elimina un curso del sistema por su identificador.
+     * Elimina un curso del sistema por su identificador o instancia del modelo.
      */
-    public function eliminarCurso(int|string $id): bool
+    public function eliminarCurso(Curso|int|string $curso): bool
     {
-        $curso = Curso::findOrFail($id);
-        return (bool) $curso->delete();
+        $target = $curso instanceof Curso ? $curso : Curso::findOrFail($curso);
+        return (bool) $target->delete();
     }
 
     /**
@@ -69,8 +69,9 @@ class CursoService
     /**
      * Remueve la asignación de un curso del usuario docente.
      */
-    public function desasignarDocente(User $user, int $cursoId): void
+    public function desasignarDocente(User $user, Curso|int|string $curso): void
     {
+        $cursoId = $curso instanceof Curso ? $curso->id : (int) $curso;
         $user->cursos()->detach($cursoId);
     }
 }
