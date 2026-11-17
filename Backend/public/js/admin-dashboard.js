@@ -37,6 +37,12 @@ function showInfo(moduleKey) {
     window.openModal('infoModal');
 }
 
-function closeModal() {
-    window.closeModal('infoModal');
+function closeInfoModal() {
+    if (typeof window.closeModal === 'function') {
+        window.closeModal('infoModal');
+    } else {
+        const modal = document.getElementById('infoModal');
+        if (modal) modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
 }

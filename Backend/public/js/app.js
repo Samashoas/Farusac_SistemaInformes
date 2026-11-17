@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Manejador global de la tecla Escape para cerrar modales
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            document.querySelectorAll('.modal-overlay.active, .custom-modal-overlay.active, .modal-backdrop.active').forEach(m => {
+            document.querySelectorAll('.modal-overlay.active, .custom-modal-overlay.active, .info-modal-overlay.active, .modal-backdrop.active').forEach(m => {
                 m.classList.remove('active');
             });
             document.body.style.overflow = '';
@@ -99,10 +99,17 @@ window.openModal = function (id) {
 window.abrirModal = window.openModal;
 
 /**
- * Función global para cerrar un modal por su ID.
- * @param {string} id - ID del elemento modal
+ * Función global para cerrar un modal por su ID o todos los activos si no se especifica.
+ * @param {string} [id] - ID opcional del elemento modal
  */
 window.closeModal = function (id) {
+    if (!id) {
+        document.querySelectorAll('.modal-overlay.active, .custom-modal-overlay.active, .info-modal-overlay.active, .modal-backdrop.active').forEach(m => {
+            m.classList.remove('active');
+        });
+        document.body.style.overflow = '';
+        return;
+    }
     const modal = document.getElementById(id);
     if (modal) {
         modal.classList.remove('active');

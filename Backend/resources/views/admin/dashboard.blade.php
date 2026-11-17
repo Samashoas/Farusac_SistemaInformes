@@ -63,16 +63,16 @@
 </div>
 
 <!-- Modal de Información Emergente -->
-<div class="info-modal-overlay" id="infoModal" onclick="closeModal()">
+<div class="info-modal-overlay" id="infoModal" onclick="closeInfoModal()">
     <div class="modal-card" onclick="event.stopPropagation()">
-        <button type="button" class="modal-close-btn" onclick="closeModal()">×</button>
+        <button type="button" class="modal-close-btn" onclick="closeInfoModal()" aria-label="Cerrar modal">×</button>
         <div class="modal-header-icon">
             <img id="modalIcon" src="" alt="">
         </div>
         <h2 class="modal-title" id="modalTitle">Título</h2>
         <div class="modal-divider"></div>
         <p class="modal-description" id="modalDescription">Descripción</p>
-        <button type="button" class="modal-action-btn" onclick="closeModal()">Entendido</button>
+        <button type="button" class="modal-action-btn" onclick="closeInfoModal()">Entendido</button>
     </div>
 </div>
 @endsection
