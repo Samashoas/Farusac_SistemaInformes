@@ -105,11 +105,11 @@ class CoordinadorController extends Controller
                 'carrera' => $carrera,
             ]);
         } catch (Exception $e) {
-            Log::error('Error al guardar área en usuarios: ' . $e->getMessage());
+            Log::error('Error al guardar área en usuarios: ' . $e->getMessage(), ['exception' => $e]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar en la base de datos: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al guardar el área en la base de datos.',
             ], 500);
         }
     }
@@ -232,9 +232,11 @@ class CoordinadorController extends Controller
                 'redirect'   => route('coordinador.dashboard'),
             ]);
         } catch (Exception $e) {
+            Log::error('Error al guardar informe de coordinación: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar el informe: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al guardar el informe de coordinación.',
             ], 500);
         }
     }
@@ -332,9 +334,11 @@ class CoordinadorController extends Controller
                 'redirect' => route('coordinador.dashboard'),
             ]);
         } catch (Exception $e) {
+            Log::error('Error al actualizar informe de coordinación: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el informe: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al actualizar el informe de coordinación.',
             ], 500);
         }
     }
@@ -362,9 +366,11 @@ class CoordinadorController extends Controller
                 'message' => 'El informe de coordinación ha sido eliminado permanentemente.',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al eliminar informe de coordinación: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe de coordinación: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al eliminar el informe de coordinación.',
             ], 500);
         }
     }

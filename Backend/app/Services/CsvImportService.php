@@ -8,6 +8,7 @@ use App\Models\User;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CsvImportService
 {
@@ -62,7 +63,8 @@ class CsvImportService
                             'estado' => $usuario->estado,
                         ];
                     } catch (Exception $e) {
-                        $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Error en base de datos: " . $e->getMessage() . ")";
+                        Log::error("Error al importar usuario en línea $line_number: " . $e->getMessage(), ['exception' => $e]);
+                        $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Error en base de datos al registrar usuario)";
                     }
                 } else {
                     $error_reason = '';
@@ -151,7 +153,8 @@ class CsvImportService
                             'anio'     => $curso->anio,
                         ];
                     } catch (Exception $e) {
-                        $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Error en base de datos: " . $e->getMessage() . ")";
+                        Log::error("Error al importar curso en línea $line_number: " . $e->getMessage(), ['exception' => $e]);
+                        $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Error en base de datos al registrar curso)";
                     }
                 } else {
                     $error_lines[] = "Línea $line_number: " . implode(',', $fila) . " (Datos inválidos)";
@@ -504,9 +507,11 @@ class CsvImportService
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
+            Log::error('Error al procesar la carga académica: ' . $e->getMessage(), ['exception' => $e]);
+
             return [
                 'success' => false,
-                'message' => 'Ocurrió un error al procesar la carga académica: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error inesperado al procesar el archivo de carga académica.',
                 'status'  => 500,
             ];
         }

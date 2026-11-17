@@ -27,6 +27,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -85,9 +86,11 @@ class AdminController extends Controller
                 'message' => $e->validator->errors()->first(),
             ], 422);
         } catch (Exception $e) {
+            Log::error('Error al crear el curso: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear el curso: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error inesperado al crear el curso.',
             ], 500);
         }
     }
@@ -102,9 +105,11 @@ class AdminController extends Controller
                 'message' => 'Curso eliminado exitosamente',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al eliminar el curso: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el curso: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al intentar eliminar el curso.',
             ], 500);
         }
     }
@@ -120,9 +125,11 @@ class AdminController extends Controller
                 'usuario' => new UserResource($usuario),
             ]);
         } catch (Exception $e) {
+            Log::error('Error al crear el usuario: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear el usuario: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error inesperado al registrar el usuario.',
             ], 500);
         }
     }
@@ -138,9 +145,11 @@ class AdminController extends Controller
                 'usuario' => new UserResource($updatedUsuario),
             ]);
         } catch (Exception $e) {
+            Log::error('Error al actualizar el usuario: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el usuario: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error inesperado al actualizar el usuario.',
             ], 500);
         }
     }
@@ -156,9 +165,11 @@ class AdminController extends Controller
                 'usuario' => new UserResource($updatedUsuario),
             ]);
         } catch (Exception $e) {
+            Log::error('Error al cambiar estado del usuario: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cambiar estado del usuario: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al modificar el estado del usuario.',
             ], 500);
         }
     }
@@ -267,9 +278,11 @@ class AdminController extends Controller
                 'message' => 'Informe de docente eliminado permanentemente.',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al eliminar el informe de docente: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe de docente: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al eliminar el informe de docente.',
             ], 500);
         }
     }
@@ -284,9 +297,11 @@ class AdminController extends Controller
                 'message' => 'Informe de coordinación eliminado permanentemente.',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al eliminar el informe de coordinación: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe de coordinación: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al eliminar el informe de coordinación.',
             ], 500);
         }
     }
@@ -301,7 +316,9 @@ class AdminController extends Controller
         try {
             return $this->exportService->descargarInformesZip($request, $user);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            Log::error('Error al descargar ZIP de informes: ' . $e->getMessage(), ['exception' => $e]);
+
+            return redirect()->back()->with('error', 'Ocurrió un error al generar la descarga comprimida de los informes.');
         }
     }
 
@@ -341,7 +358,12 @@ class AdminController extends Controller
         try {
             return $this->exportService->descargarSeleccionadosZip($docenteIds, $coordIds, $user);
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            Log::error('Error al descargar ZIP de seleccionados: ' . $e->getMessage(), ['exception' => $e]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al procesar la descarga comprimida de los informes seleccionados.',
+            ], 422);
         }
     }
 

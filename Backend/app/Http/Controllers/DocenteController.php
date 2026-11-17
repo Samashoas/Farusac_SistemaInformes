@@ -19,6 +19,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -76,9 +77,11 @@ class DocenteController extends Controller
                 'message' => $e->validator->errors()->first(),
             ], 422);
         } catch (Exception $e) {
+            Log::error('Error al asignar el curso: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al asignar el curso: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error inesperado al asignar el curso.',
             ], 500);
         }
     }
@@ -99,9 +102,11 @@ class DocenteController extends Controller
                 'message' => 'El curso ha sido removido de tu panel exitosamente.',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al remover la asignación del curso: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al remover la asignación: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al intentar remover el curso asignado.',
             ], 500);
         }
     }
@@ -180,9 +185,11 @@ class DocenteController extends Controller
                 'redirect_url' => $redirectUrl,
             ]);
         } catch (Exception $e) {
+            Log::error('Error al guardar el informe docente: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar el informe: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al guardar el informe.',
             ], 500);
         }
     }
@@ -251,9 +258,11 @@ class DocenteController extends Controller
                 'redirect_url' => $redirectUrl,
             ]);
         } catch (Exception $e) {
+            Log::error('Error al actualizar el informe docente: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el informe: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al actualizar el informe.',
             ], 500);
         }
     }
@@ -281,9 +290,11 @@ class DocenteController extends Controller
                 'message' => 'El informe ha sido eliminado permanentemente.',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al eliminar el informe docente: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al eliminar el informe.',
             ], 500);
         }
     }
@@ -340,9 +351,11 @@ class DocenteController extends Controller
                 'numero'  => $user->numero,
             ]);
         } catch (Exception $e) {
+            Log::error('Error al actualizar el perfil del usuario: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el perfil: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al actualizar el perfil.',
             ], 500);
         }
     }
