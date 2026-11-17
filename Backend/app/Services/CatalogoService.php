@@ -173,7 +173,7 @@ class CatalogoService
     /**
      * Extrae opciones de filtros y estadísticas para la vista de informes del Administrador.
      */
-    public function getFiltrosAdmin(Collection $informesDocentes, Collection $informesCoordinacion): array
+    public function getFiltrosAdmin(mixed $informesDocentes, mixed $informesCoordinacion): array
     {
         $carreras = $this->getCarreras();
         $areas    = $this->getAreasDisponibles();
@@ -186,12 +186,15 @@ class CatalogoService
         $aniosCoord    = InformeCoordinacion::select('anio')->distinct()->whereNotNull('anio')->pluck('anio');
         $anios         = $aniosDocentes->merge($aniosCoord)->unique()->filter()->sortDesc()->values();
 
+        $countDocentes = method_exists($informesDocentes, 'total') ? $informesDocentes->total() : (is_countable($informesDocentes) ? count($informesDocentes) : 0);
+        $countCoord    = method_exists($informesCoordinacion, 'total') ? $informesCoordinacion->total() : (is_countable($informesCoordinacion) ? count($informesCoordinacion) : 0);
+
         $stats = [
-            'total'                => $informesDocentes->count() + $informesCoordinacion->count(),
-            'docentes'             => $informesDocentes->count(),
-            'coordinacion'         => $informesCoordinacion->count(),
-            'docentes_unicos'      => $informesDocentes->pluck('usuario_id')->unique()->count(),
-            'coordinadores_unicos' => $informesCoordinacion->pluck('usuario_id')->unique()->count(),
+            'total'                => $countDocentes + $countCoord,
+            'docentes'             => $countDocentes,
+            'coordinacion'         => $countCoord,
+            'docentes_unicos'      => Informe::distinct('usuario_id')->count('usuario_id'),
+            'coordinadores_unicos' => InformeCoordinacion::distinct('usuario_id')->count('usuario_id'),
         ];
 
         return compact('carreras', 'areas', 'periodos', 'anios', 'stats');

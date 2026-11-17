@@ -63,9 +63,10 @@ class AdminController extends Controller
         return view('admin.usuarios', compact('usuarios'));
     }
 
-    public function cursosView(): View
+    public function cursosView(Request $request): View
     {
-        $cursos = Curso::all();
+        $perPage = $request->query('per_page', 25);
+        $cursos  = Curso::orderBy('id', 'desc')->paginate($perPage)->withQueryString();
 
         return view('admin.cursos', compact('cursos'));
     }
@@ -208,17 +209,20 @@ class AdminController extends Controller
     // GESTIÓN Y VISUALIZACIÓN DE INFORMES
     // =========================================================================
 
-    public function informesView(): View
+    public function informesView(Request $request): View
     {
-        $user = Auth::user();
+        $user    = Auth::user();
+        $perPage = $request->query('per_page', 25);
 
         $informesDocentes = Informe::with(['usuario', 'curso', 'semanas'])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate($perPage, ['*'], 'page_docentes')
+            ->withQueryString();
 
         $informesCoordinacion = InformeCoordinacion::with(['usuario', 'programas', 'asignaturas', 'avances', 'estudiantes'])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate($perPage, ['*'], 'page_coordinacion')
+            ->withQueryString();
 
         $filtros = $this->catalogoService->getFiltrosAdmin($informesDocentes, $informesCoordinacion);
 

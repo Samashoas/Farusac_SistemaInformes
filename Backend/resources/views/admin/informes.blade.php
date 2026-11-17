@@ -94,11 +94,11 @@
     <div class="tabs-container">
         <button type="button" class="tab-btn active" id="tabBtnDocentes" onclick="switchTab('docentes')">
             <span>Informes de Docentes</span>
-            <span class="tab-badge" id="tabCountDocentes">{{ $informesDocentes->count() }}</span>
+            <span class="tab-badge" id="tabCountDocentes">{{ method_exists($informesDocentes, 'total') ? $informesDocentes->total() : $informesDocentes->count() }}</span>
         </button>
         <button type="button" class="tab-btn" id="tabBtnCoordinacion" onclick="switchTab('coordinacion')">
             <span>Informes de Coordinación de Área</span>
-            <span class="tab-badge" id="tabCountCoordinacion">{{ $informesCoordinacion->count() }}</span>
+            <span class="tab-badge" id="tabCountCoordinacion">{{ method_exists($informesCoordinacion, 'total') ? $informesCoordinacion->total() : $informesCoordinacion->count() }}</span>
         </button>
     </div>
 
@@ -176,6 +176,11 @@
                     </tr>
                 </thead>
                 <tbody id="tbodyDocentes">
+                    @php
+                        $seqOffsetDocentes = ($informesDocentes instanceof \Illuminate\Pagination\LengthAwarePaginator && $informesDocentes->firstItem())
+                            ? $informesDocentes->firstItem() - 1
+                            : 0;
+                    @endphp
                     @forelse ($informesDocentes as $index => $inf)
                         @php
                             $docenteNombre = $inf->usuario->nombre ?? 'Docente no asignado';
@@ -193,6 +198,7 @@
                             }
                         @endphp
                         <tr class="informe-docente-row" id="row-docente-{{ $inf->id }}" data-tipo="docente"
+                            data-seq="{{ $seqOffsetDocentes + $index + 1 }}"
                             data-nombre="{{ strtolower($docenteNombre) }}"
                             data-correo="{{ strtolower($docenteCorreo) }}"
                             data-curso="{{ strtolower($cursoNombre) }}"
@@ -205,7 +211,7 @@
                             <td class="chk-cell">
                                 <input type="checkbox" class="custom-checkbox chk-item chk-docente" value="{{ $inf->id }}" onchange="updateSelectionState()">
                             </td>
-                            <td class="td-num seq-num">{{ $index + 1 }}.</td>
+                            <td class="td-num seq-num">{{ $seqOffsetDocentes + $index + 1 }}.</td>
 
                             <td>
                                 <div class="user-cell-block">
@@ -286,6 +292,11 @@
                 </tbody>
             </table>
         </div>
+        @if ($informesDocentes instanceof \Illuminate\Pagination\LengthAwarePaginator && $informesDocentes->hasPages())
+            <div class="pagination-container">
+                {{ $informesDocentes->links() }}
+            </div>
+        @endif
     </div>
 
     <!-- 2. TABLA: INFORMES DE COORDINACIÓN -->
@@ -307,6 +318,11 @@
                     </tr>
                 </thead>
                 <tbody id="tbodyCoordinacion">
+                    @php
+                        $seqOffsetCoord = ($informesCoordinacion instanceof \Illuminate\Pagination\LengthAwarePaginator && $informesCoordinacion->firstItem())
+                            ? $informesCoordinacion->firstItem() - 1
+                            : 0;
+                    @endphp
                     @forelse ($informesCoordinacion as $index => $infC)
                         @php
                             $coordNombre = $infC->usuario->nombre ?? 'Coordinador no asignado';
@@ -325,7 +341,9 @@
                             $countEst = $infC->estudiantes ? $infC->estudiantes->count() : 0;
                         @endphp
                         <tr class="informe-coordinacion-row" id="row-coordinacion-{{ $infC->id }}"
-                            data-tipo="coordinacion" data-nombre="{{ strtolower($coordNombre) }}"
+                            data-tipo="coordinacion"
+                            data-seq="{{ $seqOffsetCoord + $index + 1 }}"
+                            data-nombre="{{ strtolower($coordNombre) }}"
                             data-correo="{{ strtolower($coordCorreo) }}"
                             data-area="{{ strtolower($areaCoord) }}"
                             data-periodo="{{ strtolower($periodoClean) }}" data-anio="{{ $anioVal }}"
@@ -334,7 +352,7 @@
                             <td class="chk-cell">
                                 <input type="checkbox" class="custom-checkbox chk-item chk-coord" value="{{ $infC->id }}" onchange="updateSelectionState()">
                             </td>
-                            <td class="td-num seq-num">{{ $index + 1 }}.</td>
+                            <td class="td-num seq-num">{{ $seqOffsetCoord + $index + 1 }}.</td>
 
                             <td>
                                 <div class="user-cell-block">
@@ -407,6 +425,11 @@
                 </tbody>
             </table>
         </div>
+        @if ($informesCoordinacion instanceof \Illuminate\Pagination\LengthAwarePaginator && $informesCoordinacion->hasPages())
+            <div class="pagination-container">
+                {{ $informesCoordinacion->links() }}
+            </div>
+        @endif
     </div>
 </div>
 

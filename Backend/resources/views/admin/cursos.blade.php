@@ -92,6 +92,12 @@
             </tbody>
         </table>
     </div>
+
+    @if ($cursos instanceof \Illuminate\Pagination\LengthAwarePaginator && $cursos->hasPages())
+        <div class="pagination-container">
+            {{ $cursos->links() }}
+        </div>
+    @endif
 </div>
 
 <!-- Modal Emergente: Agregar Curso -->
@@ -177,10 +183,15 @@
 @endsection
 
 @push('scripts')
+    @php
+        $pageOffset = ($cursos instanceof \Illuminate\Pagination\LengthAwarePaginator && $cursos->firstItem())
+            ? $cursos->firstItem() - 1
+            : 0;
+    @endphp
     <script src="{{ asset('js/admin-cursos.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            initAdminCursos(@json($cursos));
+            initAdminCursos(@json($cursos), {{ $pageOffset }});
         });
     </script>
 @endpush

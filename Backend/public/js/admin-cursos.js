@@ -3,10 +3,13 @@
  */
 
 let dbCursos = [];
+let dbPageOffset = 0;
 let deleteTargetCourseId = null;
 
-function initAdminCursos(cursosData) {
-    dbCursos = (cursosData || []).map(c => ({
+function initAdminCursos(cursosData, pageOffset = 0) {
+    dbPageOffset = Number(pageOffset) || 0;
+    const rawList = Array.isArray(cursosData) ? cursosData : (cursosData?.data || []);
+    dbCursos = rawList.map(c => ({
         id: c.id,
         carrera: c.carrera,
         area: c.area,
@@ -202,7 +205,7 @@ function renderTable() {
     filtered.forEach((c, idx) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="td-id">${idx + 1}.</td>
+            <td class="td-id">${dbPageOffset + idx + 1}.</td>
             <td class="td-carrera">${c.carrera}</td>
             <td>${c.area}</td>
             <td class="td-curso">${c.curso}</td>

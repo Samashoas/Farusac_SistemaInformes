@@ -38,6 +38,7 @@ let currentTab = 'docentes';
         const periodoVal = document.getElementById('filterPeriodo').value.trim().toLowerCase();
         const anioVal = document.getElementById('filterAnio').value.trim();
         const mesVal = document.getElementById('filterMes').value.trim().toLowerCase();
+        const hasFilters = Boolean(searchVal || carreraVal || areaVal || periodoVal || anioVal || mesVal);
 
         if (currentTab === 'docentes') {
             const rows = document.querySelectorAll('#tbodyDocentes .informe-docente-row');
@@ -71,7 +72,10 @@ let currentTab = 'docentes';
                     row.style.display = '';
                     visibleCount++;
                     const numCell = row.querySelector('.seq-num');
-                    if (numCell) numCell.textContent = `${visibleCount}.`;
+                    if (numCell) {
+                        const baseSeq = row.getAttribute('data-seq');
+                        numCell.textContent = (hasFilters || !baseSeq) ? `${visibleCount}.` : `${baseSeq}.`;
+                    }
                 } else {
                     row.style.display = 'none';
                 }
@@ -88,8 +92,11 @@ let currentTab = 'docentes';
                 if (noResults) noResults.style.display = (visibleCount === 0) ? '' : 'none';
             }
 
-            document.getElementById('resultsCounterText').textContent = `Mostrando ${visibleCount} de ${rows.length} informes de docentes`;
-            document.getElementById('tabCountDocentes').textContent = rows.length;
+            if (hasFilters) {
+                document.getElementById('resultsCounterText').textContent = `Filtrados: ${visibleCount} de ${rows.length} informes en esta página`;
+            } else {
+                document.getElementById('resultsCounterText').textContent = `Mostrando ${rows.length} informes en esta página`;
+            }
 
         } else {
             const rows = document.querySelectorAll('#tbodyCoordinacion .informe-coordinacion-row');
@@ -117,7 +124,10 @@ let currentTab = 'docentes';
                     row.style.display = '';
                     visibleCount++;
                     const numCell = row.querySelector('.seq-num');
-                    if (numCell) numCell.textContent = `${visibleCount}.`;
+                    if (numCell) {
+                        const baseSeq = row.getAttribute('data-seq');
+                        numCell.textContent = (hasFilters || !baseSeq) ? `${visibleCount}.` : `${baseSeq}.`;
+                    }
                 } else {
                     row.style.display = 'none';
                 }
@@ -134,8 +144,11 @@ let currentTab = 'docentes';
                 if (noResults) noResults.style.display = (visibleCount === 0) ? '' : 'none';
             }
 
-            document.getElementById('resultsCounterText').textContent = `Mostrando ${visibleCount} de ${rows.length} informes de coordinación`;
-            document.getElementById('tabCountCoordinacion').textContent = rows.length;
+            if (hasFilters) {
+                document.getElementById('resultsCounterText').textContent = `Filtrados: ${visibleCount} de ${rows.length} informes en esta página`;
+            } else {
+                document.getElementById('resultsCounterText').textContent = `Mostrando ${rows.length} informes en esta página`;
+            }
         }
 
         updateSelectionState();
@@ -423,5 +436,10 @@ let currentTab = 'docentes';
             }
         });
 
-        applyFilters();
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('page_coordinacion') && !urlParams.has('page_docentes')) {
+            switchTab('coordinacion');
+        } else {
+            applyFilters();
+        }
     });
