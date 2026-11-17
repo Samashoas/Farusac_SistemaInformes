@@ -32,16 +32,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hamburgerBtn && sidebar) {
         hamburgerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            sidebar.classList.toggle('collapsed');
-            if (mainContent) {
-                mainContent.classList.toggle('expanded');
+            const willBeCollapsed = !sidebar.classList.contains('collapsed');
+            if (willBeCollapsed) {
+                sidebar.classList.add('collapsed');
+                if (mainContent) mainContent.classList.add('expanded');
+            } else {
+                sidebar.classList.remove('collapsed');
+                if (mainContent) mainContent.classList.remove('expanded');
             }
         });
 
         // Cerrar sidebar al hacer click en el contenido principal en pantallas pequeñas
         if (mainContent) {
             mainContent.addEventListener('click', () => {
-                if (window.innerWidth <= 900) {
+                if (window.innerWidth <= 900 && !sidebar.classList.contains('collapsed')) {
                     sidebar.classList.add('collapsed');
                     mainContent.classList.add('expanded');
                 }

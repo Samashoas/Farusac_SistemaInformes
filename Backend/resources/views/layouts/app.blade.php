@@ -22,7 +22,7 @@
     <div class="app-container">
         @include('partials.sidebar')
 
-        <main class="main-content" id="mainContent">
+        <main class="main-content expanded" id="mainContent">
             @yield('content')
         </main>
     </div>

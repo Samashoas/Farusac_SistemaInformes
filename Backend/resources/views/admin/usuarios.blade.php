@@ -90,8 +90,7 @@
         </div>
 
         @if ($usuarios instanceof \Illuminate\Pagination\LengthAwarePaginator && $usuarios->hasPages())
-            <div class="pagination-container"
-                style="display: flex; justify-content: center; align-items: center; margin-top: 25px;">
+            <div class="pagination-container">
                 {{ $usuarios->links() }}
             </div>
         @endif
