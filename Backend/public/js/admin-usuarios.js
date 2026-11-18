@@ -68,9 +68,8 @@ function renderTable() {
                 </span>
             </td>
             <td>
-                <button type="button" class="action-btn" onclick="openEditUserModal(${user.id})" title="Editar Usuario">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 22px; height: 22px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14" />
+                <button type="button" class="action-btn edit-btn" onclick="openEditUserModal(${user.id})" title="Editar Usuario">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
                 </button>
@@ -107,21 +106,21 @@ function handleCreateUser(e) {
         },
         body: JSON.stringify({ nombre: name, correo: email, numero: phone, rol: role, plaza: plaza })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            dbUsuarios.push(data.usuario);
-            closeAddUserModal();
-            renderTable();
-            window.showToast('Usuario creado correctamente', 'success');
-        } else {
-            window.showToast(data.message || 'Error al crear el usuario', 'error');
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        window.showToast('Ocurrió un error al intentar registrar el usuario.', 'error');
-    });
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                dbUsuarios.push(data.usuario);
+                closeAddUserModal();
+                renderTable();
+                window.showToast('Usuario creado correctamente', 'success');
+            } else {
+                window.showToast(data.message || 'Error al crear el usuario', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            window.showToast('Ocurrió un error al intentar registrar el usuario.', 'error');
+        });
 }
 
 function openEditUserModal(id) {
@@ -160,24 +159,24 @@ function handleUpdateUser(e) {
         },
         body: JSON.stringify({ numero: phone, rol: role, plaza: plaza })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            const idx = dbUsuarios.findIndex(u => u.id === id);
-            if (idx !== -1) {
-                dbUsuarios[idx] = data.usuario;
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const idx = dbUsuarios.findIndex(u => u.id === id);
+                if (idx !== -1) {
+                    dbUsuarios[idx] = data.usuario;
+                }
+                closeEditUserModal();
+                renderTable();
+                window.showToast('Usuario actualizado correctamente', 'success');
+            } else {
+                window.showToast(data.message || 'Error al actualizar el usuario', 'error');
             }
-            closeEditUserModal();
-            renderTable();
-            window.showToast('Usuario actualizado correctamente', 'success');
-        } else {
-            window.showToast(data.message || 'Error al actualizar el usuario', 'error');
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        window.showToast('Ocurrió un error al intentar actualizar el usuario.', 'error');
-    });
+        })
+        .catch(err => {
+            console.error(err);
+            window.showToast('Ocurrió un error al intentar actualizar el usuario.', 'error');
+        });
 }
 
 function confirmToggleEstado(id) {
@@ -225,22 +224,22 @@ function executeToggleEstado() {
             'X-CSRF-TOKEN': window.getCsrfToken()
         }
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            const idx = dbUsuarios.findIndex(u => u.id === statusTargetUserId);
-            if (idx !== -1) {
-                dbUsuarios[idx] = data.usuario;
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const idx = dbUsuarios.findIndex(u => u.id === statusTargetUserId);
+                if (idx !== -1) {
+                    dbUsuarios[idx] = data.usuario;
+                }
+                closeConfirmStatusModal();
+                renderTable();
+                window.showToast('Estado actualizado correctamente', 'info');
+            } else {
+                window.showToast(data.message || 'Error al modificar el estado', 'error');
             }
-            closeConfirmStatusModal();
-            renderTable();
-            window.showToast('Estado actualizado correctamente', 'info');
-        } else {
-            window.showToast(data.message || 'Error al modificar el estado', 'error');
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        window.showToast('Ocurrió un error al intentar cambiar el estado.', 'error');
-    });
+        })
+        .catch(err => {
+            console.error(err);
+            window.showToast('Ocurrió un error al intentar cambiar el estado.', 'error');
+        });
 }

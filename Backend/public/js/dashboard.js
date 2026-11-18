@@ -174,14 +174,19 @@ function handleBackdropClick(event) {
 
 function resetModalForm() {
     const selectCarrera = document.getElementById('selectCarrera');
+    const selectArea = document.getElementById('selectArea');
     const selectCurso = document.getElementById('selectCurso');
     const selectSeccion = document.getElementById('selectSeccion');
     const btnSubmitCourse = document.getElementById('btnSubmitCourse');
     const modalErrorMessage = document.getElementById('modalErrorMessage');
 
     if (selectCarrera) selectCarrera.value = '';
+    if (selectArea) {
+        selectArea.innerHTML = '<option value="">Selecciona primero una carrera...</option>';
+        selectArea.disabled = true;
+    }
     if (selectCurso) {
-        selectCurso.innerHTML = '<option value="">Selecciona primero una carrera...</option>';
+        selectCurso.innerHTML = '<option value="">Selecciona primero un área...</option>';
         selectCurso.disabled = true;
     }
     if (selectSeccion) {
@@ -197,26 +202,70 @@ function resetModalForm() {
 
 function onCarreraChange() {
     const selectCarrera = document.getElementById('selectCarrera');
+    const selectArea = document.getElementById('selectArea');
     const selectCurso = document.getElementById('selectCurso');
     const selectSeccion = document.getElementById('selectSeccion');
     const btnSubmitCourse = document.getElementById('btnSubmitCourse');
 
     const carrera = selectCarrera ? selectCarrera.value : '';
-    if (selectCurso) selectCurso.innerHTML = '<option value="">Selecciona un curso...</option>';
+
+    if (selectArea) {
+        selectArea.innerHTML = '<option value="">Selecciona un área...</option>';
+        selectArea.disabled = true;
+    }
+    if (selectCurso) {
+        selectCurso.innerHTML = '<option value="">Selecciona primero un área...</option>';
+        selectCurso.disabled = true;
+    }
     if (selectSeccion) {
         selectSeccion.innerHTML = '<option value="">Selecciona primero un curso...</option>';
         selectSeccion.disabled = true;
     }
     if (btnSubmitCourse) btnSubmitCourse.disabled = true;
 
-    if (!carrera || !selectCurso) {
-        if (selectCurso) selectCurso.disabled = true;
-        return;
+    if (!carrera) return;
+
+    const catalogo = getCatalogoCursos();
+    const areasUnicas = [...new Set(
+        catalogo.filter(c => c.carrera === carrera && c.area).map(c => c.area)
+    )].sort();
+
+    if (selectArea) {
+        areasUnicas.forEach(area => {
+            const opt = document.createElement('option');
+            opt.value = area;
+            opt.textContent = area;
+            selectArea.appendChild(opt);
+        });
+        selectArea.disabled = false;
     }
+}
+
+function onAreaChange() {
+    const selectCarrera = document.getElementById('selectCarrera');
+    const selectArea = document.getElementById('selectArea');
+    const selectCurso = document.getElementById('selectCurso');
+    const selectSeccion = document.getElementById('selectSeccion');
+    const btnSubmitCourse = document.getElementById('btnSubmitCourse');
+
+    const carrera = selectCarrera ? selectCarrera.value : '';
+    const area = selectArea ? selectArea.value : '';
+
+    if (selectCurso) {
+        selectCurso.innerHTML = '<option value="">Selecciona un curso...</option>';
+        selectCurso.disabled = true;
+    }
+    if (selectSeccion) {
+        selectSeccion.innerHTML = '<option value="">Selecciona primero un curso...</option>';
+        selectSeccion.disabled = true;
+    }
+    if (btnSubmitCourse) btnSubmitCourse.disabled = true;
+
+    if (!carrera || !area || !selectCurso) return;
 
     const catalogo = getCatalogoCursos();
     const cursosUnicos = [...new Set(
-        catalogo.filter(c => c.carrera === carrera).map(c => c.nombre_curso)
+        catalogo.filter(c => c.carrera === carrera && c.area === area).map(c => c.nombre_curso)
     )].sort();
 
     cursosUnicos.forEach(nombre => {
@@ -231,11 +280,13 @@ function onCarreraChange() {
 
 function onCursoChange() {
     const selectCarrera = document.getElementById('selectCarrera');
+    const selectArea = document.getElementById('selectArea');
     const selectCurso = document.getElementById('selectCurso');
     const selectSeccion = document.getElementById('selectSeccion');
     const btnSubmitCourse = document.getElementById('btnSubmitCourse');
 
     const carrera = selectCarrera ? selectCarrera.value : '';
+    const area = selectArea ? selectArea.value : '';
     const nombreCurso = selectCurso ? selectCurso.value : '';
     if (!selectSeccion) return;
     selectSeccion.innerHTML = '<option value="">Selecciona una sección...</option>';
@@ -248,7 +299,7 @@ function onCursoChange() {
 
     const catalogo = getCatalogoCursos();
     const secciones = catalogo
-        .filter(c => c.carrera === carrera && c.nombre_curso === nombreCurso)
+        .filter(c => c.carrera === carrera && (!area || c.area === area) && c.nombre_curso === nombreCurso)
         .sort((a, b) => (a.seccion || '').localeCompare(b.seccion || ''));
 
     secciones.forEach(c => {
