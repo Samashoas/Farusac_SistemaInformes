@@ -3,7 +3,7 @@
 @section('title', isset($informe) ? 'Edición de Informe de Coordinación' : 'Creación de Informe de Coordinación')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/informe-coordinacion.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/coordinador/informe-coordinacion.css') }}">
 @endpush
 
 @section('content')

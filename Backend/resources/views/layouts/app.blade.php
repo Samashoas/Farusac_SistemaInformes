@@ -13,6 +13,7 @@
 
     <!-- Estilos Globales Centralizados -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/components/report-modal.css') }}">
 
     @stack('styles')
 </head>

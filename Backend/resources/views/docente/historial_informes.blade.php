@@ -7,7 +7,7 @@
 @endphp
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/informes.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/docente/historial-informes.css') }}">
 @endpush
 
 @section('content')

@@ -3,7 +3,7 @@
 @section('title', 'FARUSAC - Panel del Docente')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/docente/dashboard.css') }}">
 @endpush
 
 @section('content')

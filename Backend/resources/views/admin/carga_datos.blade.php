@@ -3,7 +3,7 @@
 @section('title', 'Carga de Datos - Panel Administrador')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin/carga-datos.css') }}">
 @endpush
 
 @section('content')

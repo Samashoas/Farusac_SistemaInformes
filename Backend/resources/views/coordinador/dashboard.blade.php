@@ -3,7 +3,7 @@
 @section('title', 'FARUSAC - Panel del Coordinador')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/coordinador/dashboard.css') }}">
 @endpush
 
 @section('content')

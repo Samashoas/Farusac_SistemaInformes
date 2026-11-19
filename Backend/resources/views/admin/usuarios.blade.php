@@ -3,7 +3,7 @@
 @section('title', 'Gestión de Usuarios - Sistema de Informes')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin/usuarios.css') }}">
 @endpush
 
 @section('content')

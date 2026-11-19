@@ -3,7 +3,7 @@
 @section('title', isset($modoEdicion) && $modoEdicion ? 'FARUSAC - Edición de Informe' : 'FARUSAC - Creación de Informe')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/informes.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/docente/crear-informe.css') }}">
 @endpush
 
 @section('content')
