@@ -4,69 +4,155 @@
 
 const cfg = window.informeDocenteConfig || {};
 const isEditMode = !!cfg.isEditMode;
+const isLocked = !!cfg.estaBloqueado;
 const targetUrl = cfg.targetUrl || '';
 const redirectUrl = cfg.redirectUrl || '';
 
-    function onCursoSelected() {
-        const select = document.getElementById('cursoIdSelect');
-        const selectedOpt = select.options[select.selectedIndex];
-        const inputSeccion = document.getElementById('inputSeccion');
-        const inputAnio = document.getElementById('inputAnio');
-        const selectPeriodo = document.getElementById('selectPeriodo');
+function checkDuplicateInforme() {
+    const cursoSelect = document.getElementById('cursoIdSelect');
+    const selectMes = document.getElementById('selectMes');
+    const inputAnio = document.getElementById('inputAnio');
+    const alertBox = document.getElementById('duplicateInformeAlert');
+    const alertMsg = document.getElementById('duplicateInformeAlertMsg');
 
-        if (selectedOpt && selectedOpt.value) {
-            inputSeccion.value = selectedOpt.getAttribute('data-seccion') || '';
-            const anioCurso = selectedOpt.getAttribute('data-anio');
-            if (anioCurso) inputAnio.value = anioCurso;
+    if (!cursoSelect || !selectMes) return false;
 
-            const semCurso = selectedOpt.getAttribute('data-semestre') || '';
-            if (semCurso) {
-                Array.from(selectPeriodo.options).forEach(opt => {
-                    if (opt.value.toLowerCase().includes(semCurso.toLowerCase()) || semCurso.toLowerCase().includes(opt.value.toLowerCase())) {
-                        opt.selected = true;
-                    }
-                });
-            }
-        } else {
-            inputSeccion.value = '';
-        }
+    const cursoId = parseInt(cursoSelect.value) || 0;
+    const mes = (selectMes.value || '').trim().toLowerCase();
+    const anio = (inputAnio ? inputAnio.value : '').trim();
+    const currentId = cfg.currentInformeId || null;
+    const existingList = cfg.informesExistentes || [];
+
+    if (!cursoId || !mes) {
+        if (alertBox) alertBox.style.display = 'none';
+        selectMes.classList.remove('input-error');
+        return false;
     }
 
-    function goToStep(step) {
-        if (step === 2) {
-            const cursoVal = document.getElementById('cursoIdSelect').value;
-            const estudiantesVal = document.getElementById('inputEstudiantesAsignados').value;
+    const isDuplicate = existingList.some(item => {
+        if (currentId && item.id === currentId) return false;
+        if (item.curso_id !== cursoId) return false;
+        if (item.mes !== mes) return false;
+        if (anio && item.anio && item.anio !== anio) return false;
+        return true;
+    });
 
-            let hasErrors = false;
-            if (!cursoVal) {
-                document.getElementById('cursoIdSelect').classList.add('input-error');
-                hasErrors = true;
-            }
-            if (!estudiantesVal || parseInt(estudiantesVal) < 1) {
-                document.getElementById('inputEstudiantesAsignados').classList.add('input-error');
-                hasErrors = true;
-            }
-
-            if (hasErrors) {
-                window.showToast('Por favor completa los campos obligatorios antes de continuar a la Fase 2.', 'warning');
-                return;
-            }
-
-            document.getElementById('phase1Panel').style.display = 'none';
-            document.getElementById('phase2Panel').style.display = 'block';
-
-            document.getElementById('stepIndicator1').classList.remove('active');
-            document.getElementById('stepIndicator1').classList.add('completed');
-            document.getElementById('stepIndicator2').classList.add('active');
-        } else {
-            document.getElementById('phase2Panel').style.display = 'none';
-            document.getElementById('phase1Panel').style.display = 'block';
-
-            document.getElementById('stepIndicator2').classList.remove('active');
-            document.getElementById('stepIndicator1').classList.add('active');
+    if (isDuplicate) {
+        if (alertBox && alertMsg) {
+            const displayMes = selectMes.value;
+            alertMsg.textContent = `Ya has registrado un informe para este curso en el mes de ${displayMes}${anio ? ' (' + anio + ')' : ''}. No se permite crear más de un informe para el mismo curso y mes.`;
+            alertBox.style.display = 'flex';
         }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        selectMes.classList.add('input-error');
+        return true;
+    } else {
+        if (alertBox) alertBox.style.display = 'none';
+        selectMes.classList.remove('input-error');
+        return false;
     }
+}
+
+function updateMesesOptions() {
+    const cursoSelect = document.getElementById('cursoIdSelect');
+    const selectMes = document.getElementById('selectMes');
+    const inputAnio = document.getElementById('inputAnio');
+    if (!cursoSelect || !selectMes) return;
+
+    const cursoId = parseInt(cursoSelect.value) || 0;
+    const anio = (inputAnio ? inputAnio.value : '').trim();
+    const currentId = cfg.currentInformeId || null;
+    const existingList = cfg.informesExistentes || [];
+
+    const mesesRegistrados = new Set();
+    existingList.forEach(item => {
+        if (currentId && item.id === currentId) return;
+        if (item.curso_id === cursoId && (!anio || !item.anio || item.anio === anio)) {
+            mesesRegistrados.add(item.mes);
+        }
+    });
+
+    Array.from(selectMes.options).forEach(opt => {
+        const mesClean = opt.value.trim().toLowerCase();
+        let baseText = opt.getAttribute('data-original-text') || opt.textContent.replace(' (Ya registrado)', '').trim();
+        opt.setAttribute('data-original-text', baseText);
+
+        if (mesesRegistrados.has(mesClean)) {
+            opt.textContent = `${baseText} (Ya registrado)`;
+        } else {
+            opt.textContent = baseText;
+        }
+    });
+
+    checkDuplicateInforme();
+}
+
+function onCursoSelected() {
+    const select = document.getElementById('cursoIdSelect');
+    const selectedOpt = select.options[select.selectedIndex];
+    const inputSeccion = document.getElementById('inputSeccion');
+    const inputAnio = document.getElementById('inputAnio');
+    const selectPeriodo = document.getElementById('selectPeriodo');
+
+    if (selectedOpt && selectedOpt.value) {
+        inputSeccion.value = selectedOpt.getAttribute('data-seccion') || '';
+        const anioCurso = selectedOpt.getAttribute('data-anio');
+        if (anioCurso) inputAnio.value = anioCurso;
+
+        const semCurso = selectedOpt.getAttribute('data-semestre') || '';
+        if (semCurso) {
+            Array.from(selectPeriodo.options).forEach(opt => {
+                if (opt.value.toLowerCase().includes(semCurso.toLowerCase()) || semCurso.toLowerCase().includes(opt.value.toLowerCase())) {
+                    opt.selected = true;
+                }
+            });
+        }
+    } else {
+        inputSeccion.value = '';
+    }
+
+    updateMesesOptions();
+}
+
+function goToStep(step) {
+    if (step === 2) {
+        const cursoVal = document.getElementById('cursoIdSelect').value;
+        const estudiantesVal = document.getElementById('inputEstudiantesAsignados').value;
+
+        let hasErrors = false;
+        if (!cursoVal) {
+            document.getElementById('cursoIdSelect').classList.add('input-error');
+            hasErrors = true;
+        }
+        if (!estudiantesVal || parseInt(estudiantesVal) < 1) {
+            document.getElementById('inputEstudiantesAsignados').classList.add('input-error');
+            hasErrors = true;
+        }
+
+        if (hasErrors) {
+            window.showToast('Por favor completa los campos obligatorios antes de continuar a la Fase 2.', 'warning');
+            return;
+        }
+
+        if (checkDuplicateInforme()) {
+            window.showToast('Ya has registrado un informe para este curso en el mes seleccionado.', 'error');
+            return;
+        }
+
+        document.getElementById('phase1Panel').style.display = 'none';
+        document.getElementById('phase2Panel').style.display = 'block';
+
+        document.getElementById('stepIndicator1').classList.remove('active');
+        document.getElementById('stepIndicator1').classList.add('completed');
+        document.getElementById('stepIndicator2').classList.add('active');
+    } else {
+        document.getElementById('phase2Panel').style.display = 'none';
+        document.getElementById('phase1Panel').style.display = 'block';
+
+        document.getElementById('stepIndicator2').classList.remove('active');
+        document.getElementById('stepIndicator1').classList.add('active');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
     function addSemana() {
         const container = document.getElementById('semanasContainer');
@@ -132,6 +218,16 @@ const redirectUrl = cfg.redirectUrl || '';
     }
 
     function openFinishModal() {
+        if (isLocked) {
+            window.showToast('Este informe se encuentra bloqueado para edición porque ha vencido el plazo de 3 días.', 'error');
+            return;
+        }
+
+        if (checkDuplicateInforme()) {
+            window.showToast('No puedes guardar un informe duplicado para el mismo curso y mes.', 'error');
+            return;
+        }
+
         const estudiantesAsignados = parseInt(document.getElementById('inputEstudiantesAsignados').value) || 0;
         let hasError = false;
 
@@ -163,6 +259,18 @@ const redirectUrl = cfg.redirectUrl || '';
     }
 
     function executeSubmitInforme() {
+        if (isLocked) {
+            window.showToast('Este informe se encuentra bloqueado para edición porque ha vencido el plazo de 3 días.', 'error');
+            closeFinishModal();
+            return;
+        }
+
+        if (checkDuplicateInforme()) {
+            window.showToast('No puedes guardar un informe duplicado para el mismo curso y mes.', 'error');
+            closeFinishModal();
+            return;
+        }
+
         const btnConfirm = document.getElementById('btnConfirmSubmit');
         const estudiantesAsignados = parseInt(document.getElementById('inputEstudiantesAsignados').value) || 0;
 
@@ -236,12 +344,46 @@ const redirectUrl = cfg.redirectUrl || '';
         ['cursoIdSelect', 'inputEstudiantesAsignados', 'selectPeriodo', 'inputAnio', 'selectMes'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                el.addEventListener('input', () => el.classList.remove('input-error'));
-                el.addEventListener('change', () => el.classList.remove('input-error'));
+                el.addEventListener('input', () => {
+                    el.classList.remove('input-error');
+                    checkDuplicateInforme();
+                });
+                el.addEventListener('change', () => {
+                    el.classList.remove('input-error');
+                    checkDuplicateInforme();
+                });
             }
         });
 
+        const selectMes = document.getElementById('selectMes');
+        if (selectMes) {
+            selectMes.addEventListener('change', checkDuplicateInforme);
+        }
+
+        const inputAnio = document.getElementById('inputAnio');
+        if (inputAnio) {
+            inputAnio.addEventListener('input', updateMesesOptions);
+            inputAnio.addEventListener('change', updateMesesOptions);
+        }
+
+        if (isLocked) {
+            document.querySelectorAll('#formCrearInforme input, #formCrearInforme select, #formCrearInforme textarea, #formCrearInforme button:not(.btn-wizard-prev):not(.btn-wizard-next)').forEach(el => {
+                el.disabled = true;
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    el.classList.add('input-readonly');
+                }
+            });
+            const btnFinish = document.querySelector('.btn-wizard-finish');
+            if (btnFinish) {
+                btnFinish.disabled = true;
+                btnFinish.style.opacity = '0.5';
+                btnFinish.style.cursor = 'not-allowed';
+            }
+        }
+
         if (!isEditMode) {
             onCursoSelected();
+        } else {
+            updateMesesOptions();
         }
     });

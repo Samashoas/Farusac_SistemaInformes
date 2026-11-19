@@ -17,6 +17,7 @@ use App\Services\UserService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -160,7 +161,20 @@ class DocenteController extends Controller
         $vista                  = $user->isCoordinador() ? 'coordinador.crear_informe' : 'docente.crear_informe';
         $cursoPreseleccionadoId = $selectedCursoId;
 
-        return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'cursoPreseleccionadoId'));
+        $informesExistentes = Informe::where('usuario_id', $user->id)
+            ->get(['id', 'curso_id', 'mes', 'periodo'])
+            ->map(function ($inf) {
+                preg_match('/\d{4}/', $inf->periodo, $m);
+                return [
+                    'id'       => $inf->id,
+                    'curso_id' => (int) $inf->curso_id,
+                    'mes'      => mb_strtolower(trim($inf->mes)),
+                    'anio'     => $m[0] ?? null,
+                    'periodo'  => $inf->periodo,
+                ];
+            });
+
+        return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'cursoPreseleccionadoId', 'informesExistentes'));
     }
 
     /**
@@ -184,6 +198,12 @@ class DocenteController extends Controller
                 'informe_id'   => $informe->id,
                 'redirect_url' => $redirectUrl,
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first(),
+                'errors'  => $e->validator->errors(),
+            ], 422);
         } catch (Exception $e) {
             Log::error('Error al guardar el informe docente: ' . $e->getMessage(), ['exception' => $e]);
 
@@ -197,7 +217,7 @@ class DocenteController extends Controller
     /**
      * Muestra la vista de edición de informe cargando los datos previos.
      */
-    public function editarInformeView(Informe $informe): View
+    public function editarInformeView(Informe $informe): View|RedirectResponse
     {
         /** @var User $user */
         $user = Auth::user();
@@ -206,8 +226,13 @@ class DocenteController extends Controller
             abort(403, 'No tienes autorización para editar este informe.');
         }
 
+        if (!$user->isAdministrador() && $informe->isBloqueado()) {
+            $redirectUrl = $user->isCoordinador() ? route('coordinador.informes') : route('docente.informes');
+            return redirect($redirectUrl)->with('error', 'Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.');
+        }
+
         $informe->loadMissing(['curso', 'semanas']);
-        $estaBloqueado = ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en));
+        $estaBloqueado = $informe->isBloqueado();
 
         try {
             $cursosAsignados = $user->cursos()
@@ -222,7 +247,21 @@ class DocenteController extends Controller
         $modoEdicion   = true;
         $vista         = $user->isCoordinador() ? 'coordinador.crear_informe' : 'docente.crear_informe';
 
-        return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'informe', 'modoEdicion', 'estaBloqueado'));
+        $informesExistentes = Informe::where('usuario_id', $user->id)
+            ->where('id', '!=', $informe->id)
+            ->get(['id', 'curso_id', 'mes', 'periodo'])
+            ->map(function ($inf) {
+                preg_match('/\d{4}/', $inf->periodo, $m);
+                return [
+                    'id'       => $inf->id,
+                    'curso_id' => (int) $inf->curso_id,
+                    'mes'      => mb_strtolower(trim($inf->mes)),
+                    'anio'     => $m[0] ?? null,
+                    'periodo'  => $inf->periodo,
+                ];
+            });
+
+        return view($vista, compact('user', 'cursosAsignados', 'selectedCurso', 'informe', 'modoEdicion', 'estaBloqueado', 'informesExistentes'));
     }
 
     /**
@@ -240,7 +279,7 @@ class DocenteController extends Controller
             ], 403);
         }
 
-        if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
+        if (!$user->isAdministrador() && $informe->isBloqueado()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.',
@@ -248,7 +287,7 @@ class DocenteController extends Controller
         }
 
         try {
-            $this->docenteService->actualizarInforme($informe, $request->validated());
+            $this->docenteService->actualizarInforme($informe, $request->validated(), $user);
 
             $redirectUrl = $user->isCoordinador() ? route('coordinador.informes') : route('docente.informes');
 
@@ -257,6 +296,12 @@ class DocenteController extends Controller
                 'message'      => 'Informe actualizado exitosamente.',
                 'redirect_url' => $redirectUrl,
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first(),
+                'errors'  => $e->validator->errors(),
+            ], 422);
         } catch (Exception $e) {
             Log::error('Error al actualizar el informe docente: ' . $e->getMessage(), ['exception' => $e]);
 
@@ -280,6 +325,13 @@ class DocenteController extends Controller
                 'success' => false,
                 'message' => 'No tienes autorización para eliminar este informe.',
             ], 403);
+        }
+
+        if (!$user->isAdministrador() && $informe->isBloqueado()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar un informe cuyo plazo de 3 días ya ha vencido.',
+            ], 422);
         }
 
         try {

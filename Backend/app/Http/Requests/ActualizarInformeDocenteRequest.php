@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Informe;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -14,7 +15,23 @@ class ActualizarInformeDocenteRequest extends FormRequest
     {
         /** @var User|null $user */
         $user = $this->user();
-        return $user !== null && ($user->isDocente() || $user->isCoordinador());
+        if ($user === null || (!$user->isDocente() && !$user->isCoordinador() && !$user->isAdministrador())) {
+            return false;
+        }
+
+        /** @var Informe|null $informe */
+        $informe = $this->route('informe');
+        if ($informe instanceof Informe && !$user->isAdministrador()) {
+            if ($informe->usuario_id !== $user->id) {
+                return false;
+            }
+
+            if ($informe->isBloqueado()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -41,6 +58,43 @@ class ActualizarInformeDocenteRequest extends FormRequest
             'semanas.*.metodologias'             => 'nullable|string',
             'semanas.*.medios_comunicacion'      => 'nullable|string',
         ];
+    }
+
+    /**
+     * Validación personalizada posterior para impedir informes duplicados del mismo curso y mes al actualizar.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $cursoId = $this->input('curso_id');
+            $mes = trim($this->input('mes', ''));
+            $periodo = trim($this->input('periodo', ''));
+            $informe = $this->route('informe');
+            $informeId = $informe instanceof Informe ? $informe->id : (int) $informe;
+
+            if ($cursoId && $mes && $periodo) {
+                preg_match('/\d{4}/', $periodo, $matches);
+                $anio = $matches[0] ?? null;
+
+                $query = Informe::where('curso_id', $cursoId)
+                    ->where('id', '!=', $informeId)
+                    ->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower($mes)]);
+
+                if ($anio) {
+                    $query->where('periodo', 'LIKE', "%{$anio}%");
+                } else {
+                    $query->where('periodo', $periodo);
+                }
+
+                if ($query->exists()) {
+                    $periodoDesc = $anio ? " ({$anio})" : " ({$periodo})";
+                    $validator->errors()->add(
+                        'mes',
+                        "Ya existe otro informe registrado para este curso en el mes de {$mes}{$periodoDesc}. No se permite duplicar informes para el mismo curso y mes."
+                    );
+                }
+            }
+        });
     }
 
     /**

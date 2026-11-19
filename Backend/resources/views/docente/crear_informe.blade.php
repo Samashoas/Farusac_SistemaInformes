@@ -136,6 +136,12 @@
                 </div>
             </div>
 
+            <!-- Alerta interactiva de informe duplicado -->
+            <div id="duplicateInformeAlert" style="display: none; background-color: #fee2e2; border: 1.5px solid #ef4444; color: #991b1b; padding: 12px 18px; border-radius: 10px; margin-bottom: 20px; font-weight: 600; font-size: 13.5px; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">⚠️</span>
+                <span id="duplicateInformeAlertMsg">Ya existe un informe registrado para este curso en el mes seleccionado.</span>
+            </div>
+
             <div class="form-row">
                 <div class="form-col">
                     <label class="form-label" for="inputListadoAsistencia">Listado de asistencia:</label>
@@ -262,7 +268,7 @@
                 <button type="button" class="btn-wizard btn-wizard-prev" onclick="goToStep(1)">
                     &lt;- ANTERIOR
                 </button>
-                <button type="button" class="btn-wizard btn-wizard-finish" onclick="openFinishModal()">
+                <button type="button" class="btn-wizard btn-wizard-finish" onclick="{{ (isset($estaBloqueado) && $estaBloqueado && !Auth::user()->isAdministrador()) ? 'return false;' : 'openFinishModal()' }}" {{ (isset($estaBloqueado) && $estaBloqueado && !Auth::user()->isAdministrador()) ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '' }}>
                     {{ isset($modoEdicion) && $modoEdicion ? 'ACTUALIZAR INFORME' : 'FINALIZAR Y ENVIAR' }}
                 </button>
             </div>
@@ -307,8 +313,11 @@
 <script>
     window.informeDocenteConfig = {
         isEditMode: {{ (isset($modoEdicion) && $modoEdicion) || isset($informe) ? 'true' : 'false' }},
+        currentInformeId: {{ isset($informe) ? $informe->id : 'null' }},
+        estaBloqueado: {{ isset($estaBloqueado) && $estaBloqueado && !Auth::user()->isAdministrador() ? 'true' : 'false' }},
         targetUrl: '{{ (isset($modoEdicion) && $modoEdicion) || isset($informe) ? ($user->isCoordinador() ? url('/coordinador/informes/' . ($informe->id ?? 0)) : url('/docente/informes/' . ($informe->id ?? 0))) : ($user->isCoordinador() ? route('coordinador.informes.guardar') : route('docente.informes.guardar')) }}',
-        redirectUrl: '{{ (isset($modoEdicion) && $modoEdicion) || isset($informe) ? ($user->isCoordinador() ? route('coordinador.informes') : route('docente.informes')) : ($user->isCoordinador() ? route('coordinador.dashboard') : route('docente.dashboard')) }}'
+        redirectUrl: '{{ (isset($modoEdicion) && $modoEdicion) || isset($informe) ? ($user->isCoordinador() ? route('coordinador.informes') : route('docente.informes')) : ($user->isCoordinador() ? route('coordinador.dashboard') : route('docente.dashboard')) }}',
+        informesExistentes: @json($informesExistentes ?? [])
     };
 </script>
 <script src="{{ asset('js/crear-informe-docente.js') }}"></script>

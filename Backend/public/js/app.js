@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Manejador global de la tecla Escape para cerrar modales
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            document.querySelectorAll('.modal-overlay.active, .custom-modal-overlay.active, .info-modal-overlay.active, .modal-backdrop.active').forEach(m => {
+            document.querySelectorAll('.modal-overlay.active, .custom-modal-overlay.active, .info-modal-overlay.active, .modal-backdrop.active, .report-modal-overlay.active').forEach(m => {
                 m.classList.remove('active');
             });
             document.body.style.overflow = '';
@@ -166,4 +166,92 @@ window.showToast = function (message, type = 'success', duration = 3500) {
     window._toastTimeout = setTimeout(() => {
         toast.classList.remove('active', 'show');
     }, duration);
+};
+
+/**
+ * Visualizador Modal Superpuesto Global de Informes Oficiales (Lightbox Iframe)
+ */
+window.openReportPreviewModal = function (type, id, title, subtitle, customUrl) {
+    const modal = document.getElementById('reportPreviewModal');
+    if (!modal) return;
+    const iframe = document.getElementById('reportPreviewIframe');
+    const loader = document.getElementById('previewIframeLoader');
+    const titleEl = document.getElementById('previewModalTitle');
+    const subtitleEl = document.getElementById('previewModalSubtitle');
+    const badgeEl = document.getElementById('previewModalBadge');
+    const fullTabBtn = document.getElementById('previewModalFullTabBtn');
+
+    if (titleEl) titleEl.textContent = title || 'Informe Oficial';
+    if (subtitleEl) subtitleEl.textContent = subtitle || 'FARUSAC • Control Académico';
+
+    let verUrl = customUrl || '';
+    if (!verUrl) {
+        if (window.adminInformesConfig) {
+            verUrl = type === 'coordinacion'
+                ? `${window.adminInformesConfig.coordinacionVerBaseUrl || '/admin/informes/coordinacion'}/${id}/ver`
+                : `${window.adminInformesConfig.docenteVerBaseUrl || '/admin/informes/docente'}/${id}/ver`;
+        } else if (type === 'coordinacion') {
+            verUrl = `/coordinador/informes-coordinacion/${id}/ver`;
+        } else {
+            verUrl = `/docente/informes/${id}/ver`;
+        }
+    }
+
+    if (badgeEl) {
+        if (type === 'coordinacion') {
+            badgeEl.textContent = 'Coordinación';
+            badgeEl.className = 'report-badge-type report-badge-coord';
+        } else {
+            badgeEl.textContent = 'Docente';
+            badgeEl.className = 'report-badge-type report-badge-docente';
+        }
+    }
+
+    if (iframe) {
+        const separator = verUrl.includes('?') ? '&' : '?';
+        iframe.src = `${verUrl}${separator}embed=1`;
+    }
+    if (fullTabBtn) {
+        fullTabBtn.href = verUrl;
+    }
+
+    if (loader) loader.style.display = 'flex';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeReportPreviewModal = function () {
+    const modal = document.getElementById('reportPreviewModal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+
+    setTimeout(() => {
+        const iframe = document.getElementById('reportPreviewIframe');
+        if (iframe && !modal.classList.contains('active')) {
+            iframe.src = 'about:blank';
+        }
+    }, 300);
+};
+
+window.hidePreviewLoader = function () {
+    const loader = document.getElementById('previewIframeLoader');
+    const iframe = document.getElementById('reportPreviewIframe');
+    if (iframe && (iframe.src.includes('about:blank') || !iframe.src)) return;
+    if (loader) {
+        loader.style.display = 'none';
+    }
+};
+
+window.printReportIframe = function () {
+    const iframe = document.getElementById('reportPreviewIframe');
+    if (iframe && iframe.contentWindow) {
+        try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } catch (e) {
+            console.error('Error al invocar impresión de iframe:', e);
+            window.open(iframe.src.replace('?embed=1', '').replace('&embed=1', ''), '_blank');
+        }
+    }
 };

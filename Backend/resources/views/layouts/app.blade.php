@@ -30,6 +30,9 @@
     <!-- Notificación Toast con Componente Blade -->
     <x-toast />
 
+    <!-- Modal Superpuesto Global de Visualización de Informes Oficiales -->
+    <x-report-preview-modal />
+
     <!-- Scripts Globales Centralizados -->
     <script src="{{ asset('js/app.js') }}"></script>
 

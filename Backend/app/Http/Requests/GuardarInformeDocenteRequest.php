@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Informe;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -41,6 +42,40 @@ class GuardarInformeDocenteRequest extends FormRequest
             'semanas.*.metodologias'             => 'nullable|string',
             'semanas.*.medios_comunicacion'      => 'nullable|string',
         ];
+    }
+
+    /**
+     * Validación personalizada posterior para impedir informes duplicados del mismo curso y mes.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $cursoId = $this->input('curso_id');
+            $mes = trim($this->input('mes', ''));
+            $periodo = trim($this->input('periodo', ''));
+
+            if ($cursoId && $mes && $periodo) {
+                preg_match('/\d{4}/', $periodo, $matches);
+                $anio = $matches[0] ?? null;
+
+                $query = Informe::where('curso_id', $cursoId)
+                    ->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower($mes)]);
+
+                if ($anio) {
+                    $query->where('periodo', 'LIKE', "%{$anio}%");
+                } else {
+                    $query->where('periodo', $periodo);
+                }
+
+                if ($query->exists()) {
+                    $periodoDesc = $anio ? " ({$anio})" : " ({$periodo})";
+                    $validator->errors()->add(
+                        'mes',
+                        "Ya existe un informe registrado para este curso en el mes de {$mes}{$periodoDesc}. No se permite crear más de un informe para el mismo curso y mes."
+                    );
+                }
+            }
+        });
     }
 
     /**

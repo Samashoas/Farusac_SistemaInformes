@@ -141,10 +141,11 @@
                                 </td>
                                 <td style="text-align: center;">
                                     <div class="actions-btn-group" style="justify-content: center;">
-                                        <a href="{{ route('coordinador.informes-coordinacion.ver', $inf->id) }}" class="btn-table-action btn-table-view" title="Ver / Imprimir">
+                                        <button type="button" class="btn-table-action btn-table-view" title="Ver / Imprimir"
+                                            onclick="openReportPreviewModal('coordinacion', {{ $inf->id }}, 'Área {{ addslashes($inf->area) }} - {{ addslashes($inf->mes) }}', '{{ addslashes($user->nombre) }} • {{ addslashes($inf->mes) }} ({{ addslashes($inf->periodo) }})', '{{ route('coordinador.informes-coordinacion.ver', $inf->id) }}')">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                             Ver
-                                        </a>
+                                        </button>
                                         @if (!$isLocked)
                                             <a href="{{ route('coordinador.informes-coordinacion.editar', $inf->id) }}" class="btn-table-action btn-table-edit" title="Editar">
                                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
