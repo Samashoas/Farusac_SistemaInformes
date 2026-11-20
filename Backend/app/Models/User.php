@@ -27,6 +27,13 @@ class User extends Authenticatable
     ];
 
     /**
+     * Atributos ocultos para la serialización a JSON / Array.
+     */
+    protected $hidden = [
+        'google_id',
+    ];
+
+    /**
      * Mapeo de tipos y Enums en el modelo.
      */
     protected function casts(): array

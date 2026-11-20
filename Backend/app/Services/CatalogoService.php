@@ -7,7 +7,9 @@ use App\Models\Informe;
 use App\Models\InformeCoordinacion;
 use App\Models\User;
 use Exception;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class CatalogoService
 {
@@ -41,18 +43,32 @@ class CatalogoService
     ];
 
     /**
-     * Obtiene el catálogo completo de cursos ordenado institucionalmente.
+     * Obtiene el catálogo completo de cursos ordenado institucionalmente,
+     * utilizando caché de corta duración para optimizar memoria y tiempo de respuesta.
      */
-    public function getCatalogoCursos(): Collection
+    public function getCatalogoCursos(int $ttlMinutes = 30): Collection
     {
         try {
-            return Curso::orderBy('carrera', 'asc')
-                ->orderBy('nombre_curso', 'asc')
-                ->orderBy('seccion', 'asc')
-                ->get();
+            return Cache::remember('catalogo_cursos_completo', now()->addMinutes($ttlMinutes), function () {
+                return Curso::orderBy('carrera', 'asc')
+                    ->orderBy('nombre_curso', 'asc')
+                    ->orderBy('seccion', 'asc')
+                    ->get();
+            });
         } catch (Exception $e) {
             return collect();
         }
+    }
+
+    /**
+     * Obtiene el catálogo de cursos paginado para listados o APIs que requieran partición.
+     */
+    public function getCatalogoCursosPaginado(int $perPage = 25): LengthAwarePaginator
+    {
+        return Curso::orderBy('carrera', 'asc')
+            ->orderBy('nombre_curso', 'asc')
+            ->orderBy('seccion', 'asc')
+            ->paginate($perPage);
     }
 
     /**

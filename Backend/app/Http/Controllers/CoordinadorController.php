@@ -17,9 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class CoordinadorController extends Controller
@@ -86,13 +84,7 @@ class CoordinadorController extends Controller
         $carrera   = $validated['carrera'] ?? null;
 
         try {
-            $updateData = ['area' => $area];
-            if (Schema::hasColumn('usuarios', 'carrera') && !empty($carrera)) {
-                $updateData['carrera'] = $carrera;
-            }
-
-            DB::table('usuarios')->where('id', $user->id)->update($updateData);
-            $user->area = $area;
+            $user->update(['area' => $area]);
             $request->session()->put('coordinador_area', $area);
             if (!empty($carrera)) {
                 $request->session()->put('coordinador_carrera', $carrera);

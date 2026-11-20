@@ -7,6 +7,7 @@ use App\Models\Curso;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -83,6 +84,8 @@ class CsvImportService
         }
 
         fclose($handle);
+
+        Cache::forget('catalogo_cursos_completo');
 
         return [
             'success'         => true,
@@ -165,6 +168,8 @@ class CsvImportService
         }
 
         fclose($handle);
+
+        Cache::forget('catalogo_cursos_completo');
 
         return [
             'success'         => true,
@@ -515,6 +520,8 @@ class CsvImportService
                 'status'  => 500,
             ];
         }
+
+        Cache::forget('catalogo_cursos_completo');
 
         return [
             'success'           => true,
