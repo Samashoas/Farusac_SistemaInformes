@@ -54,7 +54,7 @@ class InformeDocenteService
                 'enlace_classroom_drive_url' => $data['enlace_classroom_drive_url'] ?? null,
                 'estrategias_evaluacion'     => $data['estrategias_evaluacion'] ?? null,
                 'estado'                     => 'enviado',
-                'bloqueado_en'               => Carbon::now()->addDays(3),
+                'bloqueado_en'               => Carbon::now()->addDays((int) config('informes.dias_bloqueo', 3)),
             ]);
 
             $this->sincronizarSemanas($informe, $data['semanas'] ?? []);
@@ -73,7 +73,8 @@ class InformeDocenteService
     public function actualizarInforme(Informe $informe, array $data, ?User $user = null): Informe
     {
         if ($user && !$user->isAdministrador() && $informe->isBloqueado()) {
-            throw new Exception('Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.');
+            $dias = (int) config('informes.dias_bloqueo', 3);
+            throw new Exception("Este informe ya no puede ser editado porque ha vencido el plazo límite de {$dias} días.");
         }
 
         $cursoId = $data['curso_id'] ?? $informe->curso_id;
@@ -155,7 +156,8 @@ class InformeDocenteService
             }
 
             if ($target->isBloqueado()) {
-                abort(403, 'No se puede eliminar un informe cuyo plazo de 3 días ya ha vencido.');
+                $dias = (int) config('informes.dias_bloqueo', 3);
+                abort(403, "No se puede eliminar un informe cuyo plazo de {$dias} días ya ha vencido.");
             }
         }
 

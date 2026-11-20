@@ -310,10 +310,11 @@ class CoordinadorController extends Controller
             ], 403);
         }
 
-        if ($informeCoordinacion->bloqueado_en && Carbon::now()->greaterThan($informeCoordinacion->bloqueado_en)) {
+        if ($informeCoordinacion->isBloqueado()) {
+            $dias = (int) config('informes.dias_bloqueo', 3);
             return response()->json([
                 'success' => false,
-                'message' => 'El informe está bloqueado para edición (plazo máximo de 3 días vencido).',
+                'message' => "El informe está bloqueado para edición (plazo máximo de {$dias} días vencido).",
             ], 403);
         }
 

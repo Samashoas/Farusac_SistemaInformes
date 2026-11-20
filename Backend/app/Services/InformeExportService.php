@@ -210,12 +210,15 @@ class InformeExportService
      */
     public function descargarSeleccionadosZip(array $docenteIds, array $coordIds, User $user): BinaryFileResponse
     {
+        $docenteIds = array_values(array_filter(array_map('intval', $docenteIds), fn (int $id) => $id > 0));
+        $coordIds   = array_values(array_filter(array_map('intval', $coordIds), fn (int $id) => $id > 0));
+
         $informesDocentes = !empty($docenteIds)
-            ? Informe::with(['usuario', 'curso', 'semanas'])->whereIn('id', array_filter($docenteIds))->get()
+            ? Informe::with(['usuario', 'curso', 'semanas'])->whereIn('id', $docenteIds)->get()
             : collect();
 
         $informesCoordinacion = !empty($coordIds)
-            ? InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->whereIn('id', array_filter($coordIds))->get()
+            ? InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->whereIn('id', $coordIds)->get()
             : collect();
 
         if ($informesDocentes->isEmpty() && $informesCoordinacion->isEmpty()) {
@@ -379,12 +382,15 @@ class InformeExportService
      */
     public function obtenerListaSeleccionadosZipJson(array $docenteIds, array $coordIds): array
     {
+        $docenteIds = array_values(array_filter(array_map('intval', $docenteIds), fn (int $id) => $id > 0));
+        $coordIds   = array_values(array_filter(array_map('intval', $coordIds), fn (int $id) => $id > 0));
+
         $informesDocentes = !empty($docenteIds)
-            ? Informe::with(['usuario', 'curso', 'semanas'])->whereIn('id', array_filter($docenteIds))->get()
+            ? Informe::with(['usuario', 'curso', 'semanas'])->whereIn('id', $docenteIds)->get()
             : collect();
 
         $informesCoordinacion = !empty($coordIds)
-            ? InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->whereIn('id', array_filter($coordIds))->get()
+            ? InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->whereIn('id', $coordIds)->get()
             : collect();
 
         if ($informesDocentes->isEmpty() && $informesCoordinacion->isEmpty()) {

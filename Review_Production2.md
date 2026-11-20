@@ -143,7 +143,7 @@ public function test_the_application_returns_a_successful_response(): void
 
 ---
 
-### 7. Trait `HandlesInformeData` es código muerto
+### 7. Trait `HandlesInformeData` es código muerto - ✅ RESUELTO
 
 **Archivo:** [HandlesInformeData.php](file:///c:/Users/jpsam/OneDrive/Escritorio/Uni/Farusac_SistemaInformes/Backend/app/Traits/HandlesInformeData.php) (112 líneas)  
 **Severidad:** ⚠️ BAJA
@@ -175,21 +175,12 @@ Ningún controlador usa `use HandlesInformeData`.
 
 ---
 
-### 10. Días de bloqueo hardcodeados como `3`
+### 10. Días de bloqueo hardcodeados como `3` — ✅ RESUELTO
 
-**Archivos:** Múltiples controladores y servicios  
-**Severidad:** ⚠️ BAJA
+**Archivos:** `config/informes.php`, `Informe.php`, `InformeCoordinacion.php`, servicios y controladores  
+**Severidad:** ⚠️ BAJA (Resuelto)
 
-El valor `3` (días para bloqueo de edición) aparece hardcodeado en:
-- `InformeDocenteService` líneas 57, 76
-- `InformeCoordinacionService` línea 167
-- `DocenteController` líneas 197, 231, 285, 333
-- `CoordinadorController` línea 324
-- `Informe::isBloqueado()` línea 39
-- `InformeCoordinacion::isBloqueado()` línea 42
-
-**Acción requerida:**
-- Extraer a constante o configuración: `config('informes.dias_bloqueo', 3)`
+> **Solución aplicada:** Se creó el archivo de configuración dedicado `config/informes.php` con la clave `'dias_bloqueo' => (int) env('INFORMES_DIAS_BLOQUEO', 3)`. Todos los modelos (`Informe`, `InformeCoordinacion`), servicios (`InformeDocenteService`, `InformeCoordinacionService`) y controladores (`DocenteController`, `CoordinadorController`) ahora consumen `config('informes.dias_bloqueo', 3)` dinámicamente tanto en cálculos de fechas como en mensajes de usuario.
 
 ---
 
@@ -202,18 +193,12 @@ El valor `3` (días para bloqueo de edición) aparece hardcodeado en:
 
 ---
 
-### 12. Falta middleware CSRF para rutas que reciben POST con explode
+### 12. Sanitización y validación de IDs en descargas por selección — ✅ RESUELTO
 
-**Archivo:** [AdminController.php](file:///c:/Users/jpsam/OneDrive/Escritorio/Uni/Farusac_SistemaInformes/Backend/app/Http/Controllers/AdminController.php#L349-L361)  
-**Severidad:** ⚠️ BAJA
+**Archivo:** [AdminController.php](file:///c:/Users/jpsam/OneDrive/Escritorio/Uni/Farusac_SistemaInformes/Backend/app/Http/Controllers/AdminController.php#L349-L375), [InformeExportService.php](file:///c:/Users/jpsam/OneDrive/Escritorio/Uni/Farusac_SistemaInformes/Backend/app/Services/InformeExportService.php#L210-L230)  
+**Severidad:** ⚠️ BAJA (Resuelto)
 
-Los métodos `descargarSeleccionadosZip` y `verConsolidadoSeleccionadosPdf` reciben arrays de IDs como strings y los convierten con `explode()`. Aunque Laravel incluye protección CSRF por defecto, la validación de los IDs es mínima — solo se usa `array_filter()`.
-
-**Acción requerida:**
-```php
-$docenteIds = array_map('intval', array_filter($docenteIds));
-$coordIds = array_map('intval', array_filter($coordIds));
-```
+> **Solución aplicada:** Se implementó un método centralizado `sanitizarIds()` en `AdminController` que valida, divide comas y convierte estrictamente cada identificador con `array_map('intval', ...)` filtrando valores mayores a 0 (`$id > 0`). Se aplicó la misma sanitización en `InformeExportService`. La protección CSRF `@csrf` ya se encuentra validada y activa en el formulario receptor `formSeleccionadosPost` y protegida por el middleware `web`.
 
 ---
 
@@ -313,8 +298,8 @@ $coordIds = array_map('intval', array_filter($coordIds));
 | 7 | Agregar `$hidden = ['google_id']` al modelo User | ✅ Resuelto | `User.php` |
 | 8 | Eliminar trait `HandlesInformeData` | 2 min | `app/Traits/HandlesInformeData.php` |
 | 9 | Limpiar `UserFactory::unverified()` | ✅ Resuelto | `UserFactory.php` |
-| 10 | Extraer constante para días de bloqueo | 15 min | Múltiples archivos |
-| 11 | Sanitizar IDs con `intval` en descargas por selección | 5 min | `AdminController.php` |
+| 10 | Extraer constante para días de bloqueo | ✅ Resuelto | `config/informes.php`, modelos, servicios |
+| 11 | Sanitizar IDs con `intval` en descargas por selección | ✅ Resuelto | `AdminController.php`, `InformeExportService.php` |
 | 12 | Cachear o paginar `getCatalogoCursos()` | ✅ Resuelto | `CatalogoService.php`, `CursoService.php` |
 
 ### Fase 3: Mejoras para después del lanzamiento

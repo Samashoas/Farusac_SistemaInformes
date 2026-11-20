@@ -36,7 +36,8 @@ class Informe extends Model
      */
     public function isBloqueado(): bool
     {
-        $limite = $this->bloqueado_en ?? ($this->created_at ? $this->created_at->copy()->addDays(3) : null);
+        $dias = (int) config('informes.dias_bloqueo', 3);
+        $limite = $this->bloqueado_en ?? ($this->created_at ? $this->created_at->copy()->addDays($dias) : null);
 
         if (!$limite) {
             return false;
