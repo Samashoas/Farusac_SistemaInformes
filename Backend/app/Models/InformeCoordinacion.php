@@ -34,6 +34,20 @@ class InformeCoordinacion extends Model
         'anio' => 'integer',
     ];
 
+    /**
+     * Determina si el informe de coordinación se encuentra bloqueado para edición.
+     */
+    public function isBloqueado(): bool
+    {
+        $limite = $this->bloqueado_en ?? ($this->created_at ? $this->created_at->copy()->addDays(3) : null);
+
+        if (!$limite) {
+            return false;
+        }
+
+        return \Carbon\Carbon::now()->greaterThan($limite);
+    }
+
     public function usuario()
     {
         return $this->belongsTo(User::class, 'usuario_id');

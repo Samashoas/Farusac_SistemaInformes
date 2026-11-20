@@ -28,4 +28,19 @@ class Curso extends Model
     public function informes(){
         return $this->hasMany(Informe::class, 'curso_id');
     }
+
+    public function asignaturasCoordinacion()
+    {
+        return $this->hasMany(InformeCoordinacionAsignatura::class, 'curso_id');
+    }
+
+    public function avancesCoordinacion()
+    {
+        return $this->hasMany(InformeCoordinacionAvance::class, 'curso_id');
+    }
+
+    public function estudiantesCoordinacion()
+    {
+        return $this->hasMany(InformeCoordinacionEstudiante::class, 'curso_id');
+    }
 }

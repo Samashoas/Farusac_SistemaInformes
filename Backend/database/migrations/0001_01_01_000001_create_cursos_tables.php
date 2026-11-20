@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 1. Tabla de Cursos Académicos
         if (!Schema::hasTable('cursos')) {
             Schema::create('cursos', function (Blueprint $table) {
                 $table->id();
@@ -26,6 +27,18 @@ return new class extends Migration
                 $table->unique(['carrera', 'codigo_curso', 'seccion', 'anio', 'semestre'], 'uq_curso_periodo');
             });
         }
+
+        // 2. Tabla Pivot: Asignación Docente - Curso
+        if (!Schema::hasTable('docente_cursos')) {
+            Schema::create('docente_cursos', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
+                $table->foreignId('curso_id')->constrained('cursos')->onDelete('cascade');
+                $table->timestamps();
+
+                $table->unique(['usuario_id', 'curso_id'], 'uq_docente_curso');
+            });
+        }
     }
 
     /**
@@ -33,6 +46,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('docente_cursos');
         Schema::dropIfExists('cursos');
     }
 };

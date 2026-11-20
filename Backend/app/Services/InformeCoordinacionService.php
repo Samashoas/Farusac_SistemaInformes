@@ -294,11 +294,13 @@ class InformeCoordinacionService
                     InformeCoordinacionEstudiante::create([
                         'informe_coordinacion_id' => $informe->id,
                         'curso_id'                => !empty($est['curso_id']) ? $est['curso_id'] : null,
-                        'docente_nombre'          => $est['docente_nombre'] ?? '—',
+                        'docente_nombre'          => $est['docente_nombre'] ?? null,
                         'asignatura'              => $est['asignatura'],
                         'seccion'                 => $est['seccion'] ?? '—',
-                        'estudiantes_asignados'   => intval($est['estudiantes_asignados'] ?? 0),
-                        'estudiantes_atendidos'   => intval($est['estudiantes_atendidos'] ?? 0),
+                        'cantidad_estudiantes'    => intval($est['cantidad_estudiantes'] ?? ($est['estudiantes_atendidos'] ?? ($est['estudiantes_asignados'] ?? 0))),
+                        'carne_estudiantes'       => $est['carne_estudiantes'] ?? null,
+                        'estudiantes_asignados'   => intval($est['estudiantes_asignados'] ?? ($est['cantidad_estudiantes'] ?? 0)),
+                        'estudiantes_atendidos'   => intval($est['estudiantes_atendidos'] ?? ($est['cantidad_estudiantes'] ?? 0)),
                         'observaciones'           => $est['observaciones'] ?? null,
                     ]);
                 }

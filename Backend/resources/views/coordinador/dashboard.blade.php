@@ -125,7 +125,7 @@
                     <tbody>
                         @foreach ($informesCoordinacion as $inf)
                             @php
-                                $isLocked = ($inf->bloqueado_en && \Carbon\Carbon::now()->greaterThan($inf->bloqueado_en));
+                                $isLocked = $inf->isBloqueado();
                                 $estadoClass = $isLocked ? 'bloqueado' : ($inf->estado == 'enviado' ? 'enviado' : 'borrador');
                                 $estadoTexto = $isLocked ? 'Bloqueado (Plazo Vencido)' : ucfirst($inf->estado);
                             @endphp
