@@ -157,24 +157,12 @@ Ningún controlador usa `use HandlesInformeData`.
 
 ---
 
-### 8. `UserFactory::unverified()` referencia columna inexistente
+### 8. `UserFactory::unverified()` referencia columna inexistente — ✅ RESUELTO
 
-**Archivo:** [UserFactory.php](file:///c:/Users/jpsam/OneDrive/Escritorio/Uni/Farusac_SistemaInformes/Backend/database/factories/UserFactory.php#L42-L46)  
-**Severidad:** ⚠️ BAJA
+**Archivo:** [UserFactory.php](file:///c:/Users/jpsam/OneDrive/Escritorio/Uni/Farusac_SistemaInformes/Backend/database/factories/UserFactory.php)  
+**Severidad:** ⚠️ BAJA (Resuelto)
 
-```php
-public function unverified(): static
-{
-    return $this->state(fn (array $attributes) => [
-        'email_verified_at' => null,  // ← Esta columna NO existe en la tabla 'usuarios'
-    ]);
-}
-```
-
-También importa `Hash` y `Str` sin usarlos.
-
-**Acción requerida:**
-- Eliminar el método `unverified()` y los imports `Hash` y `Str`
+> **Solución aplicada:** Se eliminó el método obsoleto `unverified()` y la columna inexistente `email_verified_at`, así como los imports no utilizados `Hash` y `Str` y la propiedad `$password`. Se agregaron métodos de estado oficiales del dominio: `administrador()`, `coordinador()` e `inactivo()`.
 
 ---
 
@@ -324,7 +312,7 @@ $coordIds = array_map('intval', array_filter($coordIds));
 | 6 | Eliminar fallback `@exec()` de ChromiumPdfService | ✅ Resuelto | `ChromiumPdfService.php` |
 | 7 | Agregar `$hidden = ['google_id']` al modelo User | ✅ Resuelto | `User.php` |
 | 8 | Eliminar trait `HandlesInformeData` | 2 min | `app/Traits/HandlesInformeData.php` |
-| 9 | Limpiar `UserFactory::unverified()` | 5 min | `UserFactory.php` |
+| 9 | Limpiar `UserFactory::unverified()` | ✅ Resuelto | `UserFactory.php` |
 | 10 | Extraer constante para días de bloqueo | 15 min | Múltiples archivos |
 | 11 | Sanitizar IDs con `intval` en descargas por selección | 5 min | `AdminController.php` |
 | 12 | Cachear o paginar `getCatalogoCursos()` | ✅ Resuelto | `CatalogoService.php`, `CursoService.php` |
