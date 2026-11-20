@@ -2,34 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ActualizarInformeCoordinacionRequest;
+use App\Http\Requests\GuardarInformeCoordinacionRequest;
 use App\Http\Requests\SeleccionarAreaRequest;
-use App\Models\Curso;
+use App\Http\Resources\InformeDocenteResource;
 use App\Models\Informe;
 use App\Models\InformeCoordinacion;
 use App\Models\User;
+use App\Services\CatalogoService;
 use App\Services\InformeCoordinacionService;
-use App\Services\InformeDocenteService;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
-class CoordinadorController extends DocenteController
+class CoordinadorController extends Controller
 {
     public function __construct(
         protected InformeCoordinacionService $coordinacionService,
-        ?InformeDocenteService $docenteService = null
-    ) {
-        parent::__construct($docenteService);
-    }
+        protected CatalogoService $catalogoService
+    ) {}
 
     /**
      * Dashboard principal del coordinador.
      */
-    public function dashboard(?Request $request = null)
+    public function dashboard(): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -44,105 +47,10 @@ class CoordinadorController extends DocenteController
             $cursosAsignados = collect();
         }
 
-        // Catálogo de cursos y áreas disponibles registradas en la BD
-        try {
-            $catalogoCursos = Curso::orderBy('carrera', 'asc')
-                ->orderBy('nombre_curso', 'asc')
-                ->orderBy('seccion', 'asc')
-                ->get();
-
-            $carrerasDb = Curso::select('carrera')
-                ->distinct()
-                ->whereNotNull('carrera')
-                ->where('carrera', '!=', '')
-                ->pluck('carrera');
-
-            // Asegurar disponibilidad de las carreras institucionales
-            $carreras = $carrerasDb->isNotEmpty()
-                ? $carrerasDb
-                : collect(['Arquitectura', 'Diseño Gráfico']);
-
-            // Mapeo dinámico de áreas por carrera
-            $areasPorCarrera = [];
-            $cursosCarreraArea = Curso::select('carrera', 'area')
-                ->distinct()
-                ->whereNotNull('carrera')
-                ->where('carrera', '!=', '')
-                ->whereNotNull('area')
-                ->where('area', '!=', '')
-                ->orderBy('area', 'asc')
-                ->get();
-
-            foreach ($cursosCarreraArea as $item) {
-                $areasPorCarrera[$item->carrera][] = $item->area;
-            }
-
-            // Normalizar arrays únicos de áreas
-            foreach ($areasPorCarrera as $car => $ars) {
-                $areasPorCarrera[$car] = array_values(array_unique($ars));
-            }
-
-            // Áreas institucionales por defecto si la base de datos aún no tiene cursos cargados
-            if (empty($areasPorCarrera['Arquitectura'])) {
-                $areasPorCarrera['Arquitectura'] = [
-                    'Diseño Arquitectónico',
-                    'Medios de Expresión',
-                    'Historia y Teoría',
-                    'Sistemas Estructurales',
-                    'Ambiente y Urbanismo',
-                    'Digital',
-                    'Sistemas Constructivos',
-                    'Investigación y Graduación',
-                ];
-            }
-            if (empty($areasPorCarrera['Diseño Gráfico'])) {
-                $areasPorCarrera['Diseño Gráfico'] = [
-                    'Área de Diseño',
-                    'Área de Comunicación',
-                    'Área de Tecnología y Expresión',
-                    'Área de Teoría e Historia',
-                    'Área de Gestión y Práctica Profesional',
-                    'Área de Graduación',
-                ];
-            }
-
-            $areasDisponibles = Curso::select('area')
-                ->distinct()
-                ->whereNotNull('area')
-                ->where('area', '!=', '')
-                ->orderBy('area', 'asc')
-                ->pluck('area');
-
-            if ($areasDisponibles->isEmpty()) {
-                $allFallback = array_merge($areasPorCarrera['Arquitectura'], $areasPorCarrera['Diseño Gráfico']);
-                $areasDisponibles = collect(array_values(array_unique($allFallback)));
-            }
-        } catch (Exception $e) {
-            $catalogoCursos = collect();
-            $carreras = collect(['Arquitectura', 'Diseño Gráfico']);
-            $areasPorCarrera = [
-                'Arquitectura' => [
-                    'Diseño Arquitectónico',
-                    'Medios de Expresión',
-                    'Historia y Teoría',
-                    'Sistemas Estructurales',
-                    'Ambiente y Urbanismo',
-                    'Digital',
-                    'Sistemas Constructivos',
-                    'Investigación y Graduación',
-                ],
-                'Diseño Gráfico' => [
-                    'Área de Diseño',
-                    'Área de Comunicación',
-                    'Área de Tecnología y Expresión',
-                    'Área de Teoría e Historia',
-                    'Área de Gestión y Práctica Profesional',
-                    'Área de Graduación',
-                ],
-            ];
-            $allFallback = array_merge($areasPorCarrera['Arquitectura'], $areasPorCarrera['Diseño Gráfico']);
-            $areasDisponibles = collect(array_values(array_unique($allFallback)));
-        }
+        $catalogoCursos   = $this->catalogoService->getCatalogoCursos();
+        $carreras         = $this->catalogoService->getCarreras();
+        $areasPorCarrera  = $this->catalogoService->getAreasPorCarrera();
+        $areasDisponibles = $this->catalogoService->getAreasDisponibles();
 
         // Informes mensuales de coordinación generados por este usuario
         try {
@@ -154,14 +62,21 @@ class CoordinadorController extends DocenteController
             $informesCoordinacion = collect();
         }
 
-        return view('coordinador.dashboard', compact('user', 'cursosAsignados', 'catalogoCursos', 'carreras', 'areasDisponibles', 'areasPorCarrera', 'informesCoordinacion'));
+        return view('coordinador.dashboard', compact(
+            'user',
+            'cursosAsignados',
+            'catalogoCursos',
+            'carreras',
+            'areasDisponibles',
+            'areasPorCarrera',
+            'informesCoordinacion'
+        ));
     }
 
     /**
      * Guarda la selección obligatoria del área a cargo del coordinador.
-     * La autorización y validación se delegan a SeleccionarAreaRequest.
      */
-    public function seleccionarArea(SeleccionarAreaRequest $request)
+    public function seleccionarArea(SeleccionarAreaRequest $request): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
@@ -190,11 +105,11 @@ class CoordinadorController extends DocenteController
                 'carrera' => $carrera,
             ]);
         } catch (Exception $e) {
-            Log::error('Error al guardar área en usuarios: ' . $e->getMessage());
+            Log::error('Error al guardar área en usuarios: ' . $e->getMessage(), ['exception' => $e]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar en la base de datos: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al guardar el área en la base de datos.',
             ], 500);
         }
     }
@@ -202,32 +117,20 @@ class CoordinadorController extends DocenteController
     /**
      * Retorna los datos completos de un informe de docente en formato JSON para el modal interactivo.
      */
-    public function obtenerDetalleInformeDocenteJson($id)
+    public function obtenerDetalleInformeDocenteJson(Informe $informe): JsonResponse
     {
-        $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
+        $informe->loadMissing(['curso', 'semanas', 'usuario']);
 
         return response()->json([
             'success' => true,
-            'informe' => $this->buildInformeDocenteData($informe),
+            'informe' => new InformeDocenteResource($informe),
         ]);
-    }
-
-    /**
-     * Obtiene todos los cursos asociados a un área de coordinación delegando al servicio.
-     */
-    private function getCursosPorArea($area, $carrera = null)
-    {
-        return $this->coordinacionService->getCursosPorArea(
-            $area,
-            $carrera ?: session('coordinador_carrera'),
-            Auth::user()
-        );
     }
 
     /**
      * Retorna los datos dinámicos consolidados de docentes y programas para el área en formato JSON.
      */
-    public function obtenerDatosDocentesArea(Request $request)
+    public function obtenerDatosDocentesArea(Request $request): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
@@ -252,14 +155,10 @@ class CoordinadorController extends DocenteController
         ]);
     }
 
-    // =========================================================================
-    // MÓDULO DE INFORMES MENSUALES DE COORDINACIÓN (OFICIAL FARUSAC)
-    // =========================================================================
-
     /**
      * Muestra el formulario para crear un Informe Mensual de Coordinación.
      */
-    public function crearInformeCoordinacionView(Request $request)
+    public function crearInformeCoordinacionView(Request $request): View|RedirectResponse
     {
         /** @var User $user */
         $user = Auth::user();
@@ -270,7 +169,7 @@ class CoordinadorController extends DocenteController
                 ->with('error', 'Debe seleccionar un área de coordinación primero.');
         }
 
-        $cursosArea        = $this->getCursosPorArea($area);
+        $cursosArea        = $this->coordinacionService->getCursosPorArea($area, session('coordinador_carrera'), $user);
         $asignaturasUnicas = $cursosArea->pluck('nombre_curso')->unique()->values();
 
         $mesDefecto = $request->query('mes') ?? ucfirst(Carbon::now()->locale('es')->translatedFormat('F'));
@@ -317,25 +216,14 @@ class CoordinadorController extends DocenteController
     /**
      * Guarda un nuevo Informe Mensual de Coordinación en la base de datos delegando al servicio.
      */
-    public function guardarInformeCoordinacion(Request $request)
+    public function guardarInformeCoordinacion(GuardarInformeCoordinacionRequest $request): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
         $area = $user->area ?? session('coordinador_area');
 
-        $request->validate([
-            'periodo'                         => 'required|string|max:100',
-            'mes'                             => 'required|string|max:50',
-            'anio'                            => 'required|integer',
-            'herramientas_virtuales'          => 'nullable|string',
-            'enlace_actividades_coordinacion' => 'nullable|string|max:255',
-            'enlace_informe_auxiliares'       => 'nullable|string|max:255',
-            'enlace_docentes_permisos'        => 'nullable|string|max:255',
-            'estado'                          => 'nullable|in:borrador,enviado',
-        ]);
-
         try {
-            $informe = $this->coordinacionService->guardarInforme($user, $request->all(), $area);
+            $informe = $this->coordinacionService->guardarInforme($user, $request->validated(), $area);
 
             return response()->json([
                 'success'    => true,
@@ -344,9 +232,11 @@ class CoordinadorController extends DocenteController
                 'redirect'   => route('coordinador.dashboard'),
             ]);
         } catch (Exception $e) {
+            Log::error('Error al guardar informe de coordinación: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar el informe: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al guardar el informe de coordinación.',
             ], 500);
         }
     }
@@ -354,17 +244,20 @@ class CoordinadorController extends DocenteController
     /**
      * Muestra el formulario para editar un informe de coordinación existente.
      */
-    public function editarInformeCoordinacionView($id)
+    public function editarInformeCoordinacionView(InformeCoordinacion $informeCoordinacion): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes'])
-            ->where('usuario_id', $user->id)
-            ->findOrFail($id);
+        if (!$user->isAdministrador() && $informeCoordinacion->usuario_id !== $user->id) {
+            abort(403, 'No tienes autorización para editar este informe de coordinación.');
+        }
+
+        $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes']);
+        $informe = $informeCoordinacion;
 
         $area              = $informe->area;
-        $cursosArea        = $this->getCursosPorArea($area);
+        $cursosArea        = $this->coordinacionService->getCursosPorArea($area, session('coordinador_carrera'), $user);
         $cursoIds          = $cursosArea->pluck('id')->toArray();
         $asignaturasUnicas = $cursosArea->pluck('nombre_curso')->unique()->values();
 
@@ -413,34 +306,27 @@ class CoordinadorController extends DocenteController
     /**
      * Actualiza un informe de coordinación existente delegando al servicio.
      */
-    public function actualizarInformeCoordinacion(Request $request, $id)
+    public function actualizarInformeCoordinacion(ActualizarInformeCoordinacionRequest $request, InformeCoordinacion $informeCoordinacion): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = InformeCoordinacion::where('usuario_id', $user->id)->findOrFail($id);
+        if (!$user->isAdministrador() && $informeCoordinacion->usuario_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para actualizar este informe de coordinación.',
+            ], 403);
+        }
 
-        // Validar si está bloqueado por el límite de 3 días
-        if ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en)) {
+        if ($informeCoordinacion->bloqueado_en && Carbon::now()->greaterThan($informeCoordinacion->bloqueado_en)) {
             return response()->json([
                 'success' => false,
                 'message' => 'El informe está bloqueado para edición (plazo máximo de 3 días vencido).',
             ], 403);
         }
 
-        $request->validate([
-            'periodo'                         => 'required|string|max:100',
-            'mes'                             => 'required|string|max:50',
-            'anio'                            => 'required|integer',
-            'herramientas_virtuales'          => 'nullable|string',
-            'enlace_actividades_coordinacion' => 'nullable|string|max:255',
-            'enlace_informe_auxiliares'       => 'nullable|string|max:255',
-            'enlace_docentes_permisos'        => 'nullable|string|max:255',
-            'estado'                          => 'nullable|in:borrador,enviado',
-        ]);
-
         try {
-            $this->coordinacionService->actualizarInforme($informe, $request->all());
+            $this->coordinacionService->actualizarInforme($informeCoordinacion, $request->validated());
 
             return response()->json([
                 'success'  => true,
@@ -448,33 +334,43 @@ class CoordinadorController extends DocenteController
                 'redirect' => route('coordinador.dashboard'),
             ]);
         } catch (Exception $e) {
+            Log::error('Error al actualizar informe de coordinación: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el informe: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al actualizar el informe de coordinación.',
             ], 500);
         }
     }
 
     /**
-     * Elimina un informe de coordinación permanentemente.
+     * Elimina un informe de coordinación permanentemente delegando al servicio.
      */
-    public function eliminarInformeCoordinacion($id)
+    public function eliminarInformeCoordinacion(InformeCoordinacion $informeCoordinacion): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
+        if (!$user->isAdministrador() && $informeCoordinacion->usuario_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para eliminar este informe de coordinación.',
+            ], 403);
+        }
+
         try {
-            $informe = InformeCoordinacion::where('usuario_id', $user->id)->findOrFail($id);
-            $this->eliminarInformeCoordinacionModel($informe);
+            $this->coordinacionService->eliminarInformeCoordinacion($informeCoordinacion, $user);
 
             return response()->json([
                 'success' => true,
                 'message' => 'El informe de coordinación ha sido eliminado permanentemente.',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al eliminar informe de coordinación: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe de coordinación: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al eliminar el informe de coordinación.',
             ], 500);
         }
     }
@@ -482,14 +378,13 @@ class CoordinadorController extends DocenteController
     /**
      * Genera la vista institucional del informe de coordinación para consultar / imprimir.
      */
-    public function verInformeCoordinacion($id)
+    public function verInformeCoordinacion(InformeCoordinacion $informeCoordinacion): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes'])
-            ->where('usuario_id', $user->id)
-            ->findOrFail($id);
+        $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes']);
+        $informe = $informeCoordinacion;
 
         return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
     }

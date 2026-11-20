@@ -1,0 +1,8 @@
+/* ==========================================================================
+   FARUSAC - SISTEMA DE INFORMES: ESTILOS DE INFORMES (informes.css)
+   Archivo índice retrocompatible con arquitectura modular por submódulos
+   ========================================================================== */
+
+@import url('docente/crear-informe.css');
+@import url('docente/historial-informes.css');
+@import url('components/report-modal.css');

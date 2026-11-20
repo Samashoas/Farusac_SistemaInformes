@@ -294,15 +294,42 @@ class InformeCoordinacionService
                     InformeCoordinacionEstudiante::create([
                         'informe_coordinacion_id' => $informe->id,
                         'curso_id'                => !empty($est['curso_id']) ? $est['curso_id'] : null,
-                        'docente_nombre'          => $est['docente_nombre'] ?? '—',
+                        'docente_nombre'          => $est['docente_nombre'] ?? null,
                         'asignatura'              => $est['asignatura'],
                         'seccion'                 => $est['seccion'] ?? '—',
-                        'estudiantes_asignados'   => intval($est['estudiantes_asignados'] ?? 0),
-                        'estudiantes_atendidos'   => intval($est['estudiantes_atendidos'] ?? 0),
+                        'cantidad_estudiantes'    => intval($est['cantidad_estudiantes'] ?? ($est['estudiantes_atendidos'] ?? ($est['estudiantes_asignados'] ?? 0))),
+                        'carne_estudiantes'       => $est['carne_estudiantes'] ?? null,
+                        'estudiantes_asignados'   => intval($est['estudiantes_asignados'] ?? ($est['cantidad_estudiantes'] ?? 0)),
+                        'estudiantes_atendidos'   => intval($est['estudiantes_atendidos'] ?? ($est['cantidad_estudiantes'] ?? 0)),
                         'observaciones'           => $est['observaciones'] ?? null,
                     ]);
                 }
             }
+        }
+    }
+
+    /**
+     * Elimina atómicamente un informe de coordinación y todas sus tablas hijas.
+     */
+    public function eliminarInformeCoordinacion(InformeCoordinacion|int|string $informe, ?User $user = null): void
+    {
+        $target = $informe instanceof InformeCoordinacion ? $informe : InformeCoordinacion::findOrFail($informe);
+
+        if ($user && !$user->isAdministrador() && $target->usuario_id !== $user->id) {
+            abort(403, 'No tienes permiso para eliminar este informe de coordinación.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $target->programas()->delete();
+            $target->asignaturas()->delete();
+            $target->avances()->delete();
+            $target->estudiantes()->delete();
+            $target->delete();
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
     }
 }

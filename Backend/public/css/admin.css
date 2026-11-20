@@ -1,0 +1,10 @@
+/* ==========================================================================
+   FARUSAC - SISTEMA DE INFORMES: ESTILOS DE ADMINISTRACIÓN (admin.css)
+   Archivo índice retrocompatible con arquitectura modular por submódulos
+   ========================================================================== */
+
+@import url('admin/dashboard.css');
+@import url('admin/usuarios.css');
+@import url('admin/cursos.css');
+@import url('admin/carga-datos.css');
+@import url('admin/informes.css');

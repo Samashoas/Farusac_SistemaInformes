@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Informe extends Model
@@ -29,6 +30,20 @@ class Informe extends Model
         'bloqueado_en' => 'datetime',
         'estudiantes_asignados' => 'integer',
     ];
+
+    /**
+     * Determina si el informe se encuentra bloqueado para edición por haber superado el plazo de 3 días.
+     */
+    public function isBloqueado(): bool
+    {
+        $limite = $this->bloqueado_en ?? ($this->created_at ? $this->created_at->copy()->addDays(3) : null);
+
+        if (!$limite) {
+            return false;
+        }
+
+        return Carbon::now()->greaterThan($limite);
+    }
 
     public function usuario()
     {

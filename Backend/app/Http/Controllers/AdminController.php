@@ -2,197 +2,199 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Rol;
+use App\Http\Requests\CrearCursoRequest;
+use App\Http\Requests\CrearUsuarioRequest;
+use App\Http\Requests\EditarUsuarioRequest;
+use App\Http\Requests\ImportCargaAcademicaRequest;
+use App\Http\Requests\ImportCsvRequest;
+use App\Http\Resources\CursoResource;
+use App\Http\Resources\InformeCoordinacionResource;
+use App\Http\Resources\InformeDocenteResource;
+use App\Http\Resources\UserResource;
 use App\Models\Curso;
 use App\Models\Informe;
 use App\Models\InformeCoordinacion;
 use App\Models\User;
+use App\Services\CatalogoService;
 use App\Services\CsvImportService;
+use App\Services\CursoService;
+use App\Services\InformeCoordinacionService;
+use App\Services\InformeDocenteService;
 use App\Services\InformeExportService;
+use App\Services\UserService;
 use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Enum;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminController extends Controller
 {
     public function __construct(
         protected CsvImportService $csvService,
-        protected InformeExportService $exportService
+        protected InformeExportService $exportService,
+        protected CursoService $cursoService,
+        protected UserService $userService,
+        protected CatalogoService $catalogoService,
+        protected InformeDocenteService $docenteService,
+        protected InformeCoordinacionService $coordinacionService
     ) {}
 
-    public function dashboard()
+    public function dashboard(): View
     {
         return view('admin.dashboard');
     }
 
-    public function cargaDatosView()
+    public function cargaDatosView(): View
     {
         return view('admin.carga_datos');
     }
 
-    public function usuariosView(Request $request)
+    public function usuariosView(Request $request): View
     {
         $perPage  = $request->query('per_page', 25);
         $usuarios = User::orderBy('id', 'desc')->paginate($perPage)->withQueryString();
+
         return view('admin.usuarios', compact('usuarios'));
     }
 
-    public function cursosView()
+    public function cursosView(Request $request): View
     {
-        $cursos = Curso::all();
+        $perPage = $request->query('per_page', 25);
+        $cursos  = Curso::orderBy('id', 'desc')->paginate($perPage)->withQueryString();
+
         return view('admin.cursos', compact('cursos'));
     }
 
-    public function crearCurso(Request $request)
+    public function crearCurso(CrearCursoRequest $request): JsonResponse
     {
-        $request->validate([
-            'carrera'      => 'required|string|max:100',
-            'area'         => 'required|string|max:150',
-            'nombre_curso' => 'required|string|max:150',
-            'codigo_curso' => 'required|string|max:50',
-            'seccion'      => 'required|string|max:10',
-            'anio'         => 'required|integer',
-            'semestre'     => 'required|string|max:30',
-        ]);
+        try {
+            $curso = $this->cursoService->crearCurso($request->validated());
 
-        $existe = Curso::where('carrera', $request->carrera)
-            ->where('codigo_curso', $request->codigo_curso)
-            ->where('seccion', $request->seccion)
-            ->where('anio', $request->anio)
-            ->where('semestre', $request->semestre)
-            ->first();
-
-        if ($existe) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Curso creado exitosamente',
+                'curso'   => new CursoResource($curso),
+            ]);
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ya existe un registro con la misma Carrera, Código, Sección, Año y Semestre.',
+                'message' => $e->validator->errors()->first(),
             ], 422);
+        } catch (Exception $e) {
+            Log::error('Error al crear el curso: ' . $e->getMessage(), ['exception' => $e]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error inesperado al crear el curso.',
+            ], 500);
         }
-
-        $curso = Curso::create([
-            'carrera'      => $request->carrera,
-            'area'         => $request->area,
-            'nombre_curso' => $request->nombre_curso,
-            'codigo_curso' => $request->codigo_curso,
-            'seccion'      => $request->seccion,
-            'anio'         => $request->anio,
-            'semestre'     => $request->semestre,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Curso creado exitosamente',
-            'curso'   => $curso,
-        ]);
     }
 
-    public function eliminarCurso($id)
+    public function eliminarCurso(Curso $curso): JsonResponse
     {
-        $curso = Curso::findOrFail($id);
-        $curso->delete();
+        try {
+            $this->cursoService->eliminarCurso($curso);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Curso eliminado exitosamente',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Curso eliminado exitosamente',
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error al eliminar el curso: ' . $e->getMessage(), ['exception' => $e]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al intentar eliminar el curso.',
+            ], 500);
+        }
     }
 
-    public function crearUsuario(Request $request)
+    public function crearUsuario(CrearUsuarioRequest $request): JsonResponse
     {
-        $request->validate([
-            'nombre' => 'required|string|max:150',
-            'correo' => 'required|email|max:100|unique:usuarios,correo',
-            'numero' => 'required|string|max:30',
-            'rol'    => ['required', new Enum(Rol::class)],
-            'plaza'  => 'required|in:titular + ampliacion,titular,interino',
-        ]);
+        try {
+            $usuario = $this->userService->crearUsuario($request->validated());
 
-        $usuario = User::create([
-            'nombre' => $request->nombre,
-            'correo' => $request->correo,
-            'numero' => $request->numero,
-            'rol'    => Rol::from($request->rol),
-            'plaza'  => $request->plaza,
-            'estado' => 'activo',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario creado exitosamente',
+                'usuario' => new UserResource($usuario),
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error al crear el usuario: ' . $e->getMessage(), ['exception' => $e]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Usuario creado exitosamente',
-            'usuario' => $usuario,
-        ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error inesperado al registrar el usuario.',
+            ], 500);
+        }
     }
 
-    public function editarUsuario(Request $request, $id)
+    public function editarUsuario(EditarUsuarioRequest $request, User $usuario): JsonResponse
     {
-        $usuario = User::findOrFail($id);
+        try {
+            $updatedUsuario = $this->userService->editarUsuario($usuario, $request->validated());
 
-        $request->validate([
-            'numero' => 'required|string|max:30',
-            'rol'    => ['required', new Enum(Rol::class)],
-            'plaza'  => 'required|in:titular + ampliacion,titular,interino',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario actualizado exitosamente',
+                'usuario' => new UserResource($updatedUsuario),
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error al actualizar el usuario: ' . $e->getMessage(), ['exception' => $e]);
 
-        $usuario->update([
-            'numero' => $request->numero,
-            'rol'    => Rol::from($request->rol),
-            'plaza'  => $request->plaza,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Usuario actualizado exitosamente',
-            'usuario' => $usuario,
-        ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error inesperado al actualizar el usuario.',
+            ], 500);
+        }
     }
 
-    public function toggleEstadoUsuario($id)
+    public function toggleEstadoUsuario(User $usuario): JsonResponse
     {
-        $usuario = User::findOrFail($id);
+        try {
+            $updatedUsuario = $this->userService->toggleEstadoUsuario($usuario);
 
-        $nuevoEstado = ($usuario->estado === 'activo') ? 'inactivo' : 'activo';
-        $usuario->update([
-            'estado' => $nuevoEstado,
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Estado del usuario modificado exitosamente',
+                'usuario' => new UserResource($updatedUsuario),
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error al cambiar estado del usuario: ' . $e->getMessage(), ['exception' => $e]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Estado del usuario modificado exitosamente',
-            'usuario' => $usuario,
-        ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al modificar el estado del usuario.',
+            ], 500);
+        }
     }
 
     // =========================================================================
     // IMPORTACIÓN MASIVA DE DATOS CSV (Delegada a CsvImportService)
     // =========================================================================
 
-    public function cargaUsuariosCsv(Request $request)
+    public function cargaUsuariosCsv(ImportCsvRequest $request): JsonResponse
     {
-        $request->validate([
-            'archivo_csv' => 'required|mimes:csv,txt|max:5120',
-        ]);
-
         $result = $this->csvService->importarUsuarios($request->file('archivo_csv'));
+
         return response()->json($result);
     }
 
-    public function cargaCursosCsv(Request $request)
+    public function cargaCursosCsv(ImportCsvRequest $request): JsonResponse
     {
-        $request->validate([
-            'archivo_csv' => 'required|mimes:csv,txt|max:5120',
-        ]);
-
         $result = $this->csvService->importarCursos($request->file('archivo_csv'));
+
         return response()->json($result);
     }
 
-    public function cargaAcademicaCsv(Request $request)
+    public function cargaAcademicaCsv(ImportCargaAcademicaRequest $request): JsonResponse
     {
-        $request->validate([
-            'archivo_csv' => 'required|file|max:10240',
-        ]);
-
         $result = $this->csvService->importarCargaAcademica(
             $request->file('archivo_csv'),
             $request->input('carrera'),
@@ -207,127 +209,103 @@ class AdminController extends Controller
     // GESTIÓN Y VISUALIZACIÓN DE INFORMES
     // =========================================================================
 
-    public function informesView()
+    public function informesView(Request $request): View
     {
-        $user = Auth::user();
+        $user    = Auth::user();
+        $perPage = $request->query('per_page', 25);
 
         $informesDocentes = Informe::with(['usuario', 'curso', 'semanas'])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate($perPage, ['*'], 'page_docentes')
+            ->withQueryString();
 
         $informesCoordinacion = InformeCoordinacion::with(['usuario', 'programas', 'asignaturas', 'avances', 'estudiantes'])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate($perPage, ['*'], 'page_coordinacion')
+            ->withQueryString();
 
-        $carreras = Curso::select('carrera')
-            ->distinct()
-            ->whereNotNull('carrera')
-            ->where('carrera', '!=', '')
-            ->pluck('carrera');
+        $filtros = $this->catalogoService->getFiltrosAdmin($informesDocentes, $informesCoordinacion);
 
-        $areas = Curso::select('area')
-            ->distinct()
-            ->whereNotNull('area')
-            ->where('area', '!=', '')
-            ->orderBy('area', 'asc')
-            ->pluck('area');
-
-        $periodosDocentes = Informe::select('periodo')->distinct()->whereNotNull('periodo')->pluck('periodo');
-        $periodosCoord    = InformeCoordinacion::select('periodo')->distinct()->whereNotNull('periodo')->pluck('periodo');
-        $periodos         = $periodosDocentes->merge($periodosCoord)->unique()->filter()->values();
-
-        $aniosDocentes = Curso::select('anio')->distinct()->whereNotNull('anio')->pluck('anio');
-        $aniosCoord    = InformeCoordinacion::select('anio')->distinct()->whereNotNull('anio')->pluck('anio');
-        $anios         = $aniosDocentes->merge($aniosCoord)->unique()->filter()->sortDesc()->values();
-
-        $stats = [
-            'total'                => $informesDocentes->count() + $informesCoordinacion->count(),
-            'docentes'             => $informesDocentes->count(),
-            'coordinacion'         => $informesCoordinacion->count(),
-            'docentes_unicos'      => $informesDocentes->pluck('usuario_id')->unique()->count(),
-            'coordinadores_unicos' => $informesCoordinacion->pluck('usuario_id')->unique()->count(),
-        ];
-
-        return view('admin.informes', compact(
-            'user',
-            'informesDocentes',
-            'informesCoordinacion',
-            'carreras',
-            'areas',
-            'periodos',
-            'anios',
-            'stats'
-        ));
+        return view('admin.informes', array_merge([
+            'user'                 => $user,
+            'informesDocentes'     => $informesDocentes,
+            'informesCoordinacion' => $informesCoordinacion,
+        ], $filtros));
     }
 
-    public function verInformeDocente($id)
+    public function verInformeDocente(Informe $informe): View
     {
-        $user    = Auth::user();
-        $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
+        $user = Auth::user();
+        $informe->loadMissing(['curso', 'semanas', 'usuario']);
+
         return view('docente.ver_informe_pdf', compact('user', 'informe'));
     }
 
-    public function verInformeCoordinacion($id)
+    public function verInformeCoordinacion(InformeCoordinacion $informeCoordinacion): View
     {
-        $user    = Auth::user();
-        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->findOrFail($id);
+        $user = Auth::user();
+        $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario']);
+        $informe = $informeCoordinacion;
+
         return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
     }
 
-    public function obtenerDetalleInformeDocenteJson($id)
+    public function obtenerDetalleInformeDocenteJson(Informe $informe): JsonResponse
     {
-        $informe = Informe::with(['curso', 'semanas', 'usuario'])->findOrFail($id);
+        $informe->loadMissing(['curso', 'semanas', 'usuario']);
 
         return response()->json([
             'success' => true,
             'tipo'    => 'docente',
-            'informe' => $this->buildInformeDocenteData($informe),
+            'informe' => new InformeDocenteResource($informe),
         ]);
     }
 
-    public function obtenerDetalleInformeCoordinacionJson($id)
+    public function obtenerDetalleInformeCoordinacionJson(InformeCoordinacion $informeCoordinacion): JsonResponse
     {
-        $informe = InformeCoordinacion::with(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario'])->findOrFail($id);
+        $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario']);
 
         return response()->json([
             'success' => true,
             'tipo'    => 'coordinacion',
-            'informe' => $this->buildInformeCoordinacionData($informe),
+            'informe' => new InformeCoordinacionResource($informeCoordinacion),
         ]);
     }
 
-    public function eliminarInformeDocente($id)
+    public function eliminarInformeDocente(Informe $informe): JsonResponse
     {
         try {
-            $informe = Informe::findOrFail($id);
-            $this->eliminarInformeDocenteModel($informe);
+            $this->docenteService->eliminarInformeDocente($informe);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Informe de docente eliminado permanentemente.',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al eliminar el informe de docente: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe de docente: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al eliminar el informe de docente.',
             ], 500);
         }
     }
 
-    public function eliminarInformeCoordinacion($id)
+    public function eliminarInformeCoordinacion(InformeCoordinacion $informeCoordinacion): JsonResponse
     {
         try {
-            $informe = InformeCoordinacion::findOrFail($id);
-            $this->eliminarInformeCoordinacionModel($informe);
+            $this->coordinacionService->eliminarInformeCoordinacion($informeCoordinacion);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Informe de coordinación eliminado permanentemente.',
             ]);
         } catch (Exception $e) {
+            Log::error('Error al eliminar el informe de coordinación: ' . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el informe de coordinación: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error al eliminar el informe de coordinación.',
             ], 500);
         }
     }
@@ -336,43 +314,39 @@ class AdminController extends Controller
     // EXPORTACIÓN Y REPORTES (Delegada a InformeExportService)
     // =========================================================================
 
-    public function descargarInformesZip(Request $request)
+    public function descargarInformesZip(Request $request): BinaryFileResponse|RedirectResponse
     {
         $user = Auth::user();
         try {
             return $this->exportService->descargarInformesZip($request, $user);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            Log::error('Error al descargar ZIP de informes: ' . $e->getMessage(), ['exception' => $e]);
+
+            return redirect()->back()->with('error', 'Ocurrió un error al generar la descarga comprimida de los informes.');
         }
     }
 
-    public function descargarInformesCsv(Request $request)
+    public function descargarInformesCsv(Request $request): StreamedResponse
     {
         return $this->exportService->descargarInformesCsv($request);
     }
 
-    public function verConsolidadoPdf(Request $request)
+    public function verConsolidadoPdf(Request $request): View
     {
         $user      = Auth::user();
         $filtrados = $this->exportService->obtenerInformesFiltrados($request);
 
-        $informesDocentes     = $filtrados['docentes'];
-        $informesCoordinacion = $filtrados['coordinacion'];
-        $mes                  = $filtrados['mes'];
-        $anio                 = $filtrados['anio'];
-        $totalCount           = $filtrados['total'];
-
-        return view('admin.consolidado_informes_pdf', compact(
-            'user',
-            'informesDocentes',
-            'informesCoordinacion',
-            'mes',
-            'anio',
-            'totalCount'
-        ));
+        return view('admin.consolidado_informes_pdf', [
+            'user'                 => $user,
+            'informesDocentes'     => $filtrados['docentes'],
+            'informesCoordinacion' => $filtrados['coordinacion'],
+            'mes'                  => $filtrados['mes'],
+            'anio'                 => $filtrados['anio'],
+            'totalCount'           => $filtrados['total'],
+        ]);
     }
 
-    public function descargarSeleccionadosZip(Request $request)
+    public function descargarSeleccionadosZip(Request $request): BinaryFileResponse|JsonResponse
     {
         $user       = Auth::user();
         $docenteIds = $request->input('docente_ids', []);
@@ -388,11 +362,16 @@ class AdminController extends Controller
         try {
             return $this->exportService->descargarSeleccionadosZip($docenteIds, $coordIds, $user);
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            Log::error('Error al descargar ZIP de seleccionados: ' . $e->getMessage(), ['exception' => $e]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al procesar la descarga comprimida de los informes seleccionados.',
+            ], 422);
         }
     }
 
-    public function verConsolidadoSeleccionadosPdf(Request $request)
+    public function verConsolidadoSeleccionadosPdf(Request $request): View
     {
         $user       = Auth::user();
         $docenteIds = $request->input('docente_ids', []);
@@ -422,13 +401,14 @@ class AdminController extends Controller
         ));
     }
 
-    public function obtenerListaDescargaZipJson(Request $request)
+    public function obtenerListaDescargaZipJson(Request $request): JsonResponse
     {
         $result = $this->exportService->obtenerListaDescargaZipJson($request);
+
         return response()->json($result);
     }
 
-    public function obtenerListaSeleccionadosZipJson(Request $request)
+    public function obtenerListaSeleccionadosZipJson(Request $request): JsonResponse
     {
         $docenteIds = $request->input('docente_ids', []);
         $coordIds   = $request->input('coordinacion_ids', []);
@@ -442,6 +422,7 @@ class AdminController extends Controller
 
         $result = $this->exportService->obtenerListaSeleccionadosZipJson($docenteIds, $coordIds);
         $status = empty($result['success']) ? 422 : 200;
+
         return response()->json($result, $status);
     }
 }

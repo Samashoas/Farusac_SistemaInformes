@@ -52,6 +52,11 @@ class User extends Authenticatable
         return $this->hasMany(Informe::class, 'usuario_id');
     }
 
+    public function informesCoordinacion()
+    {
+        return $this->hasMany(InformeCoordinacion::class, 'usuario_id');
+    }
+
     /**
      * Helpers de rol
      */
