@@ -40,7 +40,7 @@ return [
         'client_secret'  => env('GOOGLE_CLIENT_SECRET'),
         'redirect'       => env('GOOGLE_REDIRECT_URI'),
         'allowed_domain' => env('GOOGLE_ALLOWED_DOMAIN', 'farusac.edu.gt'),
-        'ssl_cert_path'  => env('GOOGLE_SSL_CERT_PATH', true),
+        'ssl_cert_path'  => env('GOOGLE_SSL_CERT_PATH') ?: true,
     ],
 
     'chromium' => [

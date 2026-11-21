@@ -192,9 +192,11 @@ class DocenteController extends Controller
                 ? route('coordinador.dashboard')
                 : route('docente.dashboard');
 
+            $dias = (int) config('informes.dias_bloqueo', 3);
+
             return response()->json([
                 'success'      => true,
-                'message'      => 'El informe ha sido creado y enviado exitosamente. Recuerda que tienes un máximo de 3 días para editar o modificar tu informe antes de que se bloquee para revisión.',
+                'message'      => "El informe ha sido creado y enviado exitosamente. Recuerda que tienes un máximo de {$dias} días para editar o modificar tu informe antes de que se bloquee para revisión.",
                 'informe_id'   => $informe->id,
                 'redirect_url' => $redirectUrl,
             ]);
@@ -227,8 +229,9 @@ class DocenteController extends Controller
         }
 
         if (!$user->isAdministrador() && $informe->isBloqueado()) {
+            $dias = (int) config('informes.dias_bloqueo', 3);
             $redirectUrl = $user->isCoordinador() ? route('coordinador.informes') : route('docente.informes');
-            return redirect($redirectUrl)->with('error', 'Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.');
+            return redirect($redirectUrl)->with('error', "Este informe ya no puede ser editado porque ha vencido el plazo límite de {$dias} días.");
         }
 
         $informe->loadMissing(['curso', 'semanas']);
@@ -280,9 +283,10 @@ class DocenteController extends Controller
         }
 
         if (!$user->isAdministrador() && $informe->isBloqueado()) {
+            $dias = (int) config('informes.dias_bloqueo', 3);
             return response()->json([
                 'success' => false,
-                'message' => 'Este informe ya no puede ser editado porque ha vencido el plazo límite de 3 días.',
+                'message' => "Este informe ya no puede ser editado porque ha vencido el plazo límite de {$dias} días.",
             ], 422);
         }
 
@@ -328,9 +332,10 @@ class DocenteController extends Controller
         }
 
         if (!$user->isAdministrador() && $informe->isBloqueado()) {
+            $dias = (int) config('informes.dias_bloqueo', 3);
             return response()->json([
                 'success' => false,
-                'message' => 'No se puede eliminar un informe cuyo plazo de 3 días ya ha vencido.',
+                'message' => "No se puede eliminar un informe cuyo plazo de {$dias} días ya ha vencido.",
             ], 422);
         }
 

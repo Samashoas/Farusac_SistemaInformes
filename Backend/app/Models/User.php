@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Enums\Rol;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use HasFactory, Notifiable;
 
     protected $table = 'usuarios';
     
@@ -23,6 +24,13 @@ class User extends Authenticatable
         'plaza',
         'area',
         'estado',
+        'google_id',
+    ];
+
+    /**
+     * Atributos ocultos para la serialización a JSON / Array.
+     */
+    protected $hidden = [
         'google_id',
     ];
 

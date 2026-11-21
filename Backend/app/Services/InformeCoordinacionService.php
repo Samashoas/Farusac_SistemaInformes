@@ -164,7 +164,7 @@ class InformeCoordinacionService
     public function guardarInforme(User $user, array $data, ?string $area): InformeCoordinacion
     {
         $estado      = $data['estado'] ?? 'enviado';
-        $bloqueadoEn = ($estado === 'enviado') ? Carbon::now()->addDays(3) : null;
+        $bloqueadoEn = ($estado === 'enviado') ? Carbon::now()->addDays((int) config('informes.dias_bloqueo', 3)) : null;
 
         DB::beginTransaction();
         try {

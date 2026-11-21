@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Curso;
 use App\Models\User;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
 class CursoService
@@ -29,7 +30,7 @@ class CursoService
             ]);
         }
 
-        return Curso::create([
+        $curso = Curso::create([
             'carrera'      => $data['carrera'],
             'area'         => $data['area'],
             'nombre_curso' => $data['nombre_curso'],
@@ -38,6 +39,10 @@ class CursoService
             'anio'         => $data['anio'],
             'semestre'     => $data['semestre'],
         ]);
+
+        Cache::forget('catalogo_cursos_completo');
+
+        return $curso;
     }
 
     /**
@@ -46,7 +51,11 @@ class CursoService
     public function eliminarCurso(Curso|int|string $curso): bool
     {
         $target = $curso instanceof Curso ? $curso : Curso::findOrFail($curso);
-        return (bool) $target->delete();
+        $deleted = (bool) $target->delete();
+        if ($deleted) {
+            Cache::forget('catalogo_cursos_completo');
+        }
+        return $deleted;
     }
 
     /**

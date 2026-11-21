@@ -10,8 +10,13 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::get('/auth/google', [AuthController::class, 'redirect'])->name('google.login'); // Va a Google
-Route::get('/auth/google/callback', [AuthController::class, 'callback']); // Google nos devuelve aquí
+
+// Rutas de autenticación con Rate Limiting (máx 10 peticiones por minuto para prevenir abusos a OAuth)
+Route::middleware('throttle:10,1')->group(function () {
+    Route::get('/auth/google', [AuthController::class, 'redirect'])->name('google.login'); // Va a Google
+    Route::get('/auth/google/callback', [AuthController::class, 'callback']); // Google nos devuelve aquí
+});
+
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function () {

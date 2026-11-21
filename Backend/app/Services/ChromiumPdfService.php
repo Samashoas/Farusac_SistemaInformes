@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 
 class ChromiumPdfService
@@ -188,11 +189,17 @@ class ChromiumPdfService
         $command = array_merge([$chromiumPath], $flags);
 
         try {
-            Process::timeout(60)->run($command);
+            $processResult = Process::timeout(60)->run($command);
+            if (!$processResult->successful()) {
+                Log::warning('Chromium PDF finalizó con código no exitoso: ' . $processResult->exitCode(), [
+                    'error' => $processResult->errorOutput(),
+                ]);
+            }
         } catch (\Throwable $e) {
-            // Si el runner de Process falla, intentar como fallback con argumentos sanitizados individualmente
-            $escapedCmd = escapeshellcmd($chromiumPath) . ' ' . implode(' ', array_map('escapeshellarg', $flags));
-            @exec($escapedCmd);
+            Log::error('Fallo en la ejecución de Chromium Process: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+            throw new Exception('Error al ejecutar el motor de Chromium para generar el PDF: ' . $e->getMessage(), 0, $e);
         }
 
         $pdfBinary = null;

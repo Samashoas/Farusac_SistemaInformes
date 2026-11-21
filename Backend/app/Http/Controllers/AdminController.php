@@ -346,18 +346,32 @@ class AdminController extends Controller
         ]);
     }
 
+    /**
+     * Sanitiza y castea una lista de IDs (como array o string delimitado por comas) a enteros positivos.
+     *
+     * @return int[]
+     */
+    protected function sanitizarIds(mixed $ids): array
+    {
+        if (is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map('intval', $ids),
+            fn (int $id) => $id > 0
+        ));
+    }
+
     public function descargarSeleccionadosZip(Request $request): BinaryFileResponse|JsonResponse
     {
         $user       = Auth::user();
-        $docenteIds = $request->input('docente_ids', []);
-        $coordIds   = $request->input('coordinacion_ids', []);
-
-        if (is_string($docenteIds)) {
-            $docenteIds = explode(',', $docenteIds);
-        }
-        if (is_string($coordIds)) {
-            $coordIds = explode(',', $coordIds);
-        }
+        $docenteIds = $this->sanitizarIds($request->input('docente_ids', []));
+        $coordIds   = $this->sanitizarIds($request->input('coordinacion_ids', []));
 
         try {
             return $this->exportService->descargarSeleccionadosZip($docenteIds, $coordIds, $user);
@@ -374,18 +388,11 @@ class AdminController extends Controller
     public function verConsolidadoSeleccionadosPdf(Request $request): View
     {
         $user       = Auth::user();
-        $docenteIds = $request->input('docente_ids', []);
-        $coordIds   = $request->input('coordinacion_ids', []);
+        $docenteIds = $this->sanitizarIds($request->input('docente_ids', []));
+        $coordIds   = $this->sanitizarIds($request->input('coordinacion_ids', []));
 
-        if (is_string($docenteIds)) {
-            $docenteIds = explode(',', $docenteIds);
-        }
-        if (is_string($coordIds)) {
-            $coordIds = explode(',', $coordIds);
-        }
-
-        $informesDocentes     = !empty($docenteIds) ? Informe::with(['usuario', 'curso', 'semanas'])->whereIn('id', array_filter($docenteIds))->get() : collect();
-        $informesCoordinacion = !empty($coordIds) ? InformeCoordinacion::with(['usuario', 'programas', 'asignaturas', 'avances', 'estudiantes'])->whereIn('id', array_filter($coordIds))->get() : collect();
+        $informesDocentes     = !empty($docenteIds) ? Informe::with(['usuario', 'curso', 'semanas'])->whereIn('id', $docenteIds)->get() : collect();
+        $informesCoordinacion = !empty($coordIds) ? InformeCoordinacion::with(['usuario', 'programas', 'asignaturas', 'avances', 'estudiantes'])->whereIn('id', $coordIds)->get() : collect();
 
         $mes        = 'Seleccionados';
         $anio       = date('Y');
@@ -410,15 +417,8 @@ class AdminController extends Controller
 
     public function obtenerListaSeleccionadosZipJson(Request $request): JsonResponse
     {
-        $docenteIds = $request->input('docente_ids', []);
-        $coordIds   = $request->input('coordinacion_ids', []);
-
-        if (is_string($docenteIds)) {
-            $docenteIds = explode(',', $docenteIds);
-        }
-        if (is_string($coordIds)) {
-            $coordIds = explode(',', $coordIds);
-        }
+        $docenteIds = $this->sanitizarIds($request->input('docente_ids', []));
+        $coordIds   = $this->sanitizarIds($request->input('coordinacion_ids', []));
 
         $result = $this->exportService->obtenerListaSeleccionadosZipJson($docenteIds, $coordIds);
         $status = empty($result['success']) ? 422 : 200;
