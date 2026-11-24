@@ -34,7 +34,7 @@ class CheckRole
             }
         }
 
-        if ($userRole !== 'administrador' && !in_array($userRole, $allowed)) {
+        if(!in_array($userRole, $allowed)){
             abort(403, 'Acceso denegado, la cuenta no tiene los permisos para ver esta pagina');
         }    
         return $next($request);

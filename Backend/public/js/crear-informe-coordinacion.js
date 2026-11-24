@@ -141,43 +141,27 @@ const informeId = informeCoordCfg.informeId || "";
         }
 
         // Abrir Modal de Informe de Docente (En la misma ventana con formato oficial de PDF)
-        function abrirModalInformeDocente(docenteInformeId, docenteNombre = '', cursoNombre = '') {
+        function abrirModalInformeDocente(docenteInformeId) {
             if (!docenteInformeId) return;
 
-            const rawUrl = `/coordinador/informes/${docenteInformeId}/ver`;
-            const urlInforme = window.route ? window.route(rawUrl) : rawUrl;
-
-            // Si el modal institucional global está disponible, usarlo preferentemente
-            if (typeof window.openReportPreviewModal === 'function') {
-                const title = cursoNombre ? `Informe Docente - ${cursoNombre}` : 'Informe Mensual del Docente';
-                const subtitle = docenteNombre ? `${docenteNombre} • Documento Institucional FARUSAC` : 'Documento institucional oficial FARUSAC';
-                window.openReportPreviewModal('docente', docenteInformeId, title, subtitle, urlInforme);
-                return;
-            }
-
-            // Fallback con modal local
             abrirModal('modalVerInformeDocente');
 
             const loader = document.getElementById('modalDocenteLoader');
             const iframe = document.getElementById('iframeDocenteInforme');
             const subtitulo = document.getElementById('modalDocenteSubtitulo');
-            const tabBtn = document.getElementById('modalDocenteTabBtn');
 
             if (loader) loader.style.display = 'flex';
+
+            const urlInforme = `/coordinador/informes/${docenteInformeId}/ver`;
 
             if (iframe) {
                 iframe.src = `${urlInforme}?embed=1`;
             }
 
             if (subtitulo) {
-                subtitulo.textContent = docenteNombre ? `${docenteNombre} • Documento oficial FARUSAC` : 'Documento institucional oficial FARUSAC';
-            }
-
-            if (tabBtn) {
-                tabBtn.href = urlInforme;
+                subtitulo.textContent = 'Documento institucional oficial FARUSAC';
             }
         }
-        window.abrirModalInformeDocente = abrirModalInformeDocente;
 
         // Imprimir directamente el documento oficial desde el modal
         function imprimirIframeDocente() {
@@ -320,7 +304,7 @@ const informeId = informeCoordCfg.informeId || "";
                                         <td style="text-align: center;">
                                             <div class="col-docente-report-action" data-curso-id="${d.curso_id || ''}">
                                                 ${d.docente_informe_id ? `
-                                                    <button type="button" class="btn-ver-docente" onclick="abrirModalInformeDocente(${d.docente_informe_id}, '${(d.docente_nombre || '').replace(/'/g, "\\'")}', '${(d.asignatura || '').replace(/'/g, "\\'")}')" title="Visualizar informe entregado por el docente en ${mes}">
+                                                    <button type="button" class="btn-ver-docente" onclick="abrirModalInformeDocente(${d.docente_informe_id})" title="Visualizar informe entregado por el docente en ${mes}">
                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                                         <span>Ver Informe</span>
                                                     </button>
@@ -469,7 +453,7 @@ const informeId = informeCoordCfg.informeId || "";
                                     if (actionCol) {
                                         if (d.docente_informe_id) {
                                             actionCol.innerHTML = `
-                                            <button type="button" class="btn-ver-docente" onclick="abrirModalInformeDocente(${d.docente_informe_id}, '${(d.docente_nombre || '').replace(/'/g, "\\'")}', '${(d.asignatura || '').replace(/'/g, "\\'")}')" title="Visualizar informe entregado por el docente en ${mes}">
+                                            <button type="button" class="btn-ver-docente" onclick="abrirModalInformeDocente(${d.docente_informe_id})" title="Visualizar informe entregado por el docente en ${mes}">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                                 <span>Ver Informe</span>
                                             </button>

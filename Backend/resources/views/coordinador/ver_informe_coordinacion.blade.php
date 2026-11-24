@@ -64,27 +64,6 @@
             box-shadow: 0 4px 10px rgba(0, 45, 114, 0.2);
         }
 
-        .btn-ver-docente-inline {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background-color: #0284c7;
-            color: #ffffff;
-            border: none;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .btn-ver-docente-inline:hover {
-            background-color: #0369a1;
-            transform: translateY(-1px);
-        }
-
         .btn-print:hover {
             background-color: var(--color-azul-medio);
             transform: translateY(-1px);
@@ -479,8 +458,7 @@
                 overflow: visible !important;
             }
 
-            .no-print-bar,
-            .no-print {
+            .no-print-bar {
                 display: none !important;
             }
 
@@ -771,8 +749,7 @@
                 line-height: 1.35 !important;
             }
 
-            .no-print-bar,
-            .no-print {
+            .no-print-bar {
                 display: none !important;
             }
 
@@ -1197,37 +1174,12 @@
                                     </thead>
                                     <tbody>
                                         @forelse ($informe->asignaturas as $asig)
-                                            @php
-                                                $docenteInf = isset($docenteInformes) ? $docenteInformes->first(function ($item) use ($asig) {
-                                                    if ($asig->curso_id && (int)$item->curso_id === (int)$asig->curso_id) {
-                                                        return true;
-                                                    }
-                                                    if ($item->curso && mb_strtolower(trim($item->curso->nombre_curso ?? '')) === mb_strtolower(trim($asig->asignatura))
-                                                        && mb_strtolower(trim($item->curso->seccion ?? '')) === mb_strtolower(trim($asig->seccion))) {
-                                                        return true;
-                                                    }
-                                                    return ($asig->docente_nombre && mb_strtolower(trim($item->usuario?->nombre ?? '')) === mb_strtolower(trim($asig->docente_nombre)));
-                                                }) : null;
-                                            @endphp
                                             <tr>
                                                 <td><strong>{{ $asig->docente_nombre }}</strong></td>
                                                 <td>{{ $asig->asignatura }}</td>
                                                 <td style="text-align: center;">{{ $asig->seccion }}</td>
                                                 <td style="text-align: center;">
                                                     {!! $asig->presento_informe ? '<span class="tag-si">Sí</span>' : '<span class="tag-no">No</span>' !!}
-                                                    @if ($asig->presento_informe && $docenteInf)
-                                                        <div class="no-print" style="margin-top: 4px;">
-                                                            <button type="button" class="btn-ver-docente-inline"
-                                                                onclick="abrirModalDocenteConsultar({{ $docenteInf->id }}, '{{ addslashes($asig->docente_nombre) }}', '{{ addslashes($asig->asignatura) }}')"
-                                                                title="Visualizar informe entregado por el docente">
-                                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                                    <circle cx="12" cy="12" r="3"></circle>
-                                                                </svg>
-                                                                <span>Ver</span>
-                                                            </button>
-                                                        </div>
-                                                    @endif
                                                 </td>
                                                 <td style="text-align: center;">
                                                     {!! $asig->tiene_sala_reuniones ? '<span class="tag-si">Sí</span>' : '<span class="tag-no">No</span>' !!}
@@ -1436,66 +1388,6 @@
         </div>
     </div>
 
-    <!-- Modal para consultar informe de docente desde el informe de coordinación -->
-    <div id="modalDocenteConsultar" class="no-print"
-        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.7); z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-        <div style="background: #ffffff; width: 95vw; max-width: 980px; height: 90vh; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-            <div style="background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h3 id="modalDocenteConsTitulo" style="margin: 0; font-size: 15px; color: #0b2341; font-weight: 700;">Informe de Actividades Docente</h3>
-                    <p id="modalDocenteConsSubtitulo" style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">Documento institucional oficial FARUSAC</p>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <a href="#" id="modalDocenteConsTabBtn" target="_blank"
-                        style="padding: 6px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-weight: 600;">
-                        <span>Abrir en pestaña</span>
-                    </a>
-                    <button type="button" onclick="cerrarModalDocenteConsultar()"
-                        style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b; padding: 4px 8px; line-height: 1;">✕</button>
-                </div>
-            </div>
-            <div style="flex: 1; position: relative;">
-                <iframe id="iframeDocenteCons" src="about:blank" style="width: 100%; height: 100%; border: none;"></iframe>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function abrirModalDocenteConsultar(docenteInfId, docenteNombre, cursoNombre) {
-            const modal = document.getElementById('modalDocenteConsultar');
-            const iframe = document.getElementById('iframeDocenteCons');
-            const tabBtn = document.getElementById('modalDocenteConsTabBtn');
-            const titulo = document.getElementById('modalDocenteConsTitulo');
-            const subtitulo = document.getElementById('modalDocenteConsSubtitulo');
-
-            const baseApp = '{{ url('/') }}';
-            const rawUrl = baseApp + '/coordinador/informes/' + docenteInfId + '/ver';
-
-            if (titulo && cursoNombre) titulo.textContent = 'Informe Docente - ' + cursoNombre;
-            if (subtitulo && docenteNombre) subtitulo.textContent = docenteNombre + ' • Documento institucional oficial FARUSAC';
-            if (tabBtn) tabBtn.href = rawUrl;
-            if (iframe) iframe.src = rawUrl + '?embed=1';
-
-            if (modal) {
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            }
-        }
-
-        function cerrarModalDocenteConsultar() {
-            const modal = document.getElementById('modalDocenteConsultar');
-            const iframe = document.getElementById('iframeDocenteCons');
-            if (modal) {
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }
-            if (iframe) iframe.src = 'about:blank';
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') cerrarModalDocenteConsultar();
-        });
-    </script>
 </body>
 
 </html>

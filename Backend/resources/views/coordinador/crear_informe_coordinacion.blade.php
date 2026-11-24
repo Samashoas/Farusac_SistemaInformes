@@ -232,35 +232,11 @@
 
                                             // Buscar informe docente correspondiente
                                             $docenteInformeId = is_array($asig) ? ($asig['docente_informe_id'] ?? null) : null;
-                                            if (!$docenteInformeId && isset($docenteInformes) && $docenteInformes->isNotEmpty()) {
-                                                $docenteInf = $docenteInformes->first(function ($item) use ($cursoId, $docenteNombre, $docenteId, $nombreAsignatura, $seccion) {
-                                                    if ($cursoId && (int)$item->curso_id === (int)$cursoId) {
-                                                        if ($docenteId && (int)$item->usuario_id === (int)$docenteId) {
-                                                            return true;
-                                                        }
-                                                        if ($docenteNombre && mb_strtolower(trim($item->usuario?->nombre ?? '')) === mb_strtolower(trim($docenteNombre))) {
-                                                            return true;
-                                                        }
-                                                    }
-                                                    if ($cursoId && (int)$item->curso_id === (int)$cursoId && !$docenteNombre) {
-                                                        return true;
-                                                    }
-                                                    if ($item->curso && mb_strtolower(trim($item->curso->nombre_curso ?? '')) === mb_strtolower(trim($nombreAsignatura))
-                                                        && mb_strtolower(trim($item->curso->seccion ?? '')) === mb_strtolower(trim($seccion))) {
-                                                        if (!$docenteNombre || mb_strtolower(trim($item->usuario?->nombre ?? '')) === mb_strtolower(trim($docenteNombre))) {
-                                                            return true;
-                                                        }
-                                                    }
-                                                    return false;
+                                            if (!$docenteInformeId && isset($docenteInformes)) {
+                                                $docenteInf = $docenteInformes->first(function ($item) use ($cursoId, $docenteNombre) {
+                                                    return (int)$item->curso_id === (int)$cursoId
+                                                        && (!$docenteNombre || mb_strtolower(trim($item->usuario?->nombre ?? '')) === mb_strtolower(trim($docenteNombre)));
                                                 });
-
-                                                if (!$docenteInf && $cursoId) {
-                                                    $candidatos = $docenteInformes->filter(fn($it) => (int)$it->curso_id === (int)$cursoId);
-                                                    if ($candidatos->count() === 1) {
-                                                        $docenteInf = $candidatos->first();
-                                                    }
-                                                }
-
                                                 $docenteInformeId = $docenteInf ? $docenteInf->id : null;
                                             }
                                             $docenteId = is_array($asig) ? ($asig['docente_id'] ?? '') : '';
@@ -272,7 +248,7 @@
                                                 <div class="col-docente-report-action" data-curso-id="{{ $cursoId }}">
                                                     @if ($docenteInformeId)
                                                         <button type="button" class="btn-ver-docente"
-                                                            onclick="abrirModalInformeDocente({{ $docenteInformeId }}, '{{ addslashes($docenteNombre) }}', '{{ addslashes($nombreAsignatura) }}')"
+                                                            onclick="abrirModalInformeDocente({{ $docenteInformeId }})"
                                                             title="Visualizar informe entregado por el docente">
                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                                                 stroke="currentColor" stroke-width="2.2">
@@ -678,16 +654,6 @@
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <a href="#" id="modalDocenteTabBtn" target="_blank"
-                        style="padding: 7px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-weight: 600;"
-                        title="Abrir en pestaña completa del navegador">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                            <polyline points="15 3 21 3 21 9"></polyline>
-                            <line x1="10" y1="14" x2="21" y2="3"></line>
-                        </svg>
-                        <span>Pestaña</span>
-                    </a>
                     <button type="button" class="btn-submit-action" onclick="imprimirIframeDocente()"
                         style="padding: 7px 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"

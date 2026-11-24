@@ -182,21 +182,12 @@ class CoordinadorController extends Controller
         $filasAsignaturas   = $res['datos'];
         $programasIniciales = $res['programas'];
 
-        $docenteInformesQuery = Informe::with(['usuario', 'semanas', 'curso'])
+        $docenteInformesQuery = Informe::with(['usuario', 'semanas'])
             ->whereIn('curso_id', $cursosArea->pluck('id')->toArray())
-            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado', 'borrador']);
+            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado']);
 
         if (!empty($mesDefecto)) {
             $docenteInformesQuery->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower(trim($mesDefecto))]);
-        }
-
-        if (!empty($periodoDefecto)) {
-            $cleanPeriodo = trim(preg_replace('/\d{4}/', '', $periodoDefecto));
-            $docenteInformesQuery->where(function ($q) use ($periodoDefecto, $cleanPeriodo) {
-                $q->where('periodo', trim($periodoDefecto))
-                  ->orWhere('periodo', 'LIKE', '%' . $cleanPeriodo . '%')
-                  ->orWhereRaw('LOWER(TRIM(periodo)) LIKE ?', ['%' . mb_strtolower($cleanPeriodo) . '%']);
-            });
         }
 
         $docenteInformes = $docenteInformesQuery->get();
@@ -263,24 +254,12 @@ class CoordinadorController extends Controller
         $cursoIds          = $cursosArea->pluck('id')->toArray();
         $asignaturasUnicas = $cursosArea->pluck('nombre_curso')->unique()->values();
 
-        $docenteInformesQuery = Informe::with(['usuario', 'semanas', 'curso'])
+        $docenteInformes = Informe::with(['usuario', 'semanas'])
             ->whereIn('curso_id', $cursoIds)
-            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado', 'borrador']);
-
-        if (!empty($informe->mes)) {
-            $docenteInformesQuery->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower(trim($informe->mes))]);
-        }
-
-        if (!empty($informe->periodo)) {
-            $cleanPeriodo = trim(preg_replace('/\d{4}/', '', $informe->periodo));
-            $docenteInformesQuery->where(function ($q) use ($informe, $cleanPeriodo) {
-                $q->where('periodo', trim($informe->periodo))
-                  ->orWhere('periodo', 'LIKE', '%' . $cleanPeriodo . '%')
-                  ->orWhereRaw('LOWER(TRIM(periodo)) LIKE ?', ['%' . mb_strtolower($cleanPeriodo) . '%']);
-            });
-        }
-
-        $docenteInformes = $docenteInformesQuery->get();
+            ->where('periodo', $informe->periodo)
+            ->where('mes', $informe->mes)
+            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado'])
+            ->get();
 
         $programasGuardados = $informe->programas->keyBy('asignatura');
         $programasCompletos = $asignaturasUnicas->map(function ($nombreCurso) use ($programasGuardados, $cursosArea, $docenteInformes) {
@@ -447,27 +426,6 @@ class CoordinadorController extends Controller
 
         $informe = $informeCoordinacion;
 
-        // Cargar los informes docentes asociados para permitir su consulta desde el informe de coordinación
-        $cursosArea = $this->coordinacionService->getCursosPorArea($informe->area, session('coordinador_carrera'), $user);
-        $cursoIds = $cursosArea->pluck('id')->toArray();
-        $docenteInformesQuery = Informe::with(['usuario', 'semanas', 'curso'])
-            ->whereIn('curso_id', $cursoIds)
-            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado', 'borrador']);
-
-        if (!empty($informe->mes)) {
-            $docenteInformesQuery->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower(trim($informe->mes))]);
-        }
-
-        if (!empty($informe->periodo)) {
-            $cleanPeriodo = trim(preg_replace('/\d{4}/', '', $informe->periodo));
-            $docenteInformesQuery->where(function ($q) use ($informe, $cleanPeriodo) {
-                $q->where('periodo', trim($informe->periodo))
-                  ->orWhere('periodo', 'LIKE', '%' . $cleanPeriodo . '%')
-                  ->orWhereRaw('LOWER(TRIM(periodo)) LIKE ?', ['%' . mb_strtolower($cleanPeriodo) . '%']);
-            });
-        }
-        $docenteInformes = $docenteInformesQuery->get();
-
-        return view('coordinador.ver_informe_coordinacion', compact('user', 'informe', 'docenteInformes'));
+        return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
     }
 }
