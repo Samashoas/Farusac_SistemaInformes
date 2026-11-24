@@ -67,6 +67,10 @@ const informeId = informeCoordCfg.informeId || "";
             if (modal) {
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
+                if (modalId === 'modalVerInformeDocente') {
+                    const iframe = document.getElementById('iframeDocenteInforme');
+                    if (iframe) iframe.src = 'about:blank';
+                }
             }
         }
 
@@ -152,7 +156,8 @@ const informeId = informeCoordCfg.informeId || "";
 
             if (loader) loader.style.display = 'flex';
 
-            const urlInforme = `/coordinador/informes/${docenteInformeId}/ver`;
+            const rawUrl = `/coordinador/informes/${docenteInformeId}/ver`;
+            const urlInforme = window.route ? window.route(rawUrl) : rawUrl;
 
             if (iframe) {
                 iframe.src = `${urlInforme}?embed=1`;

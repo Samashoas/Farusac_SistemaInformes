@@ -248,6 +248,8 @@ window.openReportPreviewModal = function (type, id, title, subtitle, customUrl) 
         }
     }
 
+    verUrl = window.route ? window.route(verUrl) : verUrl;
+
     if (iframe) {
         const separator = verUrl.includes('?') ? '&' : '?';
         iframe.src = `${verUrl}${separator}embed=1`;
