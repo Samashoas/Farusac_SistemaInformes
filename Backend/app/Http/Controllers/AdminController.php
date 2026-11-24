@@ -388,7 +388,7 @@ class AdminController extends Controller
         } catch (Exception $e) {
             Log::error('Error al descargar ZIP de informes: ' . $e->getMessage(), ['exception' => $e]);
 
-            return redirect()->back()->with('error', 'Ocurrió un error al generar la descarga comprimida de los informes.');
+            return redirect()->back()->with('error', $e->getMessage() ?: 'Ocurrió un error al generar la descarga comprimida de los informes.');
         }
     }
 
@@ -433,7 +433,7 @@ class AdminController extends Controller
         ));
     }
 
-    public function descargarSeleccionadosZip(Request $request): BinaryFileResponse|JsonResponse
+    public function descargarSeleccionadosZip(Request $request): BinaryFileResponse|RedirectResponse|JsonResponse
     {
         $user       = Auth::user();
         $docenteIds = $this->sanitizarIds($request->input('docente_ids', []));
@@ -444,10 +444,14 @@ class AdminController extends Controller
         } catch (Exception $e) {
             Log::error('Error al descargar ZIP de seleccionados: ' . $e->getMessage(), ['exception' => $e]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Ocurrió un error al procesar la descarga comprimida de los informes seleccionados.',
-            ], 422);
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage() ?: 'Ocurrió un error al procesar la descarga comprimida de los informes seleccionados.',
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', $e->getMessage() ?: 'Ocurrió un error al procesar la descarga comprimida de los informes seleccionados.');
         }
     }
 

@@ -163,6 +163,9 @@ class InformeExportService
      */
     public function descargarInformesZip(Request|array $filtros, User $user): BinaryFileResponse
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
         $filtrados = $this->obtenerInformesFiltrados($filtros);
 
         $informesDocentes     = $filtrados['docentes'];
@@ -171,7 +174,7 @@ class InformeExportService
         $anioFiltro           = $filtrados['anio'] ?? date('Y');
 
         if ($informesDocentes->isEmpty() && $informesCoordinacion->isEmpty()) {
-            throw new Exception('No se encontraron informes para los filtros seleccionados.');
+            throw new Exception('No se encontraron informes para los filtros seleccionados (Mes: ' . $mesFiltro . ', Año: ' . $anioFiltro . '). Verifique los filtros aplicados.');
         }
 
         if (!class_exists('ZipArchive')) {
@@ -182,24 +185,44 @@ class InformeExportService
         $zipFileName = tempnam(sys_get_temp_dir(), 'farusac_pdf_zip_');
 
         if ($zip->open($zipFileName, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new Exception('No se pudo crear el archivo ZIP temporal.');
+            throw new Exception('No se pudo crear el archivo ZIP temporal en el servidor.');
         }
 
+        $archivosGenerados = 0;
         $usedDocentePaths = [];
         foreach ($informesDocentes as $inf) {
-            $pathInfo  = $this->resolveDocenteZipPath($inf, $mesFiltro, (string) $anioFiltro, $usedDocentePaths);
-            $pdfBinary = $this->pdfService->generarPdfDocente($inf, $user);
-            $zip->addFromString($pathInfo['fullPath'], $pdfBinary);
+            $pathInfo = $this->resolveDocenteZipPath($inf, $mesFiltro, (string) $anioFiltro, $usedDocentePaths);
+            try {
+                $pdfBinary = $this->pdfService->generarPdfDocente($inf, $user);
+                $zip->addFromString($pathInfo['fullPath'], $pdfBinary);
+                $archivosGenerados++;
+            } catch (\Throwable $e) {
+                Log::warning("Fallo al generar PDF para informe docente ID {$inf->id} en ZIP: " . $e->getMessage());
+                $errPath = str_replace('.pdf', '_ADVERTENCIA.txt', $pathInfo['fullPath']);
+                $zip->addFromString($errPath, "No se pudo generar el archivo PDF para este informe docente.\nID: {$inf->id}\nError: " . $e->getMessage());
+            }
         }
 
         $usedCoordPaths = [];
         foreach ($informesCoordinacion as $infC) {
-            $pathInfo  = $this->resolveCoordZipPath($infC, $mesFiltro, (string) $anioFiltro, $usedCoordPaths);
-            $pdfBinary = $this->pdfService->generarPdfCoordinacion($infC, $user);
-            $zip->addFromString($pathInfo['fullPath'], $pdfBinary);
+            $pathInfo = $this->resolveCoordZipPath($infC, $mesFiltro, (string) $anioFiltro, $usedCoordPaths);
+            try {
+                $pdfBinary = $this->pdfService->generarPdfCoordinacion($infC, $user);
+                $zip->addFromString($pathInfo['fullPath'], $pdfBinary);
+                $archivosGenerados++;
+            } catch (\Throwable $e) {
+                Log::warning("Fallo al generar PDF para informe de coordinación ID {$infC->id} en ZIP: " . $e->getMessage());
+                $errPath = str_replace('.pdf', '_ADVERTENCIA.txt', $pathInfo['fullPath']);
+                $zip->addFromString($errPath, "No se pudo generar el archivo PDF para este informe de coordinación.\nID: {$infC->id}\nError: " . $e->getMessage());
+            }
         }
 
         $zip->close();
+
+        if ($archivosGenerados === 0) {
+            @unlink($zipFileName);
+            throw new Exception('No fue posible procesar los archivos PDF de los informes seleccionados mediante el motor Chromium.');
+        }
 
         $downloadName = "Informes_FARUSAC_{$mesFiltro}_{$anioFiltro}.zip";
         return response()->download($zipFileName, $downloadName)->deleteFileAfterSend(true);
@@ -210,6 +233,9 @@ class InformeExportService
      */
     public function descargarSeleccionadosZip(array $docenteIds, array $coordIds, User $user): BinaryFileResponse
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
         $docenteIds = array_values(array_filter(array_map('intval', $docenteIds), fn (int $id) => $id > 0));
         $coordIds   = array_values(array_filter(array_map('intval', $coordIds), fn (int $id) => $id > 0));
 
@@ -222,7 +248,7 @@ class InformeExportService
             : collect();
 
         if ($informesDocentes->isEmpty() && $informesCoordinacion->isEmpty()) {
-            throw new Exception('No se seleccionó ningún informe.');
+            throw new Exception('No se seleccionó ningún informe para descargar.');
         }
 
         if (!class_exists('ZipArchive')) {
@@ -233,24 +259,44 @@ class InformeExportService
         $zipFileName = tempnam(sys_get_temp_dir(), 'farusac_sel_pdf_zip_');
 
         if ($zip->open($zipFileName, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new Exception('Error al crear archivo ZIP temporal.');
+            throw new Exception('Error al crear el archivo ZIP temporal en el servidor.');
         }
 
+        $archivosGenerados = 0;
         $usedDocentePaths = [];
         foreach ($informesDocentes as $inf) {
-            $pathInfo  = $this->resolveDocenteZipPath($inf, 'Mes', date('Y'), $usedDocentePaths);
-            $pdfBinary = $this->pdfService->generarPdfDocente($inf, $user);
-            $zip->addFromString($pathInfo['fullPath'], $pdfBinary);
+            $pathInfo = $this->resolveDocenteZipPath($inf, 'Mes', date('Y'), $usedDocentePaths);
+            try {
+                $pdfBinary = $this->pdfService->generarPdfDocente($inf, $user);
+                $zip->addFromString($pathInfo['fullPath'], $pdfBinary);
+                $archivosGenerados++;
+            } catch (\Throwable $e) {
+                Log::warning("Fallo al generar PDF para informe seleccionado docente ID {$inf->id}: " . $e->getMessage());
+                $errPath = str_replace('.pdf', '_ADVERTENCIA.txt', $pathInfo['fullPath']);
+                $zip->addFromString($errPath, "No se pudo generar el archivo PDF para este informe docente.\nID: {$inf->id}\nError: " . $e->getMessage());
+            }
         }
 
         $usedCoordPaths = [];
         foreach ($informesCoordinacion as $infC) {
-            $pathInfo  = $this->resolveCoordZipPath($infC, 'Mes', date('Y'), $usedCoordPaths);
-            $pdfBinary = $this->pdfService->generarPdfCoordinacion($infC, $user);
-            $zip->addFromString($pathInfo['fullPath'], $pdfBinary);
+            $pathInfo = $this->resolveCoordZipPath($infC, 'Mes', date('Y'), $usedCoordPaths);
+            try {
+                $pdfBinary = $this->pdfService->generarPdfCoordinacion($infC, $user);
+                $zip->addFromString($pathInfo['fullPath'], $pdfBinary);
+                $archivosGenerados++;
+            } catch (\Throwable $e) {
+                Log::warning("Fallo al generar PDF para informe seleccionado de coordinación ID {$infC->id}: " . $e->getMessage());
+                $errPath = str_replace('.pdf', '_ADVERTENCIA.txt', $pathInfo['fullPath']);
+                $zip->addFromString($errPath, "No se pudo generar el archivo PDF para este informe de coordinación.\nID: {$infC->id}\nError: " . $e->getMessage());
+            }
         }
 
         $zip->close();
+
+        if ($archivosGenerados === 0) {
+            @unlink($zipFileName);
+            throw new Exception('No fue posible procesar los archivos PDF de los informes seleccionados mediante el motor Chromium.');
+        }
 
         return response()->download($zipFileName, 'Informes_Seleccionados_FARUSAC.zip')->deleteFileAfterSend(true);
     }

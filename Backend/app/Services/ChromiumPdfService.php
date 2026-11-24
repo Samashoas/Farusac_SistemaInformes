@@ -168,11 +168,12 @@ class ChromiumPdfService
 
         $tempHtml = tempnam(sys_get_temp_dir(), 'farusac_html_') . '.html';
         $tempPdf = tempnam(sys_get_temp_dir(), 'farusac_pdf_') . '.pdf';
+        $tempUserDataDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'farusac_chrome_' . uniqid('', true);
+        @mkdir($tempUserDataDir, 0700, true);
 
         file_put_contents($tempHtml, $html);
 
-        $flags = [
-            '--headless',
+        $baseFlags = [
             '--disable-gpu',
             '--allow-file-access-from-files',
             '--no-pdf-header-footer',
@@ -181,40 +182,85 @@ class ChromiumPdfService
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
+            '--disable-crash-reporter',
+            '--disable-background-networking',
+            '--disable-features=OptimizationGuideModelDownloading,OptimizationHints',
+            "--crash-dumps-dir={$tempUserDataDir}",
+            "--user-data-dir={$tempUserDataDir}",
             "--print-to-pdf={$tempPdf}",
             $tempHtml,
         ];
 
-        // Ejecución segura mediante array de argumentos: no invoca shell, previniendo inyección de comandos
-        $command = array_merge([$chromiumPath], $flags);
-
-        try {
-            $processResult = Process::timeout(60)->run($command);
-            if (!$processResult->successful()) {
-                Log::warning('Chromium PDF finalizó con código no exitoso: ' . $processResult->exitCode(), [
-                    'error' => $processResult->errorOutput(),
-                ]);
-            }
-        } catch (\Throwable $e) {
-            Log::error('Fallo en la ejecución de Chromium Process: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
-            throw new Exception('Error al ejecutar el motor de Chromium para generar el PDF: ' . $e->getMessage(), 0, $e);
-        }
+        // Intentar primero con --headless=new (estándar moderno Chrome/Edge >= 112), con fallback a --headless
+        $attempts = [
+            array_merge([$chromiumPath, '--headless=new'], $baseFlags),
+            array_merge([$chromiumPath, '--headless'], $baseFlags),
+        ];
 
         $pdfBinary = null;
-        if (file_exists($tempPdf) && filesize($tempPdf) > 0) {
-            $pdfBinary = file_get_contents($tempPdf);
+        $lastException = null;
+
+        try {
+            foreach ($attempts as $command) {
+                try {
+                    $processResult = Process::timeout(45)->run($command);
+
+                    if (file_exists($tempPdf) && filesize($tempPdf) > 0) {
+                        $pdfBinary = file_get_contents($tempPdf);
+                        break;
+                    }
+
+                    if (!$processResult->successful()) {
+                        Log::warning('Intento de renderizado Chromium finalizó con código no exitoso: ' . $processResult->exitCode(), [
+                            'headless_mode' => $command[1] ?? '',
+                            'error'         => $processResult->errorOutput(),
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    $lastException = $e;
+                    Log::warning('Excepción al ejecutar subproceso Chromium: ' . $e->getMessage());
+                }
+            }
+        } finally {
+            @unlink($tempHtml);
+            @unlink($tempPdf);
+            $this->borrarDirectorioRecursivo($tempUserDataDir);
         }
 
-        @unlink($tempHtml);
-        @unlink($tempPdf);
-
         if (!$pdfBinary) {
-            throw new Exception('No se pudo generar el archivo PDF con el motor de Chromium.');
+            $msg = $lastException ? $lastException->getMessage() : 'No se pudo generar el archivo PDF con el motor de Chromium.';
+            throw new Exception($msg, 0, $lastException);
         }
 
         return $pdfBinary;
+    }
+
+    /**
+     * Limpieza segura de directorios temporales de perfil de Chromium.
+     */
+    protected function borrarDirectorioRecursivo(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        try {
+            $items = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+
+            foreach ($items as $item) {
+                if ($item->isDir()) {
+                    @rmdir($item->getRealPath());
+                } else {
+                    @unlink($item->getRealPath());
+                }
+            }
+            @rmdir($dir);
+        } catch (\Throwable) {
+            // Ignorar fallos menores de liberación de locks del OS
+        }
     }
 
     /**

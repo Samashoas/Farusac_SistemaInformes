@@ -235,15 +235,24 @@ function viewSelectedPdf() {
 }
 
 function openBulkDownloadModal() {
-    const activeMes = document.getElementById('filterMes').value;
-    const activeAnio = document.getElementById('filterAnio').value;
-    const activeCarrera = document.getElementById('filterCarrera').value;
+    const filterMes = document.getElementById('filterMes');
+    const filterAnio = document.getElementById('filterAnio');
+    const filterCarrera = document.getElementById('filterCarrera');
 
-    if (activeMes) document.getElementById('bulkMes').value = activeMes;
-    if (activeAnio) document.getElementById('bulkAnio').value = activeAnio;
-    if (activeCarrera) document.getElementById('bulkCarrera').value = activeCarrera;
+    const bulkMes = document.getElementById('bulkMes');
+    const bulkAnio = document.getElementById('bulkAnio');
+    const bulkCarrera = document.getElementById('bulkCarrera');
 
+    if (bulkMes) bulkMes.value = (filterMes && filterMes.value) ? filterMes.value : '';
+    if (bulkAnio) bulkAnio.value = (filterAnio && filterAnio.value) ? filterAnio.value : '';
+    if (bulkCarrera) bulkCarrera.value = (filterCarrera && filterCarrera.value) ? filterCarrera.value : '';
+
+    updateBulkPreviewCount();
     document.getElementById('bulkDownloadModal').classList.add('active');
+}
+
+function updateBulkPreviewCount() {
+    // Función de control para los eventos onchange del modal de descarga
 }
 
 function closeBulkDownloadModal() {
@@ -271,19 +280,22 @@ function triggerBulkZip(e) {
     const params = getBulkParams();
 
     if (window.showToast) window.showToast('Generando archivo ZIP de informes...', 'info');
-    window.location.href = `/admin/informes/descargar-zip?${params}`;
+    const baseUrl = window.route ? window.route('/admin/informes/descargar-zip') : '/admin/informes/descargar-zip';
+    window.location.href = `${baseUrl}?${params}`;
 }
 
 function triggerBulkPdf(e) {
     e.preventDefault();
     const params = getBulkParams();
-    window.open(`/admin/informes/consolidado-pdf?${params}`, '_blank');
+    const baseUrl = window.route ? window.route('/admin/informes/consolidado-pdf') : '/admin/informes/consolidado-pdf';
+    window.open(`${baseUrl}?${params}`, '_blank');
 }
 
 function triggerBulkCsv(e) {
     e.preventDefault();
     const params = getBulkParams();
-    window.location.href = `/admin/informes/descargar-csv?${params}`;
+    const baseUrl = window.route ? window.route('/admin/informes/descargar-csv') : '/admin/informes/descargar-csv';
+    window.location.href = `${baseUrl}?${params}`;
     if (window.showToast) window.showToast('Descargando planilla de control CSV...', 'info');
 }
 
@@ -311,9 +323,10 @@ async function executeDelete() {
     btn.disabled = true;
     btn.textContent = 'ELIMINANDO...';
 
-    const url = (deleteType === 'docente')
+    const rawPath = (deleteType === 'docente')
         ? `/admin/informes/docente/${deleteTargetId}`
         : `/admin/informes/coordinacion/${deleteTargetId}`;
+    const url = window.route ? window.route(rawPath) : rawPath;
 
     try {
         const response = await fetch(url, {

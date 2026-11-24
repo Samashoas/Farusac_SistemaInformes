@@ -516,9 +516,9 @@
                     <div class="form-group">
                         <label class="form-label" for="bulkMes">Mes a Descargar</label>
                         <select id="bulkMes" class="form-control" onchange="updateBulkPreviewCount()">
-                            <option value="">Todos los Meses</option>
+                            <option value="" selected>Todos los Meses</option>
                             @foreach (['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'] as $m)
-                                <option value="{{ $m }}" {{ $m === 'Septiembre' ? 'selected' : '' }}>{{ $m }}</option>
+                                <option value="{{ $m }}">{{ $m }}</option>
                             @endforeach
                         </select>
                     </div>
