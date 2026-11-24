@@ -1,755 +1,335 @@
-# 🏛️ Guía Práctica de Despliegue en Debian 12 — FARUSAC Sistema de Informes
+# Guía de Despliegue en Debian 12 — FARUSAC Sistema de Informes
 
-**Entorno:** Máquina Virtual Local (Debian 12 Bookworm)  
-**Objetivo:** Simular con 100% de fidelidad el despliegue real en producción, utilizando un dominio real gratuito y permanente con HTTPS para validar Google OAuth institucional.  
-**Restricción clave:** Sin modificar archivos de configuración del sistema operativo sensibles (como `php.ini`). Toda la configuración se maneja mediante Git, `.env`, `.htaccess` y configuración básica de Apache.
-
----
-
-## 📌 1. Arquitectura de Despliegue Confirmada: Subdirectorio / Subruta (`/informes`)
-
-El despliegue del sistema en producción se realizará de forma definitiva bajo la modalidad de **Subdirectorio / Subruta**:
-
-* **Dominio institucional existente:** `https://farusac.com` (sitio web principal de la Facultad de Arquitectura).
-* **Ruta asignada al Sistema de Informes:** `https://farusac.com/informes`
-* **Entorno de práctica en tu VM local:** `https://farusac-pruebas.ngrok-free.app/informes`
-
-### ¿Qué implica técnicamente desplegar bajo un Subdirectorio?
-A diferencia de un subdominio (donde la raíz del servidor apunta directamente a la carpeta pública), en un despliegue por subdirectorio el dominio principal sirve el portal institucional y la subruta `/informes` se conecta a Laravel. Para que esto funcione de forma transparente y sin errores de rutas, esta guía implementa los 4 pilares técnicos requeridos:
-
-1. **Directiva `Alias /informes` en Apache:** Le indica al servidor web que cualquier petición dirigida a `/informes` debe resolverse en el directorio `/var/www/Farusac_SistemaInformes/Backend/public`.
-2. **Directiva `RewriteBase /informes/`:** Instruye al motor de reescritura de Apache para que todas las rutas internas de Laravel (como `/login`, `/docente/dashboard`, etc.) se resuelvan respetando el prefijo `/informes/` y nunca se vayan a la raíz del dominio principal.
-3. **Variable `APP_URL` en `.env`:** Se define como `https://farusac.com/informes` (o la URL de ngrok con `/informes`). Con esto, los helpers `route()`, `url()`, la carga de estilos CSS/JS y las redirecciones del sistema anteponen automáticamente la subruta `/informes`.
-4. **Google OAuth con Subruta:** Google Cloud Console requiere que el **Origen de JavaScript** sea el dominio base sin rutas (`https://farusac.com`), mientras que el **URI de Redirección Autorizado** incluya la subruta completa (`https://farusac.com/informes/auth/google/callback`).
-
-Toda la configuración en esta guía está diseñada y optimizada al 100% para esta arquitectura de subdirectorio.
+* **Arquitectura:** Subdirectorio institucional `/informes`.
+* **Stack:** Apache 2.4, PHP 8.4, MariaDB 10.11+, Chromium (PDFs) y Composer.
 
 ---
 
-## 🌐 2. Dominio Real Gratuito y Permanente con HTTPS
+## Requisitos Previos
+* Servidor con Debian 12 y usuario con privilegios `sudo`.
+* Dominio con certificado SSL/HTTPS activo.
+* Proyecto en Google Cloud Console para Google OAuth.
 
-Google OAuth rechaza direcciones IP directas (como `http://192.168.1.50`) y exige **HTTPS con un certificado SSL válido**. Además, necesitas que la URL sea **fija y permanente** para no tener que modificar Google Cloud Console cada vez que reinicies la máquina virtual.
+---
 
-Para lograr esto sin costo, sin registrar tarjetas y sin abrir puertos en tu router doméstico, utilizaremos **ngrok con Dominio Estático Gratuito**.
-
-### 2.1 Obtener el Dominio Estático Gratuito en ngrok
-1. Regístrate gratis en [ngrok.com](https://ngrok.com) (puedes iniciar sesión con Google o GitHub).
-2. En el panel izquierdo, ve a **Cloud Edge** > **Domains** (o directo a [dashboard.ngrok.com/cloud-edge/domains](https://dashboard.ngrok.com/cloud-edge/domains)).
-3. Haz clic en **Create Domain** (o *New Domain*).
-4. ngrok te asignará un subdominio gratuito permanente para siempre, por ejemplo:
-   ```text
-   farusac-pruebas.ngrok-free.app
-   ```
-   *(Copia este dominio, será tu URL pública fija).*
-5. En el menú izquierdo ve a **Getting Started** > **Your Authtoken** y copia tu token secreto de autenticación.
-
-### 2.2 Instalar y Conectar ngrok en Debian 12
-
-Para exponer el servidor web local con HTTPS y un dominio permanente, instalaremos el agente de ngrok.
-
-> [!WARNING] Advertencia de Compatibilidad con Debian 12 (Bookworm)
-> En Debian 12, los métodos antiguos de instalación que guardan llaves `.asc` en texto plano en `/etc/apt/trusted.gpg.d/` son rechazados por APT generando el error `NO_PUBKEY 0E61D3BBAAEE37FE`. Por ello, se recomienda la instalación directa del binario oficial (Opción A) o el uso estricto del estándar de keyrings con llave desarmada (Opción B).
-
-#### Opción A (Recomendada y Más Directa): Instalación del Binario Oficial
-ngrok es un ejecutable autocontenido. La forma más limpia, rápida y recomendada en Debian 12 es descargar el ejecutable oficial directamente a `/usr/local/bin`, sin necesidad de añadir repositorios externos de APT:
+## 1. Instalación del Stack Web (PHP 8.4, Apache, MariaDB y Chromium)
 
 ```bash
-# Descargar y extraer directamente el binario oficial de ngrok v3 para Linux AMD64
-curl -fsSL https://bin.ngrok.com/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz | sudo tar -xz -C /usr/local/bin
-
-# Comprobar la instalación:
-ngrok version
-```
-
----
-
-#### Opción B (Alternativa por Gestor de Paquetes APT):
-Si prefieres gestionar el software mediante el comando `apt`, debes seguir obligatoriamente el estándar moderno de Debian 12 (desarmando la llave GPG a formato binario e importándola en `/etc/apt/keyrings/`):
-
-```bash
-# 1. Crear el directorio oficial de keyrings
-sudo mkdir -p /etc/apt/keyrings
-
-# 2. Descargar y desarmar la llave pública GPG oficial a binario OpenPGP (.gpg)
-curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo gpg --dearmor -o /etc/apt/keyrings/ngrok.gpg
-
-# 3. Registrar el repositorio oficial vinculado a la llave firmada
-echo "deb [signed-by=/etc/apt/keyrings/ngrok.gpg] https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-
-# 4. Actualizar listas e instalar el paquete
-sudo apt update && sudo apt install -y ngrok
-```
-
----
-
-#### 2.2.1 Configurar Authtoken y Levantar el Túnel HTTPS
-Con ngrok ya instalado:
-
-```bash
-# 1. Configurar tu token de autenticación
-ngrok config add-authtoken TU_AUTHTOKEN_AQUI
-
-# 2. Iniciar el túnel hacia Apache (puerto 80) usando tu dominio estático asignado:
-ngrok http 80 --url=farusac-pruebas.ngrok-free.app
-```
-
-Verás en pantalla que tu túnel está activo con HTTPS:
-```text
-Forwarding   https://farusac-pruebas.ngrok-free.app -> http://localhost:80
-```
-
-> [!TIP]
-> Puedes dejar este comando corriendo en una pestaña separada de tu terminal o ejecutarlo en segundo plano. Tu dominio `https://farusac-pruebas.ngrok-free.app` **nunca cambiará**, lo que permite configurar Google OAuth una sola vez.
-
-#### 🛠️ Diagnóstico y Solución de Errores en ngrok:
-
-##### Caso: `reconnecting (failed to dial ngrok server... lookup connect.ngrok-agent.com: i/o timeout)`
-* **Causa Raíz:** El mensaje `lookup connect.ngrok-agent.com: i/o timeout` indica que la máquina virtual **no tiene resolución DNS** o **no tiene salida a Internet**, por lo que ngrok no puede resolver la dirección de los servidores de conexión.
-* **Diagnóstico rápido:**
-  ```bash
-  # 1. Probar conectividad IP directa:
-  ping -c 3 8.8.8.8
-
-  # 2. Probar resolución DNS de nombres:
-  ping -c 3 google.com
-  ```
-* **Solución según el resultado:**
-  * **Si `ping 8.8.8.8` responde pero `ping google.com` da timeout (Fallo de DNS):**
-    Los servidores DNS asignados por DHCP a tu VM no responden. Configura los DNS públicos de Google y Cloudflare en `/etc/resolv.conf`:
-    ```bash
-    sudo bash -c 'cat <<EOF > /etc/resolv.conf
-    nameserver 8.8.8.8
-    nameserver 1.1.1.1
-    EOF'
-    ```
-    Y vuelve a iniciar ngrok.
-  * **Si `ping 8.8.8.8` no responde (La máquina virtual no tiene internet):**
-    Revisa la configuración del hipervisor (VirtualBox o VMware):
-    1. Abre la configuración de tu máquina virtual y ve a la sección **Red (Network)**.
-    2. Asegúrate de que el **Adaptador 1** esté conectado a **NAT** o a **Adaptador Puente (Bridged)** (nunca en "Solo-anfitrión" o "Red Interna", ya que esos modos aíslan la VM de Internet).
-    3. Reinicia la red en Debian: `sudo systemctl restart networking` o reinicia la máquina virtual.
-
----
-
-## ⚙️ 3. Preparación del Servidor Debian 12 (Sin tocar `php.ini`)
-
-Todo lo requerido por Laravel y el sistema de FARUSAC se instala con paquetes estándar de Debian sin necesidad de modificar `php.ini`.
-
-### 3.1 Instalar el Stack Web (Apache, PHP 8.4, MariaDB, Git, Composer)
-
-> [!IMPORTANT] Requisito de Versión de PHP (PHP 8.4+)
-> El proyecto utiliza dependencias del ecosistema Symfony/Laravel (como `symfony/uid` y `symfony/var-dumper`) que requieren **PHP >= 8.4.1**. Dado que Debian 12 incluye por defecto PHP 8.2 en sus repositorios base, habilitamos el repositorio oficial del mantenedor de PHP para Debian (`deb.sury.org`) para instalar **PHP 8.4** de manera limpia y segura con `[signed-by]`.
-
-Ejecuta en tu terminal de Debian:
-
-```bash
-# 1. Actualizar lista de paquetes e instalar utilidades base
+# 1.1 Actualizar repositorios e instalar paquetes base
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y apt-transport-https ca-certificates curl lsb-release gnupg git unzip apache2 mariadb-server
+sudo apt install -y apt-transport-https ca-certificates curl lsb-release gnupg git unzip apache2 mariadb-server chromium chromium-sandbox
 
-# 2. Agregar repositorio oficial de PHP (Ondřej Surý) con clave GPG firmada
+# 1.2 Agregar repositorio oficial de PHP 8.4 (deb.sury.org)
 sudo curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
 echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list
 sudo apt update
 
-# 3. Instalar PHP 8.4 y todas las extensiones que requiere el sistema
+# 1.3 Instalar PHP 8.4 y módulos necesarios
 sudo apt install -y php8.4 php8.4-cli php8.4-common libapache2-mod-php8.4 \
                     php8.4-mysql php8.4-mbstring php8.4-xml php8.4-curl php8.4-zip php8.4-bcmath
 
-# 4. Asegurar que PHP 8.4 sea la versión activa por defecto
+# 1.4 Habilitar versión por defecto y módulos de Apache
 sudo update-alternatives --set php /usr/bin/php8.4
-sudo a2enmod php8.4
+sudo a2enmod php8.4 rewrite headers
+sudo systemctl restart apache2
 
-# 5. Instalar Chromium Headless (necesario para generar los PDFs institucionales)
-sudo apt install -y chromium chromium-sandbox
-
-# 6. Instalar Composer globalmente
+# 1.5 Instalar Composer globalmente
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 ```
 
-### 3.2 Habilitar Módulos de Apache Indispensables
-Laravel necesita `mod_rewrite` y `mod_headers` para gestionar las rutas y la seguridad:
-
-```bash
-sudo a2enmod rewrite headers
-sudo systemctl restart apache2
-```
-
 ---
 
-## 🗄️ 4. Configuración y Creación de la Base de Datos (MariaDB / MySQL)
-
-Antes de que Laravel pueda crear las tablas, el motor de base de datos debe estar activo y configurado con una base de datos vacía y un usuario con permisos asignados.
-
-### 4.1 Verificar que el Servicio esté en Ejecución
-En Debian 12, MariaDB se inicia automáticamente al instalarlo. Puedes verificar su estado con:
+## 2. Configuración de Base de Datos (MariaDB)
 
 ```bash
-sudo systemctl status mariadb
-```
-*(Debe mostrar `active (running)` en color verde).*
-
-### 4.2 Crear la Base de Datos y el Usuario de la Aplicación
-Accede a la consola de MariaDB como superusuario:
-
-```bash
+# 2.1 Ingresar a MariaDB
 sudo mysql -u root
 ```
 
-Dentro del prompt interactivo `MariaDB [(none)]>`, ejecuta las siguientes instrucciones SQL una por una:
-
+Ejecutar las siguientes instrucciones SQL:
 ```sql
--- 1. Crear la base de datos con soporte completo para caracteres en español (tildes, eñes) y emojis
+-- Crear base de datos en UTF-8
 CREATE DATABASE farusac_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- 2. Crear un usuario exclusivo para la aplicación (reemplaza 'TuPasswordSeguro2026!' por una clave robusta)
+-- Crear usuario con contraseña segura
 CREATE USER 'farusac_user'@'localhost' IDENTIFIED BY 'TuPasswordSeguro2026!';
-
--- 3. Otorgar permisos únicamente sobre la base de datos del sistema (principio de menor privilegio)
 GRANT ALL PRIVILEGES ON farusac_db.* TO 'farusac_user'@'localhost';
-
--- 4. Recargar los privilegios y salir
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
-### 4.3 Probar la Conexión del Nuevo Usuario
-Verifica desde la terminal que el nuevo usuario pueda conectarse exitosamente a la base de datos recién creada:
-
-```bash
-mysql -u farusac_user -p farusac_db
-```
-*Introduce la contraseña configurada. Si entras a la consola `MariaDB [farusac_db]>`, la conexión está perfecta. Escribe `exit` para salir.*
-
 ---
 
-## 📁 5. Despliegue de la Aplicación mediante Git Pull
-
-Este es el proceso exacto que ejecutará el administrador del servidor.
-
-### 5.1 Clonar el Repositorio
-Clonamos el proyecto en la carpeta estándar de aplicaciones web `/var/www`:
+## 3. Clonar Repositorio e Instalar Dependencias
 
 ```bash
+# 3.1 Clonar el proyecto en /var/www
 cd /var/www
 sudo git clone <URL_DE_TU_REPOSITORIO_GIT> Farusac_SistemaInformes
 cd Farusac_SistemaInformes/Backend
-```
 
-### 5.2 Instalar Dependencias de PHP
-
-Ejecuta en la carpeta `Backend`:
-
-```bash
+# 3.2 Instalar dependencias de producción
 sudo composer install --no-dev --optimize-autoloader
 ```
 
-> [!WARNING] Regla de Oro en Servidores: NUNCA ejecutes `composer update`
-> Aunque Composer sugiera en la consola *"Please run composer update"*, **jamás lo hagas en un servidor de producción o de pruebas**. El comando `composer update` recalcula todas las dependencias ignorando el archivo `composer.lock` congelado y puede instalar versiones no probadas que rompan el sistema. La solución siempre es asegurar que el entorno del servidor cumpla con los requisitos, no alterar las dependencias del proyecto.
+---
 
-#### 🛠️ Diagnóstico y Solución de Errores Comunes en el Paso 5.2:
-
-##### Caso A: Error `Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.1"` o `Your lock file does not contain a compatible set of packages.`
-* **Causa Raíz:** Este fallo ocurre cuando la versión de PHP activa en el servidor o en la terminal es inferior a **PHP 8.4.1** (por ejemplo, si el servidor está utilizando PHP 8.2 o PHP 8.3). Componentes modernos en `composer.lock` como `symfony/uid` y `symfony/var-dumper` exigen estrictamente `PHP >= 8.4.1`.
-* **Diagnóstico rápido:**
-  ```bash
-  php -v
-  ```
-  Si la terminal responde `PHP 8.2.x` o `PHP 8.3.x`, Composer o el autoload de Laravel detendrán la ejecución por incompatibilidad de plataforma.
-* **Solución Inmediata (sin salir del flujo de despliegue):**
-  1. Instalar y configurar PHP 8.4 oficial:
-     ```bash
-     sudo apt update
-     sudo apt install -y apt-transport-https ca-certificates curl lsb-release gnupg
-     sudo curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
-     echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list
-     sudo apt update
-     sudo apt install -y php8.4 php8.4-cli php8.4-common libapache2-mod-php8.4 \
-                         php8.4-mysql php8.4-mbstring php8.4-xml php8.4-curl php8.4-zip php8.4-bcmath
-     ```
-  2. Forzar que la terminal y Apache utilicen PHP 8.4 por defecto:
-     ```bash
-     sudo update-alternatives --set php /usr/bin/php8.4
-     sudo a2dismod php8.2 php8.3 2>/dev/null || true
-     sudo a2enmod php8.4
-     sudo systemctl restart apache2
-     ```
-  3. Reintentar la instalación de dependencias con Composer:
-     ```bash
-     sudo composer install --no-dev --optimize-autoloader
-     ```
-
-##### Caso B: Error `The requested PHP extension ext-... is missing from your system`
-* **Causa Raíz:** Falta alguna extensión requerida en el sistema (por ejemplo, `ext-curl`, `ext-zip`, `ext-mbstring` o `ext-bcmath`).
-* **Solución:** Instalar la extensión correspondiente para PHP 8.4 y reintentar:
-  ```bash
-  sudo apt install -y php8.4-curl php8.4-zip php8.4-mbstring php8.4-xml php8.4-mysql php8.4-bcmath
-  sudo composer install --no-dev --optimize-autoloader
-  ```
-
-##### Caso C: Error de Memoria `Allowed memory size of ... bytes exhausted`
-* **Causa Raíz:** En máquinas virtuales con recursos limitados (1 GB o 2 GB de RAM), Composer puede alcanzar el límite de memoria por defecto de PHP al procesar el árbol de dependencias.
-* **Solución:** Ejecutar Composer eliminando temporalmente el límite de memoria:
-  ```bash
-  sudo COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader
-  ```
-
-### 5.3 Configurar el Archivo de Entorno (`.env`)
-Copia la plantilla y genera una llave criptográfica única para el servidor:
+## 4. Configurar Variables de Entorno (`.env`)
 
 ```bash
+# 4.1 Crear archivo .env y generar clave criptográfica
 sudo cp .env.example .env
 sudo php artisan key:generate
-```
 
-Edita el archivo `.env`:
-```bash
+# 4.2 Abrir archivo para edición
 sudo nano .env
 ```
 
----
-
-### 📋 5.3.1 Desglose Completo del Archivo `.env` para Producción (¿Qué es cada cosa y por qué?)
-
-A continuación se explica cada bloque de variables que debe tener tu archivo `.env` en el servidor de producción o en tu entorno de pruebas:
-
-#### 1. Identidad y Seguridad Básica de la Aplicación (`APP_*`)
-| Variable | Valor en Producción | ¿Qué hace y por qué se configura así? |
-| :--- | :--- | :--- |
-| `APP_NAME` | `"FARUSAC - Sistema de Informes"` | Nombre institucional del sistema. Aparece en correos, títulos de pestañas del navegador y encabezados. |
-| `APP_ENV` | `production` | **Crítico.** Le indica a Laravel que está en un servidor real. Desactiva helpers de desarrollo y activa confirmaciones de seguridad automáticas (como evitar que alguien borre la base de datos por error). En desarrollo se usa `local`. |
-| `APP_KEY` | `base64:xxxx...` | Clave de cifrado simétrico (AES-256) de 32 bytes. Se usa para cifrar cookies de sesión y tokens de seguridad. **Se genera en el servidor con `php artisan key:generate` y nunca debe compartirse ni copiarse de tu PC local.** |
-| `APP_DEBUG` | `false` | **Riesgo Crítico de Seguridad.** Si se deja en `true`, cualquier error imprevisto mostrará al usuario la pantalla completa de depuración con tus contraseñas, consultas SQL y variables de entorno. En producción **siempre debe ser `false`**. |
-| `APP_URL` | `https://farusac.com/informes` | URL base oficial del sistema con HTTPS y la subruta. Laravel la utiliza para generar enlaces absolutos con `route()`, cargar estilos CSS/JS y construir el callback de Google OAuth. *(En tu práctica con ngrok usarás `https://farusac-pruebas.ngrok-free.app/informes`)*. |
-
-#### 2. Registro de Errores y Depuración (`LOG_*`)
-| Variable | Valor en Producción | ¿Qué hace y por qué se configura así? |
-| :--- | :--- | :--- |
-| `LOG_CHANNEL` | `stack` | Canal principal de registro de eventos. |
-| `LOG_STACK` | `daily` | En desarrollo suele usarse `single` (un solo archivo infinito). En producción se recomienda **`daily`** para que Laravel cree un archivo de log diario (ej. `laravel-2026-11-23.log`) y los rote automáticamente, evitando que un único archivo crezca varios gigabytes y llene el disco del servidor. |
-| `LOG_LEVEL` | `error` | En desarrollo es `debug` (registra todo). En producción se configura como **`error`** o **`warning`** para registrar únicamente fallos y errores reales sin saturar el almacenamiento. |
-
-#### 3. Base de Datos (`DB_*`)
-| Variable | Valor en Producción | ¿Qué hace y por qué se configura así? |
-| :--- | :--- | :--- |
-| `DB_CONNECTION` | `mysql` | Driver de conexión para MySQL / MariaDB. |
-| `DB_HOST` | `127.0.0.1` | Dirección IP del servidor de base de datos. Se utiliza `127.0.0.1` en lugar de `localhost` porque en Linux y Windows `localhost` a menudo intenta resolver por IPv6 o buscar un socket UNIX que puede fallar. |
-| `DB_PORT` | `3306` | Puerto estándar del motor de base de datos. |
-| `DB_DATABASE` | `farusac_db` | Nombre de la base de datos en MariaDB/MySQL. |
-| `DB_USERNAME` | `farusac_user` | Usuario de base de datos. **Nunca uses `root` en producción.** Debe ser un usuario dedicado con permisos limitados a la base de datos del sistema. |
-| `DB_PASSWORD` | `TuContraseñaSegura!` | Contraseña fuerte y exclusiva de la base de datos. |
-
-#### 4. Sesiones y Cookies de Seguridad (`SESSION_*`)
-| Variable | Valor en Producción | ¿Qué hace y por qué se configura así? |
-| :--- | :--- | :--- |
-| `SESSION_DRIVER` | `file` | Dónde se guardan las sesiones de usuario (`storage/framework/sessions`). Es rápido y suficiente para un servidor único. *(Si en el futuro la facultad usa un cluster con balanceador de carga, se cambia a `database`)*. |
-| `SESSION_LIFETIME` | `120` | Minutos de inactividad antes de que el sistema cierre la sesión automáticamente (120 minutos = 2 horas). |
-| `SESSION_SECURE_COOKIE` | `true` | **Seguridad HTTPS.** Obliga al navegador a transmitir la cookie de sesión únicamente a través de conexiones cifradas HTTPS, impidiendo que sea interceptada en redes públicas. |
-| `SESSION_SAME_SITE` | `lax` | Política de cookies para mitigar ataques CSRF (Cross-Site Request Forgery). |
-
-#### 5. Colas y Caché (`QUEUE_*`, `CACHE_*`)
-| Variable | Valor en Producción | ¿Qué hace y por qué se configura así? |
-| :--- | :--- | :--- |
-| `QUEUE_CONNECTION` | `sync` | Las tareas se ejecutan de inmediato en el mismo ciclo de la petición. Como el sistema no requiere workers en segundo plano ni colas asíncronas, se configura como `sync` (lo que elimina la necesidad de tablas de jobs). |
-| `CACHE_STORE` | `file` | Almacenamiento de caché en archivos dentro de `storage/framework/cache`. Se utiliza para almacenar en memoria el catálogo de cursos y evitar consultas masivas repetitivas a la base de datos. |
-
-#### 6. Autenticación Google OAuth (`GOOGLE_*`)
-| Variable | Valor en Producción | ¿Qué hace y por qué se configura así? |
-| :--- | :--- | :--- |
-| `GOOGLE_CLIENT_ID` | `xxxx.apps.googleusercontent.com` | ID público de tu proyecto en Google Cloud Console. Identifica a la aplicación ante Google. |
-| `GOOGLE_CLIENT_SECRET` | `GOCSPX-xxxx...` | Llave privada secreta de Google Cloud. Permite autenticar el intercambio de tokens de sesión. **Nunca debe compartirse ni subirse a Git.** |
-| `GOOGLE_REDIRECT_URI` | `https://farusac.com/informes/auth/google/callback` | Dirección exacta a donde Google devolverá al usuario autenticado. **Debe coincidir carácter por carácter** con la registrada en Google Cloud Console y con el protocolo `https://`. |
-| `GOOGLE_ALLOWED_DOMAIN` | `farusac.edu.gt` | Restricción institucional estricta. Si un usuario intenta iniciar sesión con una cuenta de Google externa (ej. `@gmail.com`), el sistema rechazará el acceso automáticamente. |
-| `GOOGLE_SSL_CERT_PATH` | *(Vacío)* | **Dejar completamente vacío en Linux.** En Windows se requería `C:\php\cacert.pem`. En servidores Debian/Linux, al dejarlo vacío, el sistema utiliza de forma nativa los certificados raíz seguros del sistema operativo (`/etc/ssl/certs/ca-certificates.crt`). |
-
-#### 7. Parámetros del Sistema FARUSAC e Infraestructura
-| Variable | Valor en Producción | ¿Qué hace y por qué se configura así? |
-| :--- | :--- | :--- |
-| `INFORMES_DIAS_BLOQUEO` | `3` | Define la cantidad de días continuos que tienen los docentes y coordinadores para editar o eliminar sus informes después de enviarlos, antes de que el sistema los bloquee para revisión. |
-| `CHROMIUM_PATH` | *(Vacío)* | Ruta al binario del navegador headless para generar PDFs. Si se deja vacío, nuestro servicio autodetecta automáticamente `/usr/bin/chromium` o `/usr/bin/google-chrome` en Linux Debian. |
-
----
-
-### 📄 Plantilla Completa de `.env` para Producción
-
-Puedes copiar este bloque directamente en tu archivo `/var/www/Farusac_SistemaInformes/Backend/.env` en el servidor:
-
+Configurar los siguientes valores:
 ```ini
-# =========================================================================
-# CONFIGURACIÓN GENERAL DEL SISTEMA
-# =========================================================================
+# --- Aplicación ---
 APP_NAME="FARUSAC - Sistema de Informes"
 APP_ENV=production
-APP_KEY=base64:COPIA_O_GENERA_CON_PHP_ARTISAN_KEY_GENERATE
 APP_DEBUG=false
+
+# URL de Producción Real:
 APP_URL=https://farusac.com/informes
+# (En entorno de pruebas VM usar: APP_URL=https://tu-dominio.ngrok-free.app/informes)
 
-APP_LOCALE=es
-APP_FALLBACK_LOCALE=es
-APP_FAKER_LOCALE=es_ES
-
-# =========================================================================
-# REGISTRO DE ERRORES (LOGS)
-# =========================================================================
-LOG_CHANNEL=stack
-LOG_STACK=daily
-LOG_LEVEL=error
-
-# =========================================================================
-# BASE DE DATOS MARIADB / MYSQL
-# =========================================================================
+# --- Base de Datos ---
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=farusac_db
 DB_USERNAME=farusac_user
-DB_PASSWORD=TuPasswordSeguroProduccion2026!
+DB_PASSWORD=TuPasswordSeguro2026!
 
-# =========================================================================
-# SESIONES Y SEGURIDAD HTTPS
-# =========================================================================
+# --- Sesiones y Seguridad HTTPS ---
 SESSION_DRIVER=file
 SESSION_LIFETIME=120
-SESSION_ENCRYPT=false
-SESSION_PATH=/
-SESSION_DOMAIN=null
 SESSION_SECURE_COOKIE=true
 SESSION_SAME_SITE=lax
 
-# =========================================================================
-# COLAS Y CACHÉ
-# =========================================================================
-QUEUE_CONNECTION=sync
-CACHE_STORE=file
-FILESYSTEM_DISK=local
+# --- Google OAuth Institucional ---
+GOOGLE_CLIENT_ID=xxxxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxx
 
-# =========================================================================
-# AUTENTICACIÓN GOOGLE OAUTH INSTITUCIONAL
-# =========================================================================
-GOOGLE_CLIENT_ID=504974444658-xxxxxxxxxxxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxx
+# URI de Producción Real:
 GOOGLE_REDIRECT_URI=https://farusac.com/informes/auth/google/callback
+# (En entorno de pruebas VM usar: GOOGLE_REDIRECT_URI=https://tu-dominio.ngrok-free.app/informes/auth/google/callback)
+
 GOOGLE_ALLOWED_DOMAIN=farusac.edu.gt
 GOOGLE_SSL_CERT_PATH=
 
-# =========================================================================
-# REGLAS DE NEGOCIO Y GENERACIÓN DE REPORTES PDF
-# =========================================================================
+# --- Reportes PDF y Chromium ---
 INFORMES_DIAS_BLOQUEO=3
 CHROMIUM_PATH=
 ```
+> **Nota:** Dejar `GOOGLE_SSL_CERT_PATH` y `CHROMIUM_PATH` vacíos en Linux; el sistema autodetecta los certificados y el binario de Chromium.
 
-### 5.4 Permisos de Directorios (Crucial para Apache)
-Apache en Debian corre bajo el usuario `www-data`. Otórgale permisos exclusivos a las carpetas de escritura:
+---
+
+## 5. Permisos de Directorios de Escritura
 
 ```bash
+# Asignar usuario www-data y permisos 775
 sudo chown -R www-data:www-data /var/www/Farusac_SistemaInformes/Backend/storage
 sudo chown -R www-data:www-data /var/www/Farusac_SistemaInformes/Backend/bootstrap/cache
 sudo chmod -R 775 /var/www/Farusac_SistemaInformes/Backend/storage
 sudo chmod -R 775 /var/www/Farusac_SistemaInformes/Backend/bootstrap/cache
 ```
 
-### 5.5 Construir y Levantar la Base de Datos (Migraciones y Seeders)
+---
 
-Una vez creada la base de datos en MariaDB (Paso 4) y configuradas las credenciales en el `.env` (Paso 5.3), Laravel se encarga de crear toda la estructura de tablas y los registros iniciales necesarios para que el sistema funcione.
-
-#### 5.5.1 ¿Qué ocurre internamente al levantar la base de datos?
-El sistema cuenta con **4 migraciones consolidadas y optimizadas** ubicadas en `database/migrations/`:
-1. `0001_01_01_000000_create_users_table.php`: Crea la tabla `usuarios` (con soporte para roles de docente, coordinador y administrador, Google ID y estado), así como las tablas de restablecimiento de contraseñas y `sessions`.
-2. `0001_01_01_000001_create_cache_table.php`: Crea las tablas `cache` y `cache_locks` para optimizar el rendimiento y almacenar en memoria el catálogo de cursos.
-3. `0001_01_01_000002_create_jobs_table.php`: Tablas estándar de soporte de Laravel.
-4. `0001_01_01_000003_create_farusac_tables.php`: Crea todas las tablas del dominio institucional de FARUSAC: `docentes`, `cursos`, `asignaciones`, `informes` (informes mensuales docentes con sus actividades) e `informes_coordinacion` (informes consolidados de coordinación).
-
-#### 5.5.2 Ejecutar las Migraciones en Producción
-Para crear todas las tablas, ejecuta desde la carpeta `Backend`:
+## 6. Migraciones y Datos Iniciales
 
 ```bash
+cd /var/www/Farusac_SistemaInformes/Backend
+
+# Crear tablas del sistema
 sudo php artisan migrate --force
-```
 
-> [!IMPORTANT] ¿Por qué es obligatorio el parámetro `--force` en producción?
-> Cuando `APP_ENV=production`, Laravel activa un mecanismo de seguridad estricto que bloquea la ejecución de migraciones y detiene el proceso solicitando una confirmación manual interactiva:
-> `Application In Production! Do you really wish to run this command? [yes/no]`
-> El parámetro `--force` le confirma a Laravel que la acción es deliberada y autorizada, evitando que el comando falle o se quede esperando indefinidamente en despliegues automatizados o terminales sin prompt interactivo.
-
-#### 5.5.3 Poblar Datos Iniciales con Seeders
-Una vez creadas las tablas, debes generar el usuario Administrador inicial para poder ingresar al sistema y gestionar a los docentes y coordinadores:
-
-```bash
+# Crear usuario Administrador inicial (admin@farusac.edu.gt)
 sudo php artisan db:seed --force
 ```
 
-* **¿Qué hace `DatabaseSeeder`?**
-  Crea la cuenta del Administrador principal del sistema:
-  - **Correo:** `admin@farusac.edu.gt`
-  - **Nombre:** Administrador FARUSAC
-  - **Rol:** `administrador`
-  - **Estado:** `activo`
-  *El seeder utiliza `firstOrCreate()`, lo que significa que es completamente seguro ejecutarlo: si el administrador ya existe, no causará ningún error de duplicidad ni alterará información existente.*
+---
 
-#### 5.5.4 Verificación del Estado de la Base de Datos
-Puedes confirmar que la base de datos se levantó a la perfección con los siguientes métodos:
+## 7. Configuración de Apache para el Subdirectorio `/informes`
 
-1. **Verificar el estado de las migraciones desde Laravel:**
+Selecciona según tu entorno:
+
+### Opción 7.A: Servidor de Producción Real (`farusac.com/informes`)
+*(El servidor ya aloja el sitio web principal de la facultad en Apache; **no** se desactiva ningún sitio).*
+
+1. Edita el VirtualHost SSL existente del dominio institucional (ej. `/etc/apache2/sites-available/farusac-ssl.conf` o el sitio activo en puerto `443`):
    ```bash
-   sudo php artisan migrate:status
+   sudo nano /etc/apache2/sites-available/farusac-ssl.conf
    ```
-   *Todas las 4 migraciones deben aparecer con `Ran? [Yes]` y su respectivo número de lote (Batch).*
 
-2. **Verificar las tablas directamente en MariaDB:**
+2. Agrega dentro del bloque `<VirtualHost *:443>` lo siguiente:
+   ```apache
+   # --- Módulo Sistema de Informes FARUSAC ---
+   Alias /informes /var/www/Farusac_SistemaInformes/Backend/public
+
+   <Directory /var/www/Farusac_SistemaInformes/Backend/public>
+       Options -Indexes +FollowSymLinks
+       AllowOverride All
+       Require all granted
+
+       RewriteEngine On
+       RewriteBase /informes/
+       RewriteCond %{REQUEST_FILENAME} !-d
+       RewriteCond %{REQUEST_FILENAME} !-f
+       RewriteRule ^ index.php [L]
+   </Directory>
+   ```
+
+3. Recarga Apache:
    ```bash
-   mysql -u farusac_user -p farusac_db -e "SHOW TABLES;"
+   sudo apache2ctl configtest
+   sudo systemctl reload apache2
    ```
-   *(Ingresa la contraseña del usuario. Verás el listado de todas las tablas: `usuarios`, `cursos`, `docentes`, `asignaciones`, `informes`, etc.).*
 
-3. **Verificar el usuario administrador creado:**
-   ```bash
-   mysql -u farusac_user -p farusac_db -e "SELECT id, nombre, correo, rol, estado FROM usuarios;"
-   ```
-   *(Confirmará la existencia de `admin@farusac.edu.gt` con rol `administrador`).*
-
-#### 5.5.5 Regla de Oro en Producción: `migrate --force` vs `migrate:fresh`
-
-> [!CAUTION] ¡PELIGRO CRÍTICO: NUNCA USES `migrate:fresh` EN PRODUCCIÓN!
-> - **`php artisan migrate --force`**: Es seguro para producción. Lee la tabla `migrations` y **únicamente ejecuta los archivos nuevos** que aún no han sido aplicados, sin tocar ni borrar los datos existentes.
-> - **`php artisan migrate:fresh` o `migrate:refresh`**: **BORRA (DROP) TODAS LAS TABLAS DE LA BASE DE DATOS** antes de volver a crearlas. Si alguien ejecuta este comando en producción, **se perderán irreversiblemente todos los informes mensuales, firmas y usuarios** de la facultad.
-
-#### 5.5.6 Diagnóstico de Problemas Comunes de Conexión
-Si al ejecutar `php artisan migrate` obtienes algún error:
-
-- **Error `SQLSTATE[HY000] [2002] Connection refused`:**
-  - El motor MariaDB está apagado o la IP está mal configurada.
-  - Verifica que el servicio esté activo: `sudo systemctl status mariadb`. Si está inactivo, inícialo con `sudo systemctl start mariadb`.
-  - Asegúrate de que en el archivo `.env` tengas `DB_HOST=127.0.0.1` (evita usar `localhost` ya que puede intentar sockets UNIX no configurados o IPv6 `::1`).
-- **Error `SQLSTATE[HY000] [1045] Access denied for user`:**
-  - El usuario o contraseña en `.env` no coinciden con los otorgados en el Paso 4.2.
-  - Prueba ingresar manualmente con `mysql -u farusac_user -p farusac_db`. Si no puedes ingresar, vuelve a asignar los permisos desde `sudo mysql -u root` con:
-    ```sql
-    ALTER USER 'farusac_user'@'localhost' IDENTIFIED BY 'TuPasswordSeguro2026!';
-    GRANT ALL PRIVILEGES ON farusac_db.* TO 'farusac_user'@'localhost';
-    FLUSH PRIVILEGES;
-    ```
+> **Alternativa por Enlace Simbólico en Producción:**  
+> Si el sitio principal tiene su raíz en `/var/www/html`, basta con crear el enlace simbólico directo:
+> ```bash
+> sudo ln -s /var/www/Farusac_SistemaInformes/Backend/public /var/www/html/informes
+> ```
 
 ---
 
-## 🌐 6. Configurar Apache para la Subruta `/informes`
+### Opción 7.B: Entorno de Pruebas en VM (ngrok)
+*(La máquina virtual solo se usa para simular el sistema).*
 
-Para simular exactamente `farusac.com/informes` sin tocar la configuración global de Apache:
-
-1. Crea o edita el archivo de configuración para el sitio:
+1. Crear archivo de configuración:
    ```bash
    sudo nano /etc/apache2/sites-available/farusac.conf
    ```
 
-2. Agrega la configuración utilizando la directiva `Alias` y `ServerAlias *` para responder tanto a ngrok como al dominio institucional:
+2. Pegar contenido:
+   ```apache
+   <VirtualHost *:80>
+       ServerName localhost
+       ServerAlias *
 
-```apache
-<VirtualHost *:80>
-    ServerName localhost
-    ServerAlias *
+       Alias /informes /var/www/Farusac_SistemaInformes/Backend/public
 
-    # Redirigir la subruta /informes directamente a la carpeta public de Laravel
-    Alias /informes /var/www/Farusac_SistemaInformes/Backend/public
+       <Directory /var/www/Farusac_SistemaInformes/Backend/public>
+           Options -Indexes +FollowSymLinks
+           AllowOverride All
+           Require all granted
 
-    <Directory /var/www/Farusac_SistemaInformes/Backend/public>
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
+           RewriteEngine On
+           RewriteBase /informes/
+           RewriteCond %{REQUEST_FILENAME} !-d
+           RewriteCond %{REQUEST_FILENAME} !-f
+           RewriteRule ^ index.php [L]
+       </Directory>
 
-        # Configuración para que Laravel maneje las rutas bajo /informes
-        RewriteEngine On
-        RewriteBase /informes/
-        RewriteCond %{REQUEST_FILENAME} !-d
-        RewriteCond %{REQUEST_FILENAME} !-f
-        RewriteRule ^ index.php [L]
-    </Directory>
+       ErrorLog ${APACHE_LOG_DIR}/farusac_error.log
+       CustomLog ${APACHE_LOG_DIR}/farusac_access.log combined
+   </VirtualHost>
+   ```
 
-    ErrorLog ${APACHE_LOG_DIR}/farusac_error.log
-    CustomLog ${APACHE_LOG_DIR}/farusac_access.log combined
-</VirtualHost>
-```
-
-3. Desactiva el sitio por defecto de Debian, habilita `farusac.conf` y recarga Apache:
+3. Activar sitio y desactivar el default:
    ```bash
-   # Desactivar el sitio default de Debian para que no intercepte el tráfico de ngrok
    sudo a2dissite 000-default.conf
-
-   # Habilitar el sitio de FARUSAC
    sudo a2ensite farusac.conf
-
-   # Verificar sintaxis y recargar el servidor web
-   sudo apache2ctl configtest    # Debe responder "Syntax OK"
+   sudo apache2ctl configtest
    sudo systemctl reload apache2
    ```
 
-#### 🛠️ Diagnóstico y Solución de Errores en el Paso 6:
+---
 
-##### Caso: `404 Not Found (Apache/2.4.x Server at ... Port 80)` al ingresar a `/informes`
-* **Causa Raíz:**
-  1. **Conflicto con `000-default.conf`:** En Debian, Apache viene con el sitio predeterminado `000-default.conf` activo. Como ngrok envía el encabezado `Host: <tu-subdominio>.ngrok-free.dev`, Apache busca un VirtualHost que coincida. Si no encuentra coincidencia exacta con `localhost`, utiliza el primer sitio en orden alfabético (`000-default.conf`), el cual apunta a `/var/www/html` y no conoce el `Alias /informes`.
-  2. **Falta de `ServerAlias *`:** Sin esta directiva, Apache ignora las peticiones entrantes dirigidas a los dominios dinámicos de ngrok.
-* **Diagnóstico rápido:**
-  ```bash
-  sudo apache2ctl -S
-  ```
-  Observa qué archivo aparece marcado como `default server`. Si dice `000-default.conf`, ese sitio está interceptando tu tráfico.
-* **Solución Inmediata:**
-  1. Desactiva el sitio por defecto de Debian:
-     ```bash
-     sudo a2dissite 000-default.conf
-     ```
-  2. Asegúrate de que `farusac.conf` tenga la línea `ServerAlias *` justo debajo de `ServerName localhost`.
-  3. Asegúrate de que la carpeta del proyecto exista físicamente:
-     ```bash
-     ls -la /var/www/Farusac_SistemaInformes/Backend/public/index.php
-     ```
-  4. Recarga Apache:
-     ```bash
-     sudo a2ensite farusac.conf
-     sudo systemctl reload apache2
-     ```
-  5. Prueba ingresar en el navegador tanto a:
-     `https://<tu-dominio>.ngrok-free.dev/informes/`
-     como a:
-     `https://<tu-dominio>.ngrok-free.dev/informes/login`
+## 8. Configuración en Google Cloud Console (OAuth 2.0)
+
+En **APIs y servicios > Credenciales**, editar el **ID de cliente de OAuth 2.0**:
+
+### Para Producción Real (`farusac.com`):
+* **Orígenes de JavaScript autorizados:**
+  `https://farusac.com` *(estrictamente sin subruta ni barra final)*
+* **URI de redireccionamiento autorizados:**
+  `https://farusac.com/informes/auth/google/callback`
+
+### Para Entorno de Pruebas (ngrok):
+* **Orígenes de JavaScript autorizados:**
+  `https://tu-dominio.ngrok-free.app`
+* **URI de redireccionamiento autorizados:**
+  `https://tu-dominio.ngrok-free.app/informes/auth/google/callback`
 
 ---
 
-## 🔑 7. Configuración Completa en Google Cloud Console
+## 9. Optimización de Caché y Prueba Final
 
-Sigue este paso a paso detallado para dar de alta tu URL gratuita en Google:
+```bash
+cd /var/www/Farusac_SistemaInformes/Backend
 
-### 7.1 Crear o Seleccionar el Proyecto
-1. Ingresa a [Google Cloud Console](https://console.cloud.google.com/).
-2. En la barra superior haz clic en el selector de proyectos y haz clic en **Proyecto Nuevo** (ej. nombre: `FARUSAC-Informes`).
+# Compilar caché de rutas, configuración y vistas
+sudo php artisan optimize
 
-### 7.2 Configurar la Pantalla de Consentimiento de OAuth
-1. En el menú de navegación izquierdo, dirígete a **APIs y servicios** > **Pantalla de consentimiento de OAuth**.
-2. **Tipo de usuario (User Type):**
-   * **Interno:** Selecciónalo si tu cuenta de Google pertenece a una organización de Google Workspace de la USAC (`@farusac.edu.gt` o `@profesor.usac.edu.gt`). Con esta opción solo usuarios institucionales pueden iniciar sesión y no requiere verificación de Google.
-   * **Externo:** Selecciónalo si estás haciendo pruebas con correos `@gmail.com` personales.
-3. Haz clic en **Crear**.
-4. Completa la información básica requerida:
-   * **Nombre de la aplicación:** `FARUSAC Sistema de Informes`
-   * **Correo de soporte del usuario:** Tu correo institucional o personal.
-   * **Logotipo de la aplicación:** Opcional.
-   * **Datos de contacto del desarrollador:** Tu correo.
-5. Haz clic en **Guardar y continuar**.
-6. En la pestaña **Permisos (Scopes)**:
-   * No agregues permisos restringidos; Laravel Socialite solo requiere los permisos básicos por defecto (`email`, `profile`, `openid`).
-   * Haz clic en **Guardar y continuar**.
-7. En la pestaña **Usuarios de prueba (Test Users)** *(Solo aplica si seleccionaste "Externo")*:
-   * Haz clic en **+ ADD USERS**.
-   * Escribe las direcciones de correo electrónico que usarás para probar el inicio de sesión.
-   * Haz clic en **Guardar y continuar**.
-
-### 7.3 Crear el ID de Cliente OAuth 2.0
-1. En el menú lateral izquierdo, ve a **APIs y servicios** > **Credenciales**.
-2. En la barra superior, haz clic en **+ CREAR CREDENCIALES** > **ID de cliente de OAuth**.
-3. En el campo **Tipo de aplicación**, selecciona: **Aplicación web**.
-4. En **Nombre**: `FARUSAC Web Client`.
-5. **Configurar Orígenes de JavaScript autorizados:**
-   * Haz clic en **+ AGREGAR URI**.
-   * Pega la URL base de tu dominio ngrok:
-     ```text
-     https://farusac-pruebas.ngrok-free.app
-     ```
-     > [!IMPORTANT]
-     > Google **no permite barras `/` al final ni subdirectorios** en este campo. Debe ser estrictamente el protocolo y nombre de dominio base (`https://tu-dominio.ngrok-free.app`).
-
-6. **Configurar URIs de redireccionamiento autorizados:**
-   * Haz clic en **+ AGREGAR URI**.
-   * Pega la URL completa del callback con la subruta `/informes`:
-     ```text
-     https://farusac-pruebas.ngrok-free.app/informes/auth/google/callback
-     ```
-   * *(Opcional)* Puedes agregar también la versión sin subruta por si deseas probar en la raíz:
-     ```text
-     https://farusac-pruebas.ngrok-free.app/auth/google/callback
-     ```
-
-7. Haz clic en el botón azul **Crear**.
-8. Se abrirá una ventana emergente titulada **Cliente de OAuth creado**:
-   * Copia el **ID de cliente** (formato: `xxxxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com`).
-   * Copia el **Secreto de cliente** (formato: `GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxx`).
+# Probar en navegador:
+# Producción: https://farusac.com/informes/login
+# Pruebas:    https://tu-dominio.ngrok-free.app/informes/login
+```
 
 ---
 
-## ⚡ 8. Sincronizar Laravel y Probar el Sistema
+## 10. Script para Actualizaciones Futuras (`deploy.sh`)
 
-1. En tu VM Debian, pega las credenciales recién obtenidas en tu archivo `/var/www/Farusac_SistemaInformes/Backend/.env`:
-   ```ini
-   GOOGLE_CLIENT_ID=xxxxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxx
-   GOOGLE_REDIRECT_URI=https://farusac-pruebas.ngrok-free.app/informes/auth/google/callback
-   ```
-
-2. Limpia y optimiza la caché de configuración:
-   ```bash
-   cd /var/www/Farusac_SistemaInformes/Backend
-   sudo php artisan optimize:clear
-   sudo php artisan optimize
-   ```
-
-3. **Prueba de Acceso:**
-   * Abre un navegador web en tu computadora Windows o teléfono celular.
-   * Navega a: `https://farusac-pruebas.ngrok-free.app/informes/login`
-   * Haz clic en **"Iniciar sesión con Google"**.
-   * Google te solicitará autorización y, tras aceptar, te redirigirá a tu sistema en Debian 12 con la sesión iniciada correctamente.
-
----
-
-## 🔄 9. Script Automatizado para Futuras Actualizaciones (`deploy.sh`)
-
-Para que el administrador pueda desplegar actualizaciones futuras en un solo paso, crea un script en `/var/www/Farusac_SistemaInformes/deploy.sh`:
+Para aplicar cambios futuros en un solo comando:
 
 ```bash
 sudo nano /var/www/Farusac_SistemaInformes/deploy.sh
 ```
 
-Pega el siguiente contenido:
-
 ```bash
 #!/bin/bash
 set -e
 
-echo "🚀 Iniciando despliegue de FARUSAC Sistema de Informes..."
-
+echo ">>>>>>>> Iniciando despliegue de actualización... <<<<<<<<"
 cd /var/www/Farusac_SistemaInformes
 
-# 1. Bajar últimos cambios de Git
-echo "📥 Descargando código del repositorio..."
+# 1. Bajar cambios de Git
 git pull origin main
 
 cd Backend
 
-# 2. Instalar/actualizar dependencias
-echo "📦 Actualizando paquetes de Composer..."
+# 2. Actualizar dependencias
 composer install --no-dev --optimize-autoloader --no-interaction
 
-# 3. Ejecutar migraciones pendientes
-echo "🗄️ Ejecutando migraciones de base de datos..."
+# 3. Aplicar migraciones pendientes
 php artisan migrate --force
 
-# 4. Limpiar y reconstruir caché de producción
-echo "⚡ Optimizando caché de Laravel..."
+# 4. Optimizar caché de Laravel
 php artisan optimize
 
 # 5. Asegurar permisos correctos
-echo "🔒 Verificando permisos de almacenamiento..."
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
-echo "✅ ¡Despliegue completado con éxito!"
+echo ">>>>>>>> Actualización completada exitosamente! <<<<<<<<"
 ```
 
-Dale permisos de ejecución:
 ```bash
+# Dar permisos de ejecución al script
 sudo chmod +x /var/www/Farusac_SistemaInformes/deploy.sh
 ```
 
-A partir de este momento, cada vez que haya cambios en el repositorio, el administrador solo ejecutará:
+Uso:
 ```bash
 sudo /var/www/Farusac_SistemaInformes/deploy.sh
 ```
+
+---
+
+## Posibles fallos
+
+| Síntoma | Causa Probable | Solución Inmediata |
+| :--- | :--- | :--- |
+| **404 Not Found (Apache/2.4.71)** | `000-default.conf` intercepta la petición (en VM) o falta la directiva `Alias /informes` en el VirtualHost activo | Verificar `Alias /informes` en el VirtualHost SSL activo y recargar Apache (`sudo systemctl reload apache2`) |
+| **405 Method Not Allowed** | Falta `RewriteBase /informes/` en la configuración de Apache | Agregar `RewriteBase /informes/` dentro del bloque `<Directory>` de Apache |
+| **Error 500 al guardar/subir** | Permisos de escritura incorrectos en `storage` | `sudo chown -R www-data:www-data storage bootstrap/cache && sudo chmod -R 775 storage bootstrap/cache` |
+| **Error de versión PHP en Composer** | PHP 8.4 no está activo en la consola | `sudo update-alternatives --set php /usr/bin/php8.4` |
+| **Cambios no visibles en navegador** | Caché de vistas o configuración activa | `sudo php artisan optimize:clear && sudo php artisan optimize` |
