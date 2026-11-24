@@ -190,7 +190,7 @@ class CoordinadorController extends Controller
             $docenteInformesQuery->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower(trim($mesDefecto))]);
         }
 
-        $docenteInformes = $docenteInformesQuery->get()->keyBy('curso_id');
+        $docenteInformes = $docenteInformesQuery->get();
 
         return view('coordinador.crear_informe_coordinacion', compact(
             'user',
@@ -215,7 +215,8 @@ class CoordinadorController extends Controller
         $area = $user->area ?? session('coordinador_area');
 
         try {
-            $informe = $this->coordinacionService->guardarInforme($user, $request->validated(), $area);
+            $payload = array_merge($request->validated(), $request->only(['programas', 'asignaturas', 'avances', 'estudiantes']));
+            $informe = $this->coordinacionService->guardarInforme($user, $payload, $area);
 
             return response()->json([
                 'success'    => true,
@@ -258,8 +259,7 @@ class CoordinadorController extends Controller
             ->where('periodo', $informe->periodo)
             ->where('mes', $informe->mes)
             ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado'])
-            ->get()
-            ->keyBy('curso_id');
+            ->get();
 
         $programasGuardados = $informe->programas->keyBy('asignatura');
         $programasCompletos = $asignaturasUnicas->map(function ($nombreCurso) use ($programasGuardados, $cursosArea, $docenteInformes) {
@@ -268,8 +268,10 @@ class CoordinadorController extends Controller
             if (!$enlace) {
                 $subCursoIds = $cursosArea->where('nombre_curso', $nombreCurso)->pluck('id');
                 foreach ($subCursoIds as $cId) {
-                    $inf = $docenteInformes->get($cId);
-                    if ($inf && !empty($inf->enlace_classroom_drive_url)) {
+                    $inf = $docenteInformes->first(function ($item) use ($cId) {
+                        return (int)$item->curso_id === (int)$cId && !empty($item->enlace_classroom_drive_url);
+                    });
+                    if ($inf) {
                         $enlace = $inf->enlace_classroom_drive_url;
                         break;
                     }
@@ -283,12 +285,22 @@ class CoordinadorController extends Controller
 
         $isLocked = ($informe->bloqueado_en && Carbon::now()->greaterThan($informe->bloqueado_en));
 
+        $res = $this->coordinacionService->obtenerDatosDocentesArea(
+            $area,
+            session('coordinador_carrera'),
+            $informe->periodo,
+            $informe->mes,
+            $user
+        );
+        $filasAsignaturas = $res['datos'];
+
         return view('coordinador.crear_informe_coordinacion', compact(
             'user',
             'area',
             'informe',
             'cursosArea',
             'asignaturasUnicas',
+            'filasAsignaturas',
             'isLocked',
             'docenteInformes',
             'programasCompletos'
@@ -319,7 +331,8 @@ class CoordinadorController extends Controller
         }
 
         try {
-            $this->coordinacionService->actualizarInforme($informeCoordinacion, $request->validated());
+            $payload = array_merge($request->validated(), $request->only(['programas', 'asignaturas', 'avances', 'estudiantes']));
+            $this->coordinacionService->actualizarInforme($informeCoordinacion, $payload);
 
             return response()->json([
                 'success'  => true,
@@ -377,6 +390,40 @@ class CoordinadorController extends Controller
         $user = Auth::user();
 
         $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes']);
+
+        // Si el informe carece de asignaturas registradas (por haberse guardado con reglas incompletas previamente), autoreparar con los datos del área
+        if ($informeCoordinacion->asignaturas->isEmpty()) {
+            $res = $this->coordinacionService->obtenerDatosDocentesArea(
+                $informeCoordinacion->area,
+                session('coordinador_carrera'),
+                $informeCoordinacion->periodo,
+                $informeCoordinacion->mes,
+                $informeCoordinacion->usuario ?? $user
+            );
+            if (!empty($res['datos']) && $res['datos']->isNotEmpty()) {
+                $payload = [
+                    'periodo'                         => $informeCoordinacion->periodo,
+                    'mes'                             => $informeCoordinacion->mes,
+                    'anio'                            => $informeCoordinacion->anio,
+                    'herramientas_virtuales'          => $informeCoordinacion->herramientas_virtuales ?? 'Google Classroom, Google Meet, Zoom, Campus Virtual FARUSAC',
+                    'enlace_actividades_coordinacion' => $informeCoordinacion->enlace_actividades_coordinacion,
+                    'enlace_informe_auxiliares'       => $informeCoordinacion->enlace_informe_auxiliares,
+                    'enlace_docentes_permisos'        => $informeCoordinacion->enlace_docentes_permisos,
+                    'estado'                          => $informeCoordinacion->estado,
+                    'programas'                       => $res['programas']->toArray(),
+                    'asignaturas'                     => $res['datos']->toArray(),
+                    'avances'                         => $res['datos']->toArray(),
+                    'estudiantes'                     => [],
+                ];
+                try {
+                    $this->coordinacionService->actualizarInforme($informeCoordinacion, $payload);
+                    $informeCoordinacion->load(['programas', 'asignaturas', 'avances', 'estudiantes']);
+                } catch (\Throwable $e) {
+                    Log::warning('No se pudo autoreparar el informe de coordinación: ' . $e->getMessage());
+                }
+            }
+        }
+
         $informe = $informeCoordinacion;
 
         return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));

@@ -117,7 +117,8 @@ async function confirmarSeleccionArea() {
     }
 
     try {
-        const response = await fetch('/coordinador/area/seleccionar', {
+        const url = window.route ? window.route('/coordinador/area/seleccionar') : '/coordinador/area/seleccionar';
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -231,13 +232,18 @@ function onCarreraChange() {
     )].sort();
 
     if (selectArea) {
-        areasUnicas.forEach(area => {
-            const opt = document.createElement('option');
-            opt.value = area;
-            opt.textContent = area;
-            selectArea.appendChild(opt);
-        });
-        selectArea.disabled = false;
+        if (areasUnicas.length === 0) {
+            selectArea.innerHTML = '<option value="">No hay cursos registrados para esta carrera...</option>';
+            selectArea.disabled = true;
+        } else {
+            areasUnicas.forEach(area => {
+                const opt = document.createElement('option');
+                opt.value = area;
+                opt.textContent = area;
+                selectArea.appendChild(opt);
+            });
+            selectArea.disabled = false;
+        }
     }
 }
 
@@ -336,7 +342,7 @@ async function handleCourseSubmit(event) {
     if (modalErrorMessage) modalErrorMessage.style.display = 'none';
 
     const rolePrefix = getRolePrefix();
-    const url = `/${rolePrefix}/cursos/asignar`;
+    const url = window.route ? window.route(`/${rolePrefix}/cursos/asignar`) : `/${rolePrefix}/cursos/asignar`;
 
     try {
         const response = await fetch(url, {
@@ -427,9 +433,10 @@ async function executeUnassignCourse() {
     }
 
     const rolePrefix = getRolePrefix();
+    const url = window.route ? window.route(`/${rolePrefix}/cursos/${cursoId}`) : `/${rolePrefix}/cursos/${cursoId}`;
 
     try {
-        const response = await fetch(`/${rolePrefix}/cursos/${cursoId}`, {
+        const response = await fetch(url, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': window.getCsrfToken(),
@@ -472,7 +479,8 @@ async function executeDeleteCoordReport() {
     }
 
     try {
-        const response = await fetch(`/coordinador/informes-coordinacion/${id}`, {
+        const url = window.route ? window.route(`/coordinador/informes-coordinacion/${id}`) : `/coordinador/informes-coordinacion/${id}`;
+        const response = await fetch(url, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': window.getCsrfToken(),

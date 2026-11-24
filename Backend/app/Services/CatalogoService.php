@@ -44,18 +44,34 @@ class CatalogoService
 
     /**
      * Obtiene el catálogo completo de cursos ordenado institucionalmente,
-     * utilizando caché de corta duración para optimizar memoria y tiempo de respuesta.
+     * utilizando caché con validación estricta de integridad para optimizar memoria y tiempo de respuesta.
      */
     public function getCatalogoCursos(int $ttlMinutes = 30): Collection
     {
         try {
-            return Cache::remember('catalogo_cursos_completo', now()->addMinutes($ttlMinutes), function () {
-                return Curso::orderBy('carrera', 'asc')
-                    ->orderBy('nombre_curso', 'asc')
-                    ->orderBy('seccion', 'asc')
-                    ->get();
-            });
-        } catch (Exception $e) {
+            $cached = Cache::get('catalogo_cursos_completo');
+            if ($cached instanceof Collection) {
+                return $cached;
+            }
+        } catch (\Throwable $e) {
+            Cache::forget('catalogo_cursos_completo');
+        }
+
+        try {
+            $cursos = Curso::select('id', 'carrera', 'area', 'nombre_curso', 'codigo_curso', 'seccion', 'anio', 'semestre')
+                ->orderBy('carrera', 'asc')
+                ->orderBy('nombre_curso', 'asc')
+                ->orderBy('seccion', 'asc')
+                ->get();
+
+            try {
+                Cache::put('catalogo_cursos_completo', $cursos, now()->addMinutes($ttlMinutes));
+            } catch (\Throwable $e) {
+                // Si la serialización en cache falla, se ignora silenciosamente
+            }
+
+            return $cursos;
+        } catch (\Throwable $e) {
             return collect();
         }
     }
@@ -84,7 +100,7 @@ class CatalogoService
                 ->pluck('carrera');
 
             return $carrerasDb->isNotEmpty() ? $carrerasDb : collect($this->carrerasPorDefecto);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return collect($this->carrerasPorDefecto);
         }
     }
@@ -113,7 +129,7 @@ class CatalogoService
             foreach ($areasPorCarrera as $car => $ars) {
                 $areasPorCarrera[$car] = array_values(array_unique($ars));
             }
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             // Continúa con fallbacks institucionales
         }
 
@@ -142,7 +158,7 @@ class CatalogoService
             if ($areas->isNotEmpty()) {
                 return $areas;
             }
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             // Usa fallback
         }
 
@@ -174,7 +190,7 @@ class CatalogoService
         if ($cursosDocente->isEmpty()) {
             try {
                 $cursosDocente = $user->cursos()->pluck('nombre_curso')->unique()->values();
-            } catch (Exception $e) {
+            } catch (\Throwable $e) {
                 $cursosDocente = collect();
             }
         }

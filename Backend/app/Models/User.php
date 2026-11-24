@@ -66,21 +66,24 @@ class User extends Authenticatable
     }
 
     /**
-     * Helpers de rol
+     * Helpers de rol resilientes a Enum y strings
      */
     public function isAdministrador(): bool
     {
-        return $this->rol === Rol::Administrador;
+        $val = $this->rol instanceof Rol ? $this->rol->value : strtolower(trim((string) $this->rol));
+        return $val === 'administrador';
     }
 
     public function isCoordinador(): bool
     {
-        return $this->rol === Rol::Coordinador;
+        $val = $this->rol instanceof Rol ? $this->rol->value : strtolower(trim((string) $this->rol));
+        return $val === 'coordinador';
     }
 
     public function isDocente(): bool
     {
-        return $this->rol === Rol::Docente;
+        $val = $this->rol instanceof Rol ? $this->rol->value : strtolower(trim((string) $this->rol));
+        return $val === 'docente';
     }
 
     public function getRolValorAttribute(): string

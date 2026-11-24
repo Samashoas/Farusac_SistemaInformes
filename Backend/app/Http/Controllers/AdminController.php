@@ -245,6 +245,40 @@ class AdminController extends Controller
     {
         $user = Auth::user();
         $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario']);
+
+        // Si el informe carece de asignaturas registradas, autoreparar con los datos consolidados del área
+        if ($informeCoordinacion->asignaturas->isEmpty()) {
+            $res = $this->coordinacionService->obtenerDatosDocentesArea(
+                $informeCoordinacion->area,
+                null,
+                $informeCoordinacion->periodo,
+                $informeCoordinacion->mes,
+                $informeCoordinacion->usuario ?? $user
+            );
+            if (!empty($res['datos']) && $res['datos']->isNotEmpty()) {
+                $payload = [
+                    'periodo'                         => $informeCoordinacion->periodo,
+                    'mes'                             => $informeCoordinacion->mes,
+                    'anio'                            => $informeCoordinacion->anio,
+                    'herramientas_virtuales'          => $informeCoordinacion->herramientas_virtuales ?? 'Google Classroom, Google Meet, Zoom, Campus Virtual FARUSAC',
+                    'enlace_actividades_coordinacion' => $informeCoordinacion->enlace_actividades_coordinacion,
+                    'enlace_informe_auxiliares'       => $informeCoordinacion->enlace_informe_auxiliares,
+                    'enlace_docentes_permisos'        => $informeCoordinacion->enlace_docentes_permisos,
+                    'estado'                          => $informeCoordinacion->estado,
+                    'programas'                       => $res['programas']->toArray(),
+                    'asignaturas'                     => $res['datos']->toArray(),
+                    'avances'                         => $res['datos']->toArray(),
+                    'estudiantes'                     => [],
+                ];
+                try {
+                    $this->coordinacionService->actualizarInforme($informeCoordinacion, $payload);
+                    $informeCoordinacion->load(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario']);
+                } catch (\Throwable $e) {
+                    Log::warning('No se pudo autoreparar el informe de coordinación en admin: ' . $e->getMessage());
+                }
+            }
+        }
+
         $informe = $informeCoordinacion;
 
         return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
@@ -264,6 +298,38 @@ class AdminController extends Controller
     public function obtenerDetalleInformeCoordinacionJson(InformeCoordinacion $informeCoordinacion): JsonResponse
     {
         $informeCoordinacion->loadMissing(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario']);
+
+        if ($informeCoordinacion->asignaturas->isEmpty()) {
+            $res = $this->coordinacionService->obtenerDatosDocentesArea(
+                $informeCoordinacion->area,
+                null,
+                $informeCoordinacion->periodo,
+                $informeCoordinacion->mes,
+                $informeCoordinacion->usuario
+            );
+            if (!empty($res['datos']) && $res['datos']->isNotEmpty()) {
+                $payload = [
+                    'periodo'                         => $informeCoordinacion->periodo,
+                    'mes'                             => $informeCoordinacion->mes,
+                    'anio'                            => $informeCoordinacion->anio,
+                    'herramientas_virtuales'          => $informeCoordinacion->herramientas_virtuales ?? 'Google Classroom, Google Meet, Zoom, Campus Virtual FARUSAC',
+                    'enlace_actividades_coordinacion' => $informeCoordinacion->enlace_actividades_coordinacion,
+                    'enlace_informe_auxiliares'       => $informeCoordinacion->enlace_informe_auxiliares,
+                    'enlace_docentes_permisos'        => $informeCoordinacion->enlace_docentes_permisos,
+                    'estado'                          => $informeCoordinacion->estado,
+                    'programas'                       => $res['programas']->toArray(),
+                    'asignaturas'                     => $res['datos']->toArray(),
+                    'avances'                         => $res['datos']->toArray(),
+                    'estudiantes'                     => [],
+                ];
+                try {
+                    $this->coordinacionService->actualizarInforme($informeCoordinacion, $payload);
+                    $informeCoordinacion->load(['programas', 'asignaturas', 'avances', 'estudiantes', 'usuario']);
+                } catch (\Throwable $e) {
+                    Log::warning('No se pudo autoreparar el informe en detalle-json: ' . $e->getMessage());
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,

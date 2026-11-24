@@ -77,13 +77,17 @@ class InformeCoordinacionService
         $asignaciones = DB::table('docente_cursos')
             ->join('usuarios', 'usuarios.id', '=', 'docente_cursos.usuario_id')
             ->whereIn('docente_cursos.curso_id', $cursoIds)
-            ->select('docente_cursos.curso_id', 'usuarios.nombre as docente_nombre', 'usuarios.correo as docente_correo')
-            ->get()
-            ->keyBy('curso_id');
+            ->select(
+                'docente_cursos.curso_id',
+                'usuarios.id as docente_id',
+                'usuarios.nombre as docente_nombre',
+                'usuarios.correo as docente_correo'
+            )
+            ->get();
 
         $docenteInformesQuery = Informe::with(['usuario', 'semanas'])
             ->whereIn('curso_id', $cursoIds)
-            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado']);
+            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado', 'borrador']);
 
         if (!empty($mes)) {
             $docenteInformesQuery->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower(trim($mes))]);
@@ -93,19 +97,22 @@ class InformeCoordinacionService
             $cleanPeriodo = trim(preg_replace('/\d{4}/', '', $periodo));
             $docenteInformesQuery->where(function ($q) use ($periodo, $cleanPeriodo) {
                 $q->where('periodo', trim($periodo))
-                  ->orWhere('periodo', 'LIKE', '%' . $cleanPeriodo . '%');
+                  ->orWhere('periodo', 'LIKE', '%' . $cleanPeriodo . '%')
+                  ->orWhereRaw('LOWER(TRIM(periodo)) LIKE ?', ['%' . mb_strtolower($cleanPeriodo) . '%']);
             });
         }
 
-        $docenteInformes   = $docenteInformesQuery->get()->keyBy('curso_id');
+        $docenteInformes   = $docenteInformesQuery->get();
         $asignaturasUnicas = $cursosArea->pluck('nombre_curso')->unique()->values();
 
         $programas = $asignaturasUnicas->map(function ($nombreCurso) use ($cursosArea, $docenteInformes) {
-            $subCursoIds = $cursosArea->where('nombre_curso', $nombreCurso)->pluck('id');
+            $subCursoIds = $cursosArea->where('nombre_curso', $nombreCurso)->pluck('id')->toArray();
             $enlaceProg  = null;
             foreach ($subCursoIds as $cId) {
-                $inf = $docenteInformes->get($cId);
-                if ($inf && !empty($inf->enlace_classroom_drive_url)) {
+                $inf = $docenteInformes->first(function ($item) use ($cId) {
+                    return (int)$item->curso_id === (int)$cId && !empty($item->enlace_classroom_drive_url);
+                });
+                if ($inf) {
                     $enlaceProg = $inf->enlace_classroom_drive_url;
                     break;
                 }
@@ -116,44 +123,91 @@ class InformeCoordinacionService
             ];
         });
 
-        $datos = $cursosArea->map(function ($curso) use ($asignaciones, $docenteInformes) {
-            $docente = $asignaciones->get($curso->id);
-            $inf     = $docenteInformes->get($curso->id);
+        $datos = [];
+        foreach ($cursosArea as $curso) {
+            $docentesAsignados = $asignaciones->where('curso_id', $curso->id);
+            $informesCurso     = $docenteInformes->where('curso_id', $curso->id);
 
-            $presento = (bool) $inf;
-            $sala     = $inf && !empty($inf->enlace_meet_zoom_url);
-            $virtual  = $inf && !empty($inf->enlace_classroom_drive_url);
-            $eval     = $inf && !empty($inf->estrategias_evaluacion);
-            $evid     = $inf && (!empty($inf->enlace_evidencia_url) || !empty($inf->listado_asistencia_url));
+            $docentesMap = [];
+            foreach ($docentesAsignados as $asig) {
+                $docentesMap[$asig->docente_id] = [
+                    'docente_id'     => $asig->docente_id,
+                    'docente_nombre' => $asig->docente_nombre,
+                    'docente_correo' => $asig->docente_correo,
+                ];
+            }
 
-            return [
-                'curso_id'                   => $curso->id,
-                'docente_nombre'             => $docente ? $docente->docente_nombre : 'Sin docente asignado',
-                'asignatura'                 => $curso->nombre_curso,
-                'seccion'                    => $curso->seccion,
-                'presento_informe'           => $presento,
-                'tiene_sala_reuniones'       => $sala,
-                'funciona_enlace_virtual'    => $virtual,
-                'funciona_enlace_evaluacion' => $eval,
-                'evidencias_generales'       => $evid,
-                'observaciones'              => '',
-                'porcentaje_avance'          => 100,
-                'docente_informe_id'         => $inf ? $inf->id : null,
-                'informe_detalles'           => $inf ? [
-                    'id'                         => $inf->id,
-                    'estudiantes_asignados'      => $inf->estudiantes_asignados,
-                    'listado_asistencia_url'     => $inf->listado_asistencia_url,
-                    'enlace_evidencia_url'       => $inf->enlace_evidencia_url,
-                    'enlace_meet_zoom_url'       => $inf->enlace_meet_zoom_url,
-                    'enlace_classroom_drive_url' => $inf->enlace_classroom_drive_url,
-                    'estrategias_evaluacion'     => $inf->estrategias_evaluacion,
-                    'semanas_registradas'        => $inf->semanas->count(),
-                ] : null,
-            ];
-        });
+            // Si algún docente entregó informe para este curso pero no está en la tabla de asignaciones, incluirlo
+            foreach ($informesCurso as $inf) {
+                if ($inf->usuario && !isset($docentesMap[$inf->usuario_id])) {
+                    $docentesMap[$inf->usuario_id] = [
+                        'docente_id'     => $inf->usuario_id,
+                        'docente_nombre' => $inf->usuario->nombre,
+                        'docente_correo' => $inf->usuario->correo,
+                    ];
+                }
+            }
+
+            if (empty($docentesMap)) {
+                $datos[] = [
+                    'curso_id'                   => $curso->id,
+                    'docente_id'                 => null,
+                    'docente_nombre'             => 'Sin docente asignado',
+                    'asignatura'                 => $curso->nombre_curso,
+                    'seccion'                    => $curso->seccion,
+                    'presento_informe'           => false,
+                    'tiene_sala_reuniones'       => false,
+                    'funciona_enlace_virtual'    => false,
+                    'funciona_enlace_evaluacion' => false,
+                    'evidencias_generales'       => false,
+                    'observaciones'              => '',
+                    'porcentaje_avance'          => 100,
+                    'docente_informe_id'         => null,
+                    'informe_detalles'           => null,
+                ];
+            } else {
+                foreach ($docentesMap as $d) {
+                    $inf = $informesCurso->first(function ($item) use ($d) {
+                        return (int)$item->usuario_id === (int)$d['docente_id'];
+                    });
+
+                    $presento = (bool) $inf;
+                    $sala     = $inf && !empty($inf->enlace_meet_zoom_url);
+                    $virtual  = $inf && !empty($inf->enlace_classroom_drive_url);
+                    $eval     = $inf && !empty($inf->estrategias_evaluacion);
+                    $evid     = $inf && (!empty($inf->enlace_evidencia_url) || !empty($inf->listado_asistencia_url));
+
+                    $datos[] = [
+                        'curso_id'                   => $curso->id,
+                        'docente_id'                 => $d['docente_id'],
+                        'docente_nombre'             => $d['docente_nombre'],
+                        'asignatura'                 => $curso->nombre_curso,
+                        'seccion'                    => $curso->seccion,
+                        'presento_informe'           => $presento,
+                        'tiene_sala_reuniones'       => $sala,
+                        'funciona_enlace_virtual'    => $virtual,
+                        'funciona_enlace_evaluacion' => $eval,
+                        'evidencias_generales'       => $evid,
+                        'observaciones'              => '',
+                        'porcentaje_avance'          => 100,
+                        'docente_informe_id'         => $inf ? $inf->id : null,
+                        'informe_detalles'           => $inf ? [
+                            'id'                         => $inf->id,
+                            'estudiantes_asignados'      => $inf->estudiantes_asignados,
+                            'listado_asistencia_url'     => $inf->listado_asistencia_url,
+                            'enlace_evidencia_url'       => $inf->enlace_evidencia_url,
+                            'enlace_meet_zoom_url'       => $inf->enlace_meet_zoom_url,
+                            'enlace_classroom_drive_url' => $inf->enlace_classroom_drive_url,
+                            'estrategias_evaluacion'     => $inf->estrategias_evaluacion,
+                            'semanas_registradas'        => $inf->semanas->count(),
+                        ] : null,
+                    ];
+                }
+            }
+        }
 
         return [
-            'datos'     => $datos,
+            'datos'     => collect($datos),
             'programas' => $programas,
         ];
     }

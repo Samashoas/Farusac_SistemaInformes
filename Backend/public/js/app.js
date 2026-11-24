@@ -86,6 +86,47 @@ window.getCsrfToken = function () {
 };
 
 /**
+ * Función global para obtener la URL base de la aplicación (incluyendo subdirectorios como /informes).
+ */
+window.getBaseUrl = function () {
+    const meta = document.querySelector('meta[name="base-url"]');
+    return meta ? meta.getAttribute('content').replace(/\/+$/, '') : '';
+};
+
+/**
+ * Función global para resolver rutas relativas respetando el subdirectorio de despliegue.
+ */
+window.route = function (path) {
+    if (!path || typeof path !== 'string') return path;
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('//')) return path;
+    const base = window.getBaseUrl();
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    if (base) {
+        try {
+            const parsed = new URL(base, window.location.origin);
+            const basePath = parsed.pathname.replace(/\/+$/, '');
+            if (basePath && basePath !== '/' && !cleanPath.startsWith(basePath + '/') && cleanPath !== basePath) {
+                return basePath + cleanPath;
+            }
+        } catch (e) {
+            if (!cleanPath.startsWith(base)) return base + cleanPath;
+        }
+    }
+    return cleanPath;
+};
+
+// Interceptor global de fetch para prefijar automáticamente el subdirectorio si existe
+(function () {
+    const originalFetch = window.fetch;
+    window.fetch = function (resource, init) {
+        if (typeof resource === 'string' && resource.startsWith('/') && !resource.startsWith('//')) {
+            resource = window.route(resource);
+        }
+        return originalFetch.call(this, resource, init);
+    };
+})();
+
+/**
  * Función global para abrir un modal por su ID.
  * @param {string} id - ID del elemento modal
  */
@@ -242,6 +283,12 @@ window.hidePreviewLoader = function () {
         loader.style.display = 'none';
     }
 };
+
+function hidePreviewLoader() {
+    if (typeof window.hidePreviewLoader === 'function') {
+        window.hidePreviewLoader();
+    }
+}
 
 window.printReportIframe = function () {
     const iframe = document.getElementById('reportPreviewIframe');

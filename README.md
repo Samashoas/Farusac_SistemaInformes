@@ -44,20 +44,52 @@ Para lograr esto sin costo, sin registrar tarjetas y sin abrir puertos en tu rou
 5. En el menú izquierdo ve a **Getting Started** > **Your Authtoken** y copia tu token secreto de autenticación.
 
 ### 2.2 Instalar y Conectar ngrok en Debian 12
-En la terminal de tu VM Debian:
+
+Para exponer el servidor web local con HTTPS y un dominio permanente, instalaremos el agente de ngrok.
+
+> [!WARNING] Advertencia de Compatibilidad con Debian 12 (Bookworm)
+> En Debian 12, los métodos antiguos de instalación que guardan llaves `.asc` en texto plano en `/etc/apt/trusted.gpg.d/` son rechazados por APT generando el error `NO_PUBKEY 0E61D3BBAAEE37FE`. Por ello, se recomienda la instalación directa del binario oficial (Opción A) o el uso estricto del estándar de keyrings con llave desarmada (Opción B).
+
+#### Opción A (Recomendada y Más Directa): Instalación del Binario Oficial
+ngrok es un ejecutable autocontenido. La forma más limpia, rápida y recomendada en Debian 12 es descargar el ejecutable oficial directamente a `/usr/local/bin`, sin necesidad de añadir repositorios externos de APT:
 
 ```bash
-# 1. Instalar repositorio oficial de ngrok
-curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
-  | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
-  | sudo tee /etc/apt/sources.list.d/ngrok.list
-sudo apt update && sudo apt install -y ngrok
+# Descargar y extraer directamente el binario oficial de ngrok v3 para Linux AMD64
+curl -fsSL https://bin.ngrok.com/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz | sudo tar -xz -C /usr/local/bin
 
-# 2. Configurar tu token de autenticación
+# Comprobar la instalación:
+ngrok version
+```
+
+---
+
+#### Opción B (Alternativa por Gestor de Paquetes APT):
+Si prefieres gestionar el software mediante el comando `apt`, debes seguir obligatoriamente el estándar moderno de Debian 12 (desarmando la llave GPG a formato binario e importándola en `/etc/apt/keyrings/`):
+
+```bash
+# 1. Crear el directorio oficial de keyrings
+sudo mkdir -p /etc/apt/keyrings
+
+# 2. Descargar y desarmar la llave pública GPG oficial a binario OpenPGP (.gpg)
+curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo gpg --dearmor -o /etc/apt/keyrings/ngrok.gpg
+
+# 3. Registrar el repositorio oficial vinculado a la llave firmada
+echo "deb [signed-by=/etc/apt/keyrings/ngrok.gpg] https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+
+# 4. Actualizar listas e instalar el paquete
+sudo apt update && sudo apt install -y ngrok
+```
+
+---
+
+#### 2.2.1 Configurar Authtoken y Levantar el Túnel HTTPS
+Con ngrok ya instalado:
+
+```bash
+# 1. Configurar tu token de autenticación
 ngrok config add-authtoken TU_AUTHTOKEN_AQUI
 
-# 3. Iniciar el túnel hacia Apache (puerto 80) usando tu dominio estático:
+# 2. Iniciar el túnel hacia Apache (puerto 80) usando tu dominio estático asignado:
 ngrok http 80 --url=farusac-pruebas.ngrok-free.app
 ```
 
@@ -69,30 +101,69 @@ Forwarding   https://farusac-pruebas.ngrok-free.app -> http://localhost:80
 > [!TIP]
 > Puedes dejar este comando corriendo en una pestaña separada de tu terminal o ejecutarlo en segundo plano. Tu dominio `https://farusac-pruebas.ngrok-free.app` **nunca cambiará**, lo que permite configurar Google OAuth una sola vez.
 
+#### 🛠️ Diagnóstico y Solución de Errores en ngrok:
+
+##### Caso: `reconnecting (failed to dial ngrok server... lookup connect.ngrok-agent.com: i/o timeout)`
+* **Causa Raíz:** El mensaje `lookup connect.ngrok-agent.com: i/o timeout` indica que la máquina virtual **no tiene resolución DNS** o **no tiene salida a Internet**, por lo que ngrok no puede resolver la dirección de los servidores de conexión.
+* **Diagnóstico rápido:**
+  ```bash
+  # 1. Probar conectividad IP directa:
+  ping -c 3 8.8.8.8
+
+  # 2. Probar resolución DNS de nombres:
+  ping -c 3 google.com
+  ```
+* **Solución según el resultado:**
+  * **Si `ping 8.8.8.8` responde pero `ping google.com` da timeout (Fallo de DNS):**
+    Los servidores DNS asignados por DHCP a tu VM no responden. Configura los DNS públicos de Google y Cloudflare en `/etc/resolv.conf`:
+    ```bash
+    sudo bash -c 'cat <<EOF > /etc/resolv.conf
+    nameserver 8.8.8.8
+    nameserver 1.1.1.1
+    EOF'
+    ```
+    Y vuelve a iniciar ngrok.
+  * **Si `ping 8.8.8.8` no responde (La máquina virtual no tiene internet):**
+    Revisa la configuración del hipervisor (VirtualBox o VMware):
+    1. Abre la configuración de tu máquina virtual y ve a la sección **Red (Network)**.
+    2. Asegúrate de que el **Adaptador 1** esté conectado a **NAT** o a **Adaptador Puente (Bridged)** (nunca en "Solo-anfitrión" o "Red Interna", ya que esos modos aíslan la VM de Internet).
+    3. Reinicia la red en Debian: `sudo systemctl restart networking` o reinicia la máquina virtual.
+
 ---
 
 ## ⚙️ 3. Preparación del Servidor Debian 12 (Sin tocar `php.ini`)
 
 Todo lo requerido por Laravel y el sistema de FARUSAC se instala con paquetes estándar de Debian sin necesidad de modificar `php.ini`.
 
-### 3.1 Instalar el Stack Web (Apache, PHP 8.2, MariaDB, Git, Composer)
+### 3.1 Instalar el Stack Web (Apache, PHP 8.4, MariaDB, Git, Composer)
+
+> [!IMPORTANT] Requisito de Versión de PHP (PHP 8.4+)
+> El proyecto utiliza dependencias del ecosistema Symfony/Laravel (como `symfony/uid` y `symfony/var-dumper`) que requieren **PHP >= 8.4.1**. Dado que Debian 12 incluye por defecto PHP 8.2 en sus repositorios base, habilitamos el repositorio oficial del mantenedor de PHP para Debian (`deb.sury.org`) para instalar **PHP 8.4** de manera limpia y segura con `[signed-by]`.
+
 Ejecuta en tu terminal de Debian:
 
 ```bash
-# Actualizar lista de paquetes
+# 1. Actualizar lista de paquetes e instalar utilidades base
 sudo apt update && sudo apt upgrade -y
+sudo apt install -y apt-transport-https ca-certificates curl lsb-release gnupg git unzip apache2 mariadb-server
 
-# Instalar Apache, MariaDB, Git, Unzip y Curl
-sudo apt install -y apache2 mariadb-server git curl unzip
+# 2. Agregar repositorio oficial de PHP (Ondřej Surý) con clave GPG firmada
+sudo curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list
+sudo apt update
 
-# Instalar PHP 8.2 y las extensiones exactas que requiere Laravel
-sudo apt install -y php8.2 libapache2-mod-php8.2 php8.2-mysql php8.2-mbstring \
-                    php8.2-xml php8.2-curl php8.2-zip php8.2-bcmath
+# 3. Instalar PHP 8.4 y todas las extensiones que requiere el sistema
+sudo apt install -y php8.4 php8.4-cli php8.4-common libapache2-mod-php8.4 \
+                    php8.4-mysql php8.4-mbstring php8.4-xml php8.4-curl php8.4-zip php8.4-bcmath
 
-# Instalar Chromium Headless (necesario para generar los PDFs institucionales)
+# 4. Asegurar que PHP 8.4 sea la versión activa por defecto
+sudo update-alternatives --set php /usr/bin/php8.4
+sudo a2enmod php8.4
+
+# 5. Instalar Chromium Headless (necesario para generar los PDFs institucionales)
 sudo apt install -y chromium chromium-sandbox
 
-# Instalar Composer globalmente
+# 6. Instalar Composer globalmente
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 ```
@@ -167,9 +238,62 @@ cd Farusac_SistemaInformes/Backend
 ```
 
 ### 5.2 Instalar Dependencias de PHP
+
+Ejecuta en la carpeta `Backend`:
+
 ```bash
 sudo composer install --no-dev --optimize-autoloader
 ```
+
+> [!WARNING] Regla de Oro en Servidores: NUNCA ejecutes `composer update`
+> Aunque Composer sugiera en la consola *"Please run composer update"*, **jamás lo hagas en un servidor de producción o de pruebas**. El comando `composer update` recalcula todas las dependencias ignorando el archivo `composer.lock` congelado y puede instalar versiones no probadas que rompan el sistema. La solución siempre es asegurar que el entorno del servidor cumpla con los requisitos, no alterar las dependencias del proyecto.
+
+#### 🛠️ Diagnóstico y Solución de Errores Comunes en el Paso 5.2:
+
+##### Caso A: Error `Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.1"` o `Your lock file does not contain a compatible set of packages.`
+* **Causa Raíz:** Este fallo ocurre cuando la versión de PHP activa en el servidor o en la terminal es inferior a **PHP 8.4.1** (por ejemplo, si el servidor está utilizando PHP 8.2 o PHP 8.3). Componentes modernos en `composer.lock` como `symfony/uid` y `symfony/var-dumper` exigen estrictamente `PHP >= 8.4.1`.
+* **Diagnóstico rápido:**
+  ```bash
+  php -v
+  ```
+  Si la terminal responde `PHP 8.2.x` o `PHP 8.3.x`, Composer o el autoload de Laravel detendrán la ejecución por incompatibilidad de plataforma.
+* **Solución Inmediata (sin salir del flujo de despliegue):**
+  1. Instalar y configurar PHP 8.4 oficial:
+     ```bash
+     sudo apt update
+     sudo apt install -y apt-transport-https ca-certificates curl lsb-release gnupg
+     sudo curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+     echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list
+     sudo apt update
+     sudo apt install -y php8.4 php8.4-cli php8.4-common libapache2-mod-php8.4 \
+                         php8.4-mysql php8.4-mbstring php8.4-xml php8.4-curl php8.4-zip php8.4-bcmath
+     ```
+  2. Forzar que la terminal y Apache utilicen PHP 8.4 por defecto:
+     ```bash
+     sudo update-alternatives --set php /usr/bin/php8.4
+     sudo a2dismod php8.2 php8.3 2>/dev/null || true
+     sudo a2enmod php8.4
+     sudo systemctl restart apache2
+     ```
+  3. Reintentar la instalación de dependencias con Composer:
+     ```bash
+     sudo composer install --no-dev --optimize-autoloader
+     ```
+
+##### Caso B: Error `The requested PHP extension ext-... is missing from your system`
+* **Causa Raíz:** Falta alguna extensión requerida en el sistema (por ejemplo, `ext-curl`, `ext-zip`, `ext-mbstring` o `ext-bcmath`).
+* **Solución:** Instalar la extensión correspondiente para PHP 8.4 y reintentar:
+  ```bash
+  sudo apt install -y php8.4-curl php8.4-zip php8.4-mbstring php8.4-xml php8.4-mysql php8.4-bcmath
+  sudo composer install --no-dev --optimize-autoloader
+  ```
+
+##### Caso C: Error de Memoria `Allowed memory size of ... bytes exhausted`
+* **Causa Raíz:** En máquinas virtuales con recursos limitados (1 GB o 2 GB de RAM), Composer puede alcanzar el límite de memoria por defecto de PHP al procesar el árbol de dependencias.
+* **Solución:** Ejecutar Composer eliminando temporalmente el límite de memoria:
+  ```bash
+  sudo COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader
+  ```
 
 ### 5.3 Configurar el Archivo de Entorno (`.env`)
 Copia la plantilla y genera una llave criptográfica única para el servidor:
@@ -413,16 +537,17 @@ Si al ejecutar `php artisan migrate` obtienes algún error:
 
 Para simular exactamente `farusac.com/informes` sin tocar la configuración global de Apache:
 
-1. Crea un archivo de configuración para el sitio:
+1. Crea o edita el archivo de configuración para el sitio:
    ```bash
    sudo nano /etc/apache2/sites-available/farusac.conf
    ```
 
-2. Agrega la configuración utilizando la directiva `Alias`:
+2. Agrega la configuración utilizando la directiva `Alias` y `ServerAlias *` para responder tanto a ngrok como al dominio institucional:
 
 ```apache
 <VirtualHost *:80>
     ServerName localhost
+    ServerAlias *
 
     # Redirigir la subruta /informes directamente a la carpeta public de Laravel
     Alias /informes /var/www/Farusac_SistemaInformes/Backend/public
@@ -445,12 +570,49 @@ Para simular exactamente `farusac.com/informes` sin tocar la configuración glob
 </VirtualHost>
 ```
 
-3. Habilita el sitio y recarga Apache:
+3. Desactiva el sitio por defecto de Debian, habilita `farusac.conf` y recarga Apache:
    ```bash
+   # Desactivar el sitio default de Debian para que no intercepte el tráfico de ngrok
+   sudo a2dissite 000-default.conf
+
+   # Habilitar el sitio de FARUSAC
    sudo a2ensite farusac.conf
+
+   # Verificar sintaxis y recargar el servidor web
    sudo apache2ctl configtest    # Debe responder "Syntax OK"
    sudo systemctl reload apache2
    ```
+
+#### 🛠️ Diagnóstico y Solución de Errores en el Paso 6:
+
+##### Caso: `404 Not Found (Apache/2.4.x Server at ... Port 80)` al ingresar a `/informes`
+* **Causa Raíz:**
+  1. **Conflicto con `000-default.conf`:** En Debian, Apache viene con el sitio predeterminado `000-default.conf` activo. Como ngrok envía el encabezado `Host: <tu-subdominio>.ngrok-free.dev`, Apache busca un VirtualHost que coincida. Si no encuentra coincidencia exacta con `localhost`, utiliza el primer sitio en orden alfabético (`000-default.conf`), el cual apunta a `/var/www/html` y no conoce el `Alias /informes`.
+  2. **Falta de `ServerAlias *`:** Sin esta directiva, Apache ignora las peticiones entrantes dirigidas a los dominios dinámicos de ngrok.
+* **Diagnóstico rápido:**
+  ```bash
+  sudo apache2ctl -S
+  ```
+  Observa qué archivo aparece marcado como `default server`. Si dice `000-default.conf`, ese sitio está interceptando tu tráfico.
+* **Solución Inmediata:**
+  1. Desactiva el sitio por defecto de Debian:
+     ```bash
+     sudo a2dissite 000-default.conf
+     ```
+  2. Asegúrate de que `farusac.conf` tenga la línea `ServerAlias *` justo debajo de `ServerName localhost`.
+  3. Asegúrate de que la carpeta del proyecto exista físicamente:
+     ```bash
+     ls -la /var/www/Farusac_SistemaInformes/Backend/public/index.php
+     ```
+  4. Recarga Apache:
+     ```bash
+     sudo a2ensite farusac.conf
+     sudo systemctl reload apache2
+     ```
+  5. Prueba ingresar en el navegador tanto a:
+     `https://<tu-dominio>.ngrok-free.dev/informes/`
+     como a:
+     `https://<tu-dominio>.ngrok-free.dev/informes/login`
 
 ---
 

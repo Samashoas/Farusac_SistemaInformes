@@ -192,10 +192,14 @@ const informeId = informeCoordCfg.informeId || "";
             if (!periodo || !mes) return;
 
             try {
-                const res = await fetch(`/coordinador/informes-coordinacion/datos-docentes?periodo=${encodeURIComponent(periodo)}&mes=${encodeURIComponent(mes)}`, {
+                const endpoint = `/coordinador/informes-coordinacion/datos-docentes?periodo=${encodeURIComponent(periodo)}&mes=${encodeURIComponent(mes)}`;
+                const fetchUrl = window.route ? window.route(endpoint) : endpoint;
+                const token = window.getCsrfToken ? window.getCsrfToken() : '';
+
+                const res = await fetch(fetchUrl, {
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
+                        'X-CSRF-TOKEN': token
                     }
                 });
                 const data = await res.json();
@@ -257,63 +261,210 @@ const informeId = informeCoordCfg.informeId || "";
                         }
                     }
 
-                    // 2. Sincronizar Información General de Asignaturas (Inciso 2)
+                    // 2. Sincronizar Información General de Asignaturas (Inciso 2) y Avances (Inciso 3.1)
                     if (data.datos && Array.isArray(data.datos)) {
-                        const mapDatos = {};
+                        const mapByKey = new Map();
+                        const listByCurso = new Map();
+
                         data.datos.forEach(d => {
-                            mapDatos[d.curso_id] = d;
-                        });
-
-                        document.querySelectorAll('#tbodyAsignaturas tr.fila-asig-general').forEach(tr => {
-                            const cId = tr.getAttribute('data-curso-id');
-                            const d = mapDatos[cId];
-                            if (d) {
-                                const inPresento = tr.querySelector('.asig-presento');
-                                if (inPresento) {
-                                    inPresento.value = d.presento_informe ? '1' : '0';
-                                    actualizarColorSelect(inPresento);
+                            if (d.curso_id && d.docente_id) {
+                                mapByKey.set(`${d.curso_id}_id_${d.docente_id}`, d);
+                            }
+                            if (d.curso_id && d.docente_nombre) {
+                                mapByKey.set(`${d.curso_id}_name_${d.docente_nombre.trim().toLowerCase()}`, d);
+                            }
+                            if (d.curso_id) {
+                                const cKey = String(d.curso_id);
+                                if (!listByCurso.has(cKey)) {
+                                    listByCurso.set(cKey, []);
                                 }
-
-                                const inSala = tr.querySelector('.asig-sala');
-                                if (inSala) {
-                                    inSala.value = d.tiene_sala_reuniones ? '1' : '0';
-                                    actualizarColorSelect(inSala);
-                                }
-
-                                const inVirtual = tr.querySelector('.asig-virtual');
-                                if (inVirtual) {
-                                    inVirtual.value = d.funciona_enlace_virtual ? '1' : '0';
-                                    actualizarColorSelect(inVirtual);
-                                }
-
-                                const inEval = tr.querySelector('.asig-eval');
-                                if (inEval) {
-                                    inEval.value = d.funciona_enlace_evaluacion ? '1' : '0';
-                                    actualizarColorSelect(inEval);
-                                }
-
-                                const inEvid = tr.querySelector('.asig-evid');
-                                if (inEvid) {
-                                    inEvid.value = d.evidencias_generales ? '1' : '0';
-                                    actualizarColorSelect(inEvid);
-                                }
-
-                                // Actualizar botón de visualización de informe docente
-                                const actionCol = tr.querySelector('.col-docente-report-action');
-                                if (actionCol) {
-                                    if (d.docente_informe_id) {
-                                        actionCol.innerHTML = `
-                                        <button type="button" class="btn-ver-docente" onclick="abrirModalInformeDocente(${d.docente_informe_id})" title="Visualizar informe entregado por el docente en ${mes}">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                            <span>Ver Informe</span>
-                                        </button>
-                                    `;
-                                    } else {
-                                        actionCol.innerHTML = `<span class="badge-sin-informe">Sin informe</span>`;
-                                    }
-                                }
+                                listByCurso.get(cKey).push(d);
                             }
                         });
+
+                        const existingAsigRows = document.querySelectorAll('#tbodyAsignaturas tr.fila-asig-general');
+                        if (existingAsigRows.length === 0) {
+                            // Generar filas dinámicamente si el contenedor estaba vacío
+                            const tbodyAsig = document.getElementById('tbodyAsignaturas');
+                            const tbodyAv = document.getElementById('tbodyAvances');
+                            if (tbodyAsig) tbodyAsig.innerHTML = '';
+                            if (tbodyAv) tbodyAv.innerHTML = '';
+
+                            data.datos.forEach((d, idx) => {
+                                if (tbodyAsig) {
+                                    const trAsig = document.createElement('tr');
+                                    trAsig.className = 'fila-asig-general';
+                                    trAsig.setAttribute('data-curso-id', d.curso_id || '');
+                                    trAsig.setAttribute('data-docente-id', d.docente_id || '');
+                                    trAsig.setAttribute('data-row-index', idx);
+                                    trAsig.setAttribute('data-asig-nombre', d.asignatura || '');
+                                    trAsig.setAttribute('data-asig-seccion', d.seccion || '');
+                                    trAsig.setAttribute('data-asig-docente', d.docente_nombre || '');
+                                    trAsig.innerHTML = `
+                                        <td style="text-align: center;">
+                                            <div class="col-docente-report-action" data-curso-id="${d.curso_id || ''}">
+                                                ${d.docente_informe_id ? `
+                                                    <button type="button" class="btn-ver-docente" onclick="abrirModalInformeDocente(${d.docente_informe_id})" title="Visualizar informe entregado por el docente en ${mes}">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                                        <span>Ver Informe</span>
+                                                    </button>
+                                                ` : `<span class="badge-sin-informe">Sin informe</span>`}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="table-input asig-docente" value="${d.docente_nombre || ''}" readonly style="background-color: #f8fafc; font-weight: 600; color: #1e293b; cursor: default;">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="table-input asig-nombre" value="${d.asignatura || ''}" readonly style="background-color: #f8fafc; font-weight: 600; color: #1e293b; cursor: default;">
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <input type="text" class="table-input asig-seccion" value="${d.seccion || ''}" readonly style="text-align: center; width: 55px; background-color: #f8fafc; font-weight: 600; color: #1e293b; cursor: default;">
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <select class="table-select asig-presento ${d.presento_informe ? 'val-si' : 'val-no'}" onchange="actualizarColorSelect(this)">
+                                                <option value="1" ${d.presento_informe ? 'selected' : ''}>Sí</option>
+                                                <option value="0" ${!d.presento_informe ? 'selected' : ''}>No</option>
+                                            </select>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <select class="table-select asig-sala ${d.tiene_sala_reuniones ? 'val-si' : 'val-no'}" onchange="actualizarColorSelect(this)">
+                                                <option value="1" ${d.tiene_sala_reuniones ? 'selected' : ''}>Sí</option>
+                                                <option value="0" ${!d.tiene_sala_reuniones ? 'selected' : ''}>No</option>
+                                            </select>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <select class="table-select asig-virtual ${d.funciona_enlace_virtual ? 'val-si' : 'val-no'}" onchange="actualizarColorSelect(this)">
+                                                <option value="1" ${d.funciona_enlace_virtual ? 'selected' : ''}>Sí</option>
+                                                <option value="0" ${!d.funciona_enlace_virtual ? 'selected' : ''}>No</option>
+                                            </select>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <select class="table-select asig-eval ${d.funciona_enlace_evaluacion ? 'val-si' : 'val-no'}" onchange="actualizarColorSelect(this)">
+                                                <option value="1" ${d.funciona_enlace_evaluacion ? 'selected' : ''}>Sí</option>
+                                                <option value="0" ${!d.funciona_enlace_evaluacion ? 'selected' : ''}>No</option>
+                                            </select>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <select class="table-select asig-evid ${d.evidencias_generales ? 'val-si' : 'val-no'}" onchange="actualizarColorSelect(this)">
+                                                <option value="1" ${d.evidencias_generales ? 'selected' : ''}>Sí</option>
+                                                <option value="0" ${!d.evidencias_generales ? 'selected' : ''}>No</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" class="asig-obs" value="${d.observaciones || ''}">
+                                            <button type="button" class="btn-obs-trigger ${d.observaciones ? 'filled' : 'empty'}" onclick="abrirModalObservacion(this, 'asig')">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                <span class="btn-obs-label">${d.observaciones ? 'Ver / Editar' : 'Agregar'}</span>
+                                            </button>
+                                        </td>
+                                    `;
+                                    tbodyAsig.appendChild(trAsig);
+                                }
+
+                                if (tbodyAv) {
+                                    const trAv = document.createElement('tr');
+                                    trAv.className = 'fila-avance';
+                                    trAv.setAttribute('data-curso-id', d.curso_id || '');
+                                    trAv.setAttribute('data-docente-id', d.docente_id || '');
+                                    trAv.setAttribute('data-asig-nombre', d.asignatura || '');
+                                    trAv.setAttribute('data-asig-seccion', d.seccion || '');
+                                    trAv.setAttribute('data-asig-docente', d.docente_nombre || '');
+                                    trAv.innerHTML = `
+                                        <td>
+                                            <input type="text" class="table-input avance-docente" value="${d.docente_nombre || ''}" readonly style="background-color: #f8fafc; font-weight: 600; color: #1e293b; cursor: default;">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="table-input avance-asignatura" value="${d.asignatura || ''}" readonly style="background-color: #f8fafc; font-weight: 600; color: #1e293b; cursor: default;">
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <input type="text" class="table-input avance-seccion" value="${d.seccion || ''}" readonly style="text-align: center; width: 55px; background-color: #f8fafc; font-weight: 600; color: #1e293b; cursor: default;">
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                                <input type="number" min="0" max="100" class="table-input avance-porcentaje" value="${d.porcentaje_avance || 100}" style="text-align: center; width: 60px; font-weight: 600;">
+                                                <span style="font-weight: 700; color: #64748b; font-size: 0.85rem;">%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" class="avance-obs" value="${d.observaciones || ''}">
+                                            <button type="button" class="btn-obs-trigger ${d.observaciones ? 'filled' : 'empty'}" onclick="abrirModalObservacion(this, 'avance')">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                <span class="btn-obs-label">${d.observaciones ? 'Ver / Editar' : 'Agregar'}</span>
+                                            </button>
+                                        </td>
+                                    `;
+                                    tbodyAv.appendChild(trAv);
+                                }
+                            });
+                        } else {
+                            existingAsigRows.forEach(tr => {
+                                const cId = tr.getAttribute('data-curso-id');
+                                const docId = tr.getAttribute('data-docente-id');
+                                const docNombre = (tr.getAttribute('data-asig-docente') || tr.querySelector('.asig-docente')?.value || '').trim().toLowerCase();
+
+                                let d = null;
+                                if (cId && docId && mapByKey.has(`${cId}_id_${docId}`)) {
+                                    d = mapByKey.get(`${cId}_id_${docId}`);
+                                } else if (cId && docNombre && mapByKey.has(`${cId}_name_${docNombre}`)) {
+                                    d = mapByKey.get(`${cId}_name_${docNombre}`);
+                                } else if (cId && listByCurso.has(String(cId))) {
+                                    const pool = listByCurso.get(String(cId));
+                                    if (pool.length === 1) {
+                                        d = pool[0];
+                                    }
+                                }
+
+                                if (d) {
+                                    if (d.docente_id) {
+                                        tr.setAttribute('data-docente-id', d.docente_id);
+                                    }
+                                    const inPresento = tr.querySelector('.asig-presento');
+                                    if (inPresento) {
+                                        inPresento.value = d.presento_informe ? '1' : '0';
+                                        actualizarColorSelect(inPresento);
+                                    }
+
+                                    const inSala = tr.querySelector('.asig-sala');
+                                    if (inSala) {
+                                        inSala.value = d.tiene_sala_reuniones ? '1' : '0';
+                                        actualizarColorSelect(inSala);
+                                    }
+
+                                    const inVirtual = tr.querySelector('.asig-virtual');
+                                    if (inVirtual) {
+                                        inVirtual.value = d.funciona_enlace_virtual ? '1' : '0';
+                                        actualizarColorSelect(inVirtual);
+                                    }
+
+                                    const inEval = tr.querySelector('.asig-eval');
+                                    if (inEval) {
+                                        inEval.value = d.funciona_enlace_evaluacion ? '1' : '0';
+                                        actualizarColorSelect(inEval);
+                                    }
+
+                                    const inEvid = tr.querySelector('.asig-evid');
+                                    if (inEvid) {
+                                        inEvid.value = d.evidencias_generales ? '1' : '0';
+                                        actualizarColorSelect(inEvid);
+                                    }
+
+                                    // Actualizar botón de visualización de informe docente
+                                    const actionCol = tr.querySelector('.col-docente-report-action');
+                                    if (actionCol) {
+                                        if (d.docente_informe_id) {
+                                            actionCol.innerHTML = `
+                                            <button type="button" class="btn-ver-docente" onclick="abrirModalInformeDocente(${d.docente_informe_id})" title="Visualizar informe entregado por el docente en ${mes}">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                                <span>Ver Informe</span>
+                                            </button>
+                                        `;
+                                        } else {
+                                            actionCol.innerHTML = `<span class="badge-sin-informe">Sin informe</span>`;
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     }
 
                     if (mostrarToast) {
@@ -456,18 +607,20 @@ const informeId = informeCoordCfg.informeId || "";
                 estudiantes: estudiantes
             };
 
-            const url = informeId
+            const basePath = informeId
                 ? `/coordinador/informes-coordinacion/${informeId}`
                 : '/coordinador/informes-coordinacion';
+            const url = window.route ? window.route(basePath) : basePath;
 
             const method = informeId ? 'PUT' : 'POST';
+            const token = window.getCsrfToken ? window.getCsrfToken() : '';
 
             try {
                 const res = await fetch(url, {
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
+                        'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify(payload)
@@ -478,7 +631,7 @@ const informeId = informeCoordCfg.informeId || "";
                 if (res.ok && data.success) {
                     showToast(data.message || 'Informe guardado exitosamente.', 'success');
                     setTimeout(() => {
-                        window.location.href = data.redirect_url || "{{ route('coordinador.dashboard') }}";
+                        window.location.href = data.redirect || data.redirect_url || (window.route ? window.route('/coordinador/dashboard') : '/coordinador/dashboard');
                     }, 1200);
                 } else {
                     showToast(data.message || 'Error al guardar el informe.', 'error');

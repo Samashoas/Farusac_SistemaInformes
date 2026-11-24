@@ -49,7 +49,7 @@
                 <span class="report-loader-text">Cargando informe institucional oficial...</span>
             </div>
             <iframe id="reportPreviewIframe" class="report-preview-iframe" src="about:blank"
-                onload="hidePreviewLoader()"></iframe>
+                onload="if (typeof window.hidePreviewLoader === 'function') window.hidePreviewLoader();"></iframe>
         </div>
     </div>
 </div>

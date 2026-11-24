@@ -215,7 +215,7 @@
                                 </thead>
                                 <tbody id="tbodyAsignaturas">
                                     @php
-                                        $itemsAsignaturas = isset($informe) ? $informe->asignaturas : $filasAsignaturas;
+                                        $itemsAsignaturas = (isset($informe) && $informe->asignaturas && $informe->asignaturas->isNotEmpty()) ? $informe->asignaturas : ($filasAsignaturas ?? collect());
                                     @endphp
                                     @foreach ($itemsAsignaturas as $index => $asig)
                                         @php
@@ -231,10 +231,17 @@
                                             $obs = is_array($asig) ? ($asig['observaciones'] ?? '') : $asig->observaciones;
 
                                             // Buscar informe docente correspondiente
-                                            $docenteInf = isset($docenteInformes) ? $docenteInformes->get($cursoId) : null;
-                                            $docenteInformeId = is_array($asig) ? ($asig['docente_informe_id'] ?? ($docenteInf ? $docenteInf->id : null)) : ($docenteInf ? $docenteInf->id : null);
+                                            $docenteInformeId = is_array($asig) ? ($asig['docente_informe_id'] ?? null) : null;
+                                            if (!$docenteInformeId && isset($docenteInformes)) {
+                                                $docenteInf = $docenteInformes->first(function ($item) use ($cursoId, $docenteNombre) {
+                                                    return (int)$item->curso_id === (int)$cursoId
+                                                        && (!$docenteNombre || mb_strtolower(trim($item->usuario?->nombre ?? '')) === mb_strtolower(trim($docenteNombre)));
+                                                });
+                                                $docenteInformeId = $docenteInf ? $docenteInf->id : null;
+                                            }
+                                            $docenteId = is_array($asig) ? ($asig['docente_id'] ?? '') : '';
                                         @endphp
-                                        <tr class="fila-asig-general" data-curso-id="{{ $cursoId }}"
+                                        <tr class="fila-asig-general" data-curso-id="{{ $cursoId }}" data-docente-id="{{ $docenteId }}"
                                             data-row-index="{{ $index }}" data-asig-nombre="{{ $nombreAsignatura }}"
                                             data-asig-seccion="{{ $seccion }}" data-asig-docente="{{ $docenteNombre }}">
                                             <td style="text-align: center;">
@@ -336,7 +343,7 @@
                                 <label class="form-label" for="inputHerramientasVirtuales">Herramientas virtuales
                                     utilizadas para la docencia en línea:</label>
                                 <textarea id="inputHerramientasVirtuales" class="form-textarea"
-                                    placeholder="Ej. Google Classroom, Google Meet, Zoom, Campus Virtual FARUSAC, etc.">{{ isset($informe) ? $informe->herramientas_virtuales : '' }}</textarea>
+                                    placeholder="Ej. Google Classroom, Google Meet, Zoom, Campus Virtual FARUSAC, etc.">{{ isset($informe) && !empty($informe->herramientas_virtuales) ? $informe->herramientas_virtuales : 'Google Classroom, Google Meet, Zoom, Campus Virtual FARUSAC' }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -375,7 +382,7 @@
                                     </thead>
                                     <tbody id="tbodyAvances">
                                         @php
-                                            $itemsAvances = isset($informe) ? $informe->avances : $filasAsignaturas;
+                                            $itemsAvances = (isset($informe) && $informe->avances && $informe->avances->isNotEmpty()) ? $informe->avances : ($filasAsignaturas ?? collect());
                                         @endphp
                                         @foreach ($itemsAvances as $av)
                                             @php
@@ -385,8 +392,9 @@
                                                 $seccion = is_array($av) ? ($av['seccion'] ?? '') : $av->seccion;
                                                 $porcentaje = is_array($av) ? ($av['porcentaje_avance'] ?? 100) : $av->porcentaje_avance;
                                                 $obs = is_array($av) ? ($av['observaciones'] ?? '') : $av->observaciones;
+                                                $docenteId = is_array($av) ? ($av['docente_id'] ?? '') : '';
                                             @endphp
-                                            <tr class="fila-avance" data-curso-id="{{ $cursoId }}"
+                                            <tr class="fila-avance" data-curso-id="{{ $cursoId }}" data-docente-id="{{ $docenteId }}"
                                                 data-asig-nombre="{{ $nombreAsignatura }}"
                                                 data-asig-seccion="{{ $seccion }}" data-asig-docente="{{ $docenteNombre }}">
                                                 <td>

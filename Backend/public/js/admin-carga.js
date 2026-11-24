@@ -69,7 +69,7 @@ function uploadCSVFile(type) {
     let uploadTextId = 'uploadTextAcademica';
     let fileNameId = 'fileNameAcademica';
     let dropAreaId = 'dropAreaAcademica';
-    let url = '/admin/carga-datos/academica';
+    let url = '/admin/importar-carga-academica';
 
     if (type === 'usuarios') {
         fileInputId = 'archivo_csv_usuarios';

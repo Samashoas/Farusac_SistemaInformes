@@ -46,7 +46,8 @@ class DocenteController extends Controller
                 ->orderBy('nombre_curso', 'asc')
                 ->orderBy('seccion', 'asc')
                 ->get();
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            Log::warning('No se pudieron cargar los cursos asignados del docente ID ' . ($user->id ?? '?') . ': ' . $e->getMessage());
             $cursosAsignados = collect();
         }
 
@@ -148,7 +149,8 @@ class DocenteController extends Controller
                 ->orderBy('nombre_curso', 'asc')
                 ->orderBy('seccion', 'asc')
                 ->get();
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            Log::warning('No se pudieron cargar los cursos asignados del docente ID ' . ($user->id ?? '?') . ': ' . $e->getMessage());
             $cursosAsignados = collect();
         }
 
@@ -242,7 +244,8 @@ class DocenteController extends Controller
                 ->orderBy('nombre_curso', 'asc')
                 ->orderBy('seccion', 'asc')
                 ->get();
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            Log::warning('No se pudieron cargar los cursos asignados del docente ID ' . ($user->id ?? '?') . ': ' . $e->getMessage());
             $cursosAsignados = collect();
         }
 

@@ -6,18 +6,18 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DocenteController;
 use App\Http\Controllers\CoordinadorController;
 
-Route::get('/', function () {
+Route::match(['get', 'post'], '/', function () {
     return redirect()->route('login');
 });
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::match(['get', 'post'], '/login', [AuthController::class, 'showLogin'])->name('login');
 
 // Rutas de autenticación con Rate Limiting (máx 10 peticiones por minuto para prevenir abusos a OAuth)
 Route::middleware('throttle:10,1')->group(function () {
-    Route::get('/auth/google', [AuthController::class, 'redirect'])->name('google.login'); // Va a Google
-    Route::get('/auth/google/callback', [AuthController::class, 'callback']); // Google nos devuelve aquí
+    Route::match(['get', 'post'], '/auth/google', [AuthController::class, 'redirect'])->name('google.login'); // Va a Google
+    Route::match(['get', 'post'], '/auth/google/callback', [AuthController::class, 'callback']); // Google nos devuelve aquí
 });
 
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function () {
 
@@ -84,6 +84,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/importar-usuarios', [AdminController::class, 'cargaUsuariosCsv'])->name('admin.importar');
         Route::post('/admin/importar-cursos', [AdminController::class, 'cargaCursosCsv'])->name('admin.importar-cursos');
         Route::post('/admin/importar-carga-academica', [AdminController::class, 'cargaAcademicaCsv'])->name('admin.importar-carga-academica');
+        Route::post('/admin/carga-datos/academica', [AdminController::class, 'cargaAcademicaCsv'])->name('admin.carga-datos.academica');
 
         // Módulo de Informes para Administrador
         Route::get('/admin/informes', [AdminController::class, 'informesView'])->name('admin.informes');
