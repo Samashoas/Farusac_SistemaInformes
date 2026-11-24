@@ -22,7 +22,7 @@ Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->nam
 Route::middleware('auth')->group(function () {
 
     // Rutas compartidas para gestión docente (docentes y coordinadores con cursos a su cargo)
-    Route::middleware('role:docente,coordinador')->group(function () {
+    Route::middleware('role:docente,coordinador,administrador')->group(function () {
         Route::get('/docente/perfil', [DocenteController::class, 'perfilView'])->name('docente.perfil');
         Route::put('/docente/perfil', [DocenteController::class, 'actualizarPerfil'])->name('docente.perfil.actualizar');
         Route::post('/docente/cursos/asignar', [DocenteController::class, 'asignarCurso'])->name('docente.cursos.asignar');

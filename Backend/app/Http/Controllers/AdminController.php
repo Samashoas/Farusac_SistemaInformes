@@ -281,7 +281,28 @@ class AdminController extends Controller
 
         $informe = $informeCoordinacion;
 
-        return view('coordinador.ver_informe_coordinacion', compact('user', 'informe'));
+        // Cargar los informes docentes asociados para permitir su consulta desde el informe de coordinación
+        $cursosArea = $this->coordinacionService->getCursosPorArea($informe->area, null, $informe->usuario ?? $user);
+        $cursoIds = $cursosArea->pluck('id')->toArray();
+        $docenteInformesQuery = Informe::with(['usuario', 'semanas', 'curso'])
+            ->whereIn('curso_id', $cursoIds)
+            ->whereIn('estado', ['enviado', 'aprobado', 'bloqueado', 'borrador']);
+
+        if (!empty($informe->mes)) {
+            $docenteInformesQuery->whereRaw('LOWER(TRIM(mes)) = ?', [mb_strtolower(trim($informe->mes))]);
+        }
+
+        if (!empty($informe->periodo)) {
+            $cleanPeriodo = trim(preg_replace('/\d{4}/', '', $informe->periodo));
+            $docenteInformesQuery->where(function ($q) use ($informe, $cleanPeriodo) {
+                $q->where('periodo', trim($informe->periodo))
+                  ->orWhere('periodo', 'LIKE', '%' . $cleanPeriodo . '%')
+                  ->orWhereRaw('LOWER(TRIM(periodo)) LIKE ?', ['%' . mb_strtolower($cleanPeriodo) . '%']);
+            });
+        }
+        $docenteInformes = $docenteInformesQuery->get();
+
+        return view('coordinador.ver_informe_coordinacion', compact('user', 'informe', 'docenteInformes'));
     }
 
     public function obtenerDetalleInformeDocenteJson(Informe $informe): JsonResponse
